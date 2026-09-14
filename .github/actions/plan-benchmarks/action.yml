@@ -16,9 +16,6 @@ inputs:
     required: true
 
 outputs:
-  scope:
-    description: Campaign concurrency scope
-    value: ${{ steps.settings.outputs.scope }}
   matrix:
     description: Benchmark job matrix
     value: ${{ steps.plan.outputs.matrix }}
@@ -29,20 +26,15 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: settings
-      name: Resolve dispatch and schedule defaults
+    - name: Validate recording branch
       shell: bash
       env:
-        REQUESTED_VERSIONS: ${{ inputs.versions }}
-        BACKFILL_MONTHS: ${{ inputs.backfill_months }}
         DEFAULT_BRANCH: ${{ inputs.default_branch }}
       run: |
         if [[ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]]; then
           echo "benchmark recording must run from $DEFAULT_BRANCH" >&2
           exit 2
         fi
-        scope="$(printf '%s\n%s' "${REQUESTED_VERSIONS:-latest-stable}" "$BACKFILL_MONTHS" | sha256sum | cut -c1-20)"
-        echo "scope=$scope" >> "$GITHUB_OUTPUT"
     - id: plan
       name: Build benchmark matrix
       shell: bash

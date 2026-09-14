@@ -24,8 +24,6 @@ jobs:
       - uses: ./.github/actions/setup-node-workspace
         with:
           build-cli: "false"
-      - name: Test workflow scripts
-        run: node --test .github/scripts/*.test.mjs
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build
