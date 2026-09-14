@@ -10,6 +10,7 @@ Reproducible measurements of released LiteLLM SDK and proxy artifacts. Every res
 | `packages/contracts/`          | Effect Schema contracts and generated JSON Schema               |
 | `packages/harness/`            | Runner registry, process execution, failures, and run metadata  |
 | `packages/python-environment/` | SDK environment service and minimal CPython probe assets        |
+| `packages/provider-*/`         | Provider-route contracts, builders, and canonical fixture data  |
 | `packages/proxy/`              | Docker lifecycle, k6 execution, and typed proxy observations    |
 | `packages/result-store/`       | Validated transactional ingestion and index generation          |
 | `data/`                        | Current-format records, annotations, migration audit, and index |
@@ -116,7 +117,7 @@ Import footprint uses the shared CPython probe because `sys.modules`, `resource.
 
 ## Proxy apparatus
 
-The proxy environment creates one Docker network per experiment and fresh mock/proxy containers per trial. It applies the declared CPU, memory, worker, and log settings; waits for readiness; runs the pinned k6 workload; captures cgroup v2 CPU and memory values; validates upstream request counts; retains logs and raw artifacts; and removes owned containers and networks on every exit path
+The proxy environment creates one Docker network per experiment. Before measurement, it runs each distinct proxy configuration, fixture, payload, and request/response contract through a fresh mock/proxy pair and fails fast with readable logs and a redacted upstream mismatch diagnostic. It then creates fresh mock/proxy containers per trial, applies the declared CPU, memory, worker, and log settings, waits for readiness, runs the pinned k6 workload, captures cgroup v2 CPU and memory values, validates upstream request counts, retains raw artifacts, and removes owned containers and networks on every exit path
 
 The Node mock validates method, path, JSON subsets, optional fields, and OCR PNG payloads. Benchmarks declare typed HTTP requests and response checks in their TS runners; the shared plain-JavaScript engine executes those declarations in k6's runtime
 

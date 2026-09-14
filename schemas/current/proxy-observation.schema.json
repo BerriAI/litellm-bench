@@ -962,6 +962,48 @@
                       "failed"
                     ],
                     "additionalProperties": false
+                  },
+                  "last_mismatch": {
+                    "type": "object",
+                    "properties": {
+                      "reason": {
+                        "type": "string",
+                        "enum": [
+                          "method_or_path",
+                          "request_body",
+                          "request_headers",
+                          "png_document",
+                          "ambiguous_match"
+                        ]
+                      },
+                      "method": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "a value with a length of at least 1"
+                      },
+                      "path": {
+                        "type": "string",
+                        "pattern": "^\\/",
+                        "description": "a string matching the RegExp ^\\/"
+                      },
+                      "operation_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "a value with a length of at least 1"
+                      },
+                      "detail": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "a value with a length of at least 1"
+                      }
+                    },
+                    "required": [
+                      "reason",
+                      "method",
+                      "path",
+                      "detail"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [

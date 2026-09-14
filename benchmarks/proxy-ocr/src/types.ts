@@ -25,8 +25,13 @@ export interface OcrObservation {
   readonly completion_rps: number;
   readonly p95_ms: number;
   readonly cpu_average_percent: number;
+  readonly cpu_ms_per_request: number;
   readonly peak_memory_mib: number;
+  readonly peak_memory_growth_mib: number;
   readonly idle_anon_mib: number;
+  readonly idle_anon_growth_mib: number;
+  readonly mock_cpu_average_percent: number;
+  readonly load_generator_cpu_percent: number;
 }
 
 export interface OcrProjection {

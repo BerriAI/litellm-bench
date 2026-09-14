@@ -1,9 +1,17 @@
 import { NodeServices } from "@effect/platform-node";
 import { expect, it } from "@effect/vitest";
+import { canonicalMistralOcrFixturePath, mistralOcr } from "@litellm-bench/provider-mistral-ocr";
+import {
+  canonicalOpenAiChatCompletions,
+  canonicalOpenAiChatCompletionsFixturePath,
+  canonicalOpenAiStreamingChatCompletionsFixturePath,
+  canonicalOpenAiStreamingEventCount,
+  openAiChatCompletion,
+} from "@litellm-bench/provider-openai-chat-completions";
 import { Effect, Exit, Fiber, FileSystem, Path, Ref, Scope, Stream } from "effect";
 import { TestClock } from "effect/testing";
 import { afterEach, describe } from "vitest";
-import { chatCompletion, ocr, responses } from "./operations.js";
+import { responses } from "./operations.js";
 import {
   createMockServer,
   decodePngExpectations,
@@ -23,6 +31,7 @@ const single = {
     path: "/v1/test",
     expect: { model: "bench", nested: { enabled: true } },
     optional_expect: { stream: false },
+    body_match: "exact",
     response: {
       kind: "json",
       timing: { response_delay_ms: 0 },
@@ -77,19 +86,19 @@ afterEach(async () => {
 const multi = {
   version: 2,
   operations: [
-    ocr({
+    mistralOcr({
       id: "ocr",
       model: "ocr",
       markdown: "page",
       timing: { responseDelayMs: 0 },
     }),
-    chatCompletion({
+    openAiChatCompletion({
       id: "chat",
       model: "bench",
       chunks: ["Hello", " world"],
       timing: { responseDelayMs: 0 },
     }),
-    chatCompletion({
+    openAiChatCompletion({
       id: "chat-stream",
       model: "bench",
       chunks: ["Hello", " world"],
@@ -173,29 +182,59 @@ describe("mock provider", () => {
       await (await server.post("/v1/test", { model: "bench", nested: { enabled: true } })).json(),
     ).toEqual({ ok: true });
     expect(
+      await (await server.post(
+        "/v1/test",
+        { model: "bench", nested: { enabled: true }, stream: false },
+      )).json(),
+    ).toEqual({ ok: true });
+    expect(
       (await server.post("/v1/test", { model: "bench", nested: { enabled: true }, stream: true }))
+        .status,
+    ).toBe(422);
+    expect(
+      (await server.post("/v1/test", { model: "bench", nested: { enabled: true }, extra: true }))
         .status,
     ).toBe(422);
     expect((await server.raw("not json")).status).toBe(422);
     expect(await (await server.post("/missing", {})).json()).toEqual({ error: "method_or_path" });
     expect(await server.stats()).toEqual({
-      requests: 4,
-      failures: 3,
-      errors: { request_body: 2, method_or_path: 1 },
+      requests: 6,
+      failures: 4,
+      errors: { request_body: 3, method_or_path: 1 },
+      last_mismatch: {
+        reason: "method_or_path",
+        method: "POST",
+        path: "/missing",
+        detail: "no operation accepts POST /missing",
+      },
     });
   });
 
-  it("loads both existing benchmark fixtures", async () => {
-    for (const name of ["proxy-ocr", "proxy-chat-completions"]) {
+  it("rejects overlapping required and optional body fields", () => {
+    expect(() =>
+      validateFixture({
+        ...single,
+        operations: [{
+          ...single.operations[0],
+          optional_expect: { model: "bench" },
+        }],
+      })
+    ).toThrow(/both required and optional/);
+  });
+
+  it("loads provider and benchmark fixtures", async () => {
+    for (
+      const [kind, location] of [
+        ["ocr", canonicalMistralOcrFixturePath],
+        ["chat", canonicalOpenAiChatCompletionsFixturePath],
+      ] as const
+    ) {
       const fixture = JSON.parse(
-        await readFile(
-          new URL(`../../../benchmarks/${name}/upstream.json`, import.meta.url),
-          "utf8",
-        ),
+        await readFile(location, "utf8"),
       );
       const server = await start(fixture);
       const operation = fixture.operations[0];
-      const body = name === "proxy-ocr"
+      const body = kind === "ocr"
         ? {
           ...operation.expect,
           document: {
@@ -210,12 +249,24 @@ describe("mock provider", () => {
           operation.path,
           body,
           undefined,
-          name === "proxy-chat-completions"
+          kind === "chat"
             ? { authorization: "Bearer sk-mock", "content-type": "application/json; charset=utf-8" }
             : {},
         )).json(),
       ).toEqual(operation.response.body);
-      if (name === "proxy-chat-completions") {
+      if (kind === "chat") {
+        expect(
+          (await server.post(operation.path, { ...body, stream: false }, undefined, {
+            authorization: "Bearer sk-mock",
+            "content-type": "application/json",
+          })).status,
+        ).toBe(200);
+        expect(
+          (await server.post(operation.path, { ...body, stream: true }, undefined, {
+            authorization: "Bearer sk-mock",
+            "content-type": "application/json",
+          })).status,
+        ).toBe(422);
         expect(
           (await server.post(operation.path, { ...body, extra: true }, undefined, {
             authorization: "Bearer sk-mock",
@@ -228,6 +279,8 @@ describe("mock provider", () => {
             "content-type": "application/json",
           })).status,
         ).toBe(422);
+      } else {
+        expect((await server.post(operation.path, { ...body, extra: true })).status).toBe(422);
       }
     }
   });
@@ -235,10 +288,7 @@ describe("mock provider", () => {
   it("loads the streaming chat benchmark fixture", async () => {
     const fixture = JSON.parse(
       await readFile(
-        new URL(
-          "../../../benchmarks/proxy-chat-completions-streaming/upstream.json",
-          import.meta.url,
-        ),
+        canonicalOpenAiStreamingChatCompletionsFixturePath,
         "utf8",
       ),
     );
@@ -250,10 +300,32 @@ describe("mock provider", () => {
     });
     expect(response.headers.get("content-type")).toContain("text/event-stream");
     const events = parseSse(await response.text());
-    expect(events).toHaveLength(7);
-    expect(events.slice(1, 5).map((event) => event.data.choices[0].delta.content).join(""))
-      .toBe("mock streaming chat response");
+    expect(events).toHaveLength(canonicalOpenAiStreamingEventCount);
+    expect(
+      events.slice(1, 1 + canonicalOpenAiChatCompletions.streamingChunks.length)
+        .map((event) => event.data.choices[0].delta.content)
+        .join(""),
+    ).toBe(canonicalOpenAiChatCompletions.streamingChunks.join(""));
+    expect(events.at(-2)?.data.usage).toEqual({
+      prompt_tokens: canonicalOpenAiChatCompletions.usage.input,
+      completion_tokens: canonicalOpenAiChatCompletions.usage.output,
+      total_tokens: canonicalOpenAiChatCompletions.usage.input
+        + canonicalOpenAiChatCompletions.usage.output,
+    });
     expect(events.at(-1)?.data).toBe("[DONE]");
+    const headers = {
+      authorization: "Bearer sk-mock",
+      "content-type": "application/json",
+    };
+    for (
+      const body of [
+        { model: "bench-model", messages: [{ role: "user", content: "Hello" }] },
+        { ...operation.expect, stream: false },
+        { ...operation.expect, extra: true },
+      ]
+    ) {
+      expect((await server.post(operation.path, body, undefined, headers)).status).toBe(422);
+    }
   });
 
   it("serves OCR, chat, and Responses together with protocol-specific streams", async () => {
@@ -350,7 +422,7 @@ describe("mock provider", () => {
     const server = await start({
       version: 2,
       operations: [
-        chatCompletion({
+        openAiChatCompletion({
           id: "slow",
           model: "bench",
           chunks: ["one", "two"],
@@ -392,7 +464,7 @@ describe("mock provider", () => {
     const server = await start({
       version: 2,
       operations: [
-        chatCompletion({
+        openAiChatCompletion({
           id: "shutdown",
           model: "bench",
           chunks: ["x"],

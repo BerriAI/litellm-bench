@@ -1,0 +1,548 @@
+{
+  "$schema": "../../../schemas/current/upstream.schema.json",
+  "version": 2,
+  "operations": [
+    {
+      "id": "chat-stream",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "stream_options": {
+          "include_usage": true
+        },
+        "model": "bench-model",
+        "stream": true
+      },
+      "body_match": "exact",
+      "expect_headers": {
+        "authorization": "Bearer sk-mock",
+        "content-type": "application/json"
+      },
+      "response": {
+        "kind": "sse",
+        "timing": {
+          "first_event_delay_ms": 10,
+          "event_interval_ms": 1
+        },
+        "events": [
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "role": "assistant",
+                    "content": ""
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "Here"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "'s"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": " a"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": " deliberately"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": " fragmented"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": " response"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "."
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "\n\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "It includes "
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "\"quoted text\""
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": ", backslashes \\\\"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": ", JSON: "
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "{\"ok\":true,\"items\":[1,2,3]}"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": ", Unicode: "
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "café "
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "東京 "
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "🙂"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": ".\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "Markdown:\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "- first item\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "- second item\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "```ts\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "const value = \"streamed\";\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "```\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "Large block follows:\n"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "content": "\nEnd."
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {},
+                  "finish_reason": "stop"
+                }
+              ]
+            }
+          },
+          {
+            "data": {
+              "id": "chatcmpl-stream",
+              "created": 1,
+              "model": "bench-model",
+              "object": "chat.completion.chunk",
+              "choices": [],
+              "usage": {
+                "prompt_tokens": 12,
+                "completion_tokens": 2048,
+                "total_tokens": 2060
+              }
+            }
+          },
+          {
+            "data": "[DONE]"
+          }
+        ]
+      }
+    }
+  ]
+}

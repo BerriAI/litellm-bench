@@ -119,7 +119,7 @@ export const benchmarkCatalog = {
           "slo": "At least 6 of 7 trials at a rate must have p95 latency <= 100 ms, window error rate 0, no dropped arrivals, >= 98% achieved/offered RPS, and stable warmup; every lower rate must also pass",
           "warmup": "The same fixed-arrival executor and request path run for 30 seconds before measurement; the final three five-second successful-completion windows must have coefficient of variation <= 5%",
           "window": "Only completions timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
-          "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=false, or the exact allowlisted JSON body",
+          "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, non-stream semantics (stream omitted or false), or the exact allowlisted JSON body",
           "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
           "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; the retained upstream fixture is the sole timing source and explicitly declares zero response delay; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
           "fail_closed": "Missing/invalid telemetry, unstable calibration, unbracketed saturation, request-count mismatch, response-semantic mismatch, or any upstream translation failure invalidates the result"
@@ -440,6 +440,14 @@ export const benchmarkCatalog = {
         "unit": "%",
         "better": "neutral"
       },
+      "core_1m.python.cpu_ms_per_request": {
+        "unit": "ms",
+        "better": "lower"
+      },
+      "core_1m.rust.cpu_ms_per_request": {
+        "unit": "ms",
+        "better": "lower"
+      },
       "core_1m.python.peak_memory_mib": {
         "unit": "MiB",
         "better": "lower"
@@ -448,11 +456,27 @@ export const benchmarkCatalog = {
         "unit": "MiB",
         "better": "lower"
       },
+      "core_1m.python.peak_memory_growth_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
+      "core_1m.rust.peak_memory_growth_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
       "core_1m.python.idle_anon_mib": {
         "unit": "MiB",
         "better": "lower"
       },
       "core_1m.rust.idle_anon_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
+      "core_1m.python.idle_anon_growth_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
+      "core_1m.rust.idle_anon_growth_mib": {
         "unit": "MiB",
         "better": "lower"
       },
@@ -484,6 +508,14 @@ export const benchmarkCatalog = {
         "unit": "%",
         "better": "neutral"
       },
+      "core_8m.python.cpu_ms_per_request": {
+        "unit": "ms",
+        "better": "lower"
+      },
+      "core_8m.rust.cpu_ms_per_request": {
+        "unit": "ms",
+        "better": "lower"
+      },
       "core_8m.python.peak_memory_mib": {
         "unit": "MiB",
         "better": "lower"
@@ -492,11 +524,27 @@ export const benchmarkCatalog = {
         "unit": "MiB",
         "better": "lower"
       },
+      "core_8m.python.peak_memory_growth_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
+      "core_8m.rust.peak_memory_growth_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
       "core_8m.python.idle_anon_mib": {
         "unit": "MiB",
         "better": "lower"
       },
       "core_8m.rust.idle_anon_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
+      "core_8m.python.idle_anon_growth_mib": {
+        "unit": "MiB",
+        "better": "lower"
+      },
+      "core_8m.rust.idle_anon_growth_mib": {
         "unit": "MiB",
         "better": "lower"
       },
@@ -543,6 +591,16 @@ export const benchmarkCatalog = {
           "better": "neutral"
         },
         {
+          "id": "core_1m.python.cpu_ms_per_request",
+          "unit": "ms",
+          "better": "lower"
+        },
+        {
+          "id": "core_1m.rust.cpu_ms_per_request",
+          "unit": "ms",
+          "better": "lower"
+        },
+        {
           "id": "core_1m.python.peak_memory_mib",
           "unit": "MiB",
           "better": "lower"
@@ -553,12 +611,32 @@ export const benchmarkCatalog = {
           "better": "lower"
         },
         {
+          "id": "core_1m.python.peak_memory_growth_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "core_1m.rust.peak_memory_growth_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
           "id": "core_1m.python.idle_anon_mib",
           "unit": "MiB",
           "better": "lower"
         },
         {
           "id": "core_1m.rust.idle_anon_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "core_1m.python.idle_anon_growth_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "core_1m.rust.idle_anon_growth_mib",
           "unit": "MiB",
           "better": "lower"
         },
@@ -598,6 +676,16 @@ export const benchmarkCatalog = {
           "better": "neutral"
         },
         {
+          "id": "core_8m.python.cpu_ms_per_request",
+          "unit": "ms",
+          "better": "lower"
+        },
+        {
+          "id": "core_8m.rust.cpu_ms_per_request",
+          "unit": "ms",
+          "better": "lower"
+        },
+        {
           "id": "core_8m.python.peak_memory_mib",
           "unit": "MiB",
           "better": "lower"
@@ -608,12 +696,32 @@ export const benchmarkCatalog = {
           "better": "lower"
         },
         {
+          "id": "core_8m.python.peak_memory_growth_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "core_8m.rust.peak_memory_growth_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
           "id": "core_8m.python.idle_anon_mib",
           "unit": "MiB",
           "better": "lower"
         },
         {
           "id": "core_8m.rust.idle_anon_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "core_8m.python.idle_anon_growth_mib",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "core_8m.rust.idle_anon_growth_mib",
           "unit": "MiB",
           "better": "lower"
         },
@@ -681,6 +789,13 @@ export const benchmarkCatalog = {
             "role": "diagnostic"
           },
           {
+            "id": "cpu_ms_per_request",
+            "label": "Proxy CPU time per successful request",
+            "unit": "ms",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
             "id": "peak_memory_mib",
             "label": "Peak container memory",
             "unit": "MiB",
@@ -688,8 +803,22 @@ export const benchmarkCatalog = {
             "better": "lower"
           },
           {
+            "id": "peak_memory_growth_mib",
+            "label": "Peak container memory above the post-warm-up baseline",
+            "unit": "MiB",
+            "role": "diagnostic",
+            "better": "lower"
+          },
+          {
             "id": "idle_anon_mib",
             "label": "Post-load anonymous memory",
+            "unit": "MiB",
+            "role": "diagnostic",
+            "better": "lower"
+          },
+          {
+            "id": "idle_anon_growth_mib",
+            "label": "Post-load anonymous memory above the post-warm-up baseline",
             "unit": "MiB",
             "role": "diagnostic",
             "better": "lower"
@@ -718,8 +847,11 @@ export const benchmarkCatalog = {
             "measurement": "latency_p95_ms",
             "additional_measurements": [
               "cpu_average_percent",
+              "cpu_ms_per_request",
               "peak_memory_mib",
-              "idle_anon_mib"
+              "peak_memory_growth_mib",
+              "idle_anon_mib",
+              "idle_anon_growth_mib"
             ],
             "group_by": [
               "scenario",
@@ -759,7 +891,7 @@ export const benchmarkCatalog = {
           }
         ],
         "validity": {
-          "trial": "Every response and upstream request must pass semantic validation; client and upstream request counts must agree; no dropped, interrupted, or failed warmup requests",
+          "trial": "Every response and upstream request must pass semantic validation; client and upstream request counts must agree; no dropped, interrupted, or failed warmup requests; proxy CPU must be at least 90%, mock CPU below 80%, and load-generator CPU below 160%",
           "exclusions": "Keep failed output and its reason, then rerun every scenario and treatment in the entire paired round, up to the configured attempt limit",
           "outliers": "Do not remove statistical outliers",
           "publication": "Publish all valid trials, paired ratios, range, and round wins"

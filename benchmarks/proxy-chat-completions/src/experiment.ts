@@ -1,4 +1,9 @@
 import type { RunContext } from "@litellm-bench/harness";
+import {
+  canonicalOpenAiChatCompletions,
+  canonicalOpenAiChatCompletionsFixturePath,
+  canonicalOpenAiChatCompletionsResponseBytes,
+} from "@litellm-bench/provider-openai-chat-completions";
 import type { ProxyExperiment, ProxyTrialPlan } from "@litellm-bench/proxy";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -22,16 +27,16 @@ export const makeChatExperiment = (
 ): ProxyExperiment => {
   const proxyBody = Buffer.from(JSON.stringify({
     model: "mock-chat",
-    messages: [{ role: "user", content: "Hello" }],
+    messages: canonicalOpenAiChatCompletions.messages,
     stream: false,
   }));
   const directBody = Buffer.from(JSON.stringify({
-    model: "bench-model",
-    messages: [{ role: "user", content: "Hello" }],
+    model: canonicalOpenAiChatCompletions.model,
+    messages: canonicalOpenAiChatCompletions.messages,
     stream: false,
   }));
   const proxyConfigPath = fileURLToPath(new URL("../proxy_config.yaml", import.meta.url));
-  const fixturePath = fileURLToPath(new URL("../upstream.json", import.meta.url));
+  const fixturePath = canonicalOpenAiChatCompletionsFixturePath;
   const load = (rate: number) => ({
     mode: "fixed" as const,
     rate,
@@ -57,9 +62,12 @@ export const makeChatExperiment = (
       jsonEquals: [
         { path: ["object"], value: "chat.completion" },
         { path: ["choices", 0, "message", "role"], value: "assistant" },
-        { path: ["choices", 0, "message", "content"], value: "mock chat response" },
+        {
+          path: ["choices", 0, "message", "content"],
+          value: canonicalOpenAiChatCompletions.response,
+        },
         { path: ["choices", 0, "finish_reason"], value: "stop" },
-        { path: ["usage", "total_tokens"], value: 2 },
+        { path: ["usage", "total_tokens"], value: canonicalOpenAiChatCompletions.totalTokens },
       ],
     },
   });
@@ -77,6 +85,7 @@ export const makeChatExperiment = (
         dimensions: {
           offered_rps: rate,
           wire_body_bytes: proxyBody.byteLength,
+          response_content_bytes: canonicalOpenAiChatCompletionsResponseBytes,
           stream: false,
           calibration: false,
         },
@@ -96,6 +105,7 @@ export const makeChatExperiment = (
       dimensions: {
         offered_rps: calibrationRate,
         wire_body_bytes: directBody.byteLength,
+        response_content_bytes: canonicalOpenAiChatCompletionsResponseBytes,
         stream: false,
         calibration: true,
       },

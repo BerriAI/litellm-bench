@@ -4,6 +4,7 @@ import {
   type Json,
   type MockOperation,
   type MockStats,
+  type RequestMismatchDiagnostic,
   type UpstreamFixture,
 } from "@litellm-bench/contracts";
 import { Context, Data, Effect, Exit, Layer, Ref, Schema, Stream } from "effect";
@@ -123,7 +124,79 @@ export class RequestMismatch extends Data.TaggedError("RequestMismatch")<{
     | "request_headers"
     | "png_document"
     | "ambiguous_match";
+  readonly operationId?: string;
+  readonly detail: string;
 }> {}
+
+const selectedOptionalBody = (fixture: MockOperation, body: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(fixture.optional_expect ?? {}).filter(([key]) => Object.hasOwn(body, key)),
+  );
+
+const includeDynamicField = (
+  expected: Record<string, unknown>,
+  actual: Record<string, unknown>,
+  path: string,
+) => {
+  const parts = path.split(".");
+  let expectedParent = expected;
+  let actualParent: Record<string, unknown> = actual;
+  for (const part of parts.slice(0, -1)) {
+    const expectedChild = expectedParent[part];
+    const actualChild = actualParent[part];
+    if (!isRecord(expectedChild) || !isRecord(actualChild)) return;
+    expectedParent = expectedChild;
+    actualParent = actualChild;
+  }
+  const leaf = parts.at(-1)!;
+  if (Object.hasOwn(actualParent, leaf)) expectedParent[leaf] = actualParent[leaf];
+};
+
+const exactExpectedBody = (fixture: MockOperation, body: Record<string, unknown>): Json => {
+  const expected = structuredClone({
+    ...fixture.expect,
+    ...selectedOptionalBody(fixture, body),
+  }) as Record<string, unknown>;
+  for (const field of fixture.png_fields ?? []) includeDynamicField(expected, body, field);
+  return expected as Json;
+};
+
+const redacted = (value: unknown): unknown => {
+  if (typeof value === "string" && value.startsWith("data:image/")) {
+    return `<image data URL, ${value.length} characters>`;
+  }
+  if (Array.isArray(value)) return value.map(redacted);
+  if (isRecord(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redacted(item)]));
+  }
+  return value;
+};
+
+const summarized = (value: unknown): string => {
+  const encoded = JSON.stringify(redacted(value));
+  if (encoded === undefined) return String(value);
+  return encoded.length <= 160 ? encoded : `${encoded.slice(0, 157)}...`;
+};
+
+const bodyMismatchDetail = (body: unknown, fixture: MockOperation): string => {
+  if (!isRecord(body)) return "request body is not a JSON object";
+  const expected = exactExpectedBody(fixture, body) as Record<string, Json>;
+  const missing = Object.keys(expected).filter((key) => !Object.hasOwn(body, key));
+  const unexpected = fixture.body_match === "exact"
+    ? Object.keys(body).filter((key) => !Object.hasOwn(expected, key))
+    : [];
+  const different = Object.entries(expected).filter(([key, value]) =>
+    Object.hasOwn(body, key) && !matches(body[key], value)
+  );
+  const parts = [
+    ...(missing.length === 0 ? [] : [`missing fields: ${missing.join(", ")}`]),
+    ...(unexpected.length === 0 ? [] : [`unexpected fields: ${unexpected.join(", ")}`]),
+    ...different.map(([key, value]) =>
+      `field ${key}: expected ${summarized(value)}, received ${summarized(body[key])}`
+    ),
+  ];
+  return parts.join("; ") || "request body did not match any operation";
+};
 
 export const encodeSse = (event: { readonly event?: string; readonly data: Json }): string => {
   const data = typeof event.data === "string" ? event.data : JSON.stringify(event.data);
@@ -167,7 +240,10 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
               fixture.method === method && fixture.path === path
             );
             if (routes.length === 0) {
-              return yield* new RequestMismatch({ reason: "method_or_path" });
+              return yield* new RequestMismatch({
+                reason: "method_or_path",
+                detail: `no operation accepts ${method} ${path}`,
+              });
             }
             const candidates = routes.filter(({ fixture }) =>
               isRecord(body) && matches(body, fixture.expect)
@@ -180,10 +256,24 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
               )
             );
             if (candidates.length === 0) {
-              return yield* new RequestMismatch({ reason: "request_body" });
+              const candidate = routes[0]!;
+              return yield* new RequestMismatch({
+                reason: "request_body",
+                ...(routes.length === 1 ? { operationId: candidate.fixture.id } : {}),
+                detail: routes.length === 1
+                  ? bodyMismatchDetail(body, candidate.fixture)
+                  : `request body matched none of: ${
+                    routes.map(({ fixture }) => fixture.id).join(", ")
+                  }`,
+              });
             }
             if (candidates.length > 1) {
-              return yield* new RequestMismatch({ reason: "ambiguous_match" });
+              return yield* new RequestMismatch({
+                reason: "ambiguous_match",
+                detail: `request body matched multiple operations: ${
+                  candidates.map(({ fixture }) => fixture.id).join(", ")
+                }`,
+              });
             }
             const selected = candidates[0]!;
             const headersMatch = Object.entries(selected.fixture.expect_headers ?? {}).every(
@@ -196,16 +286,36 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
               },
             );
             if (!headersMatch) {
-              return yield* new RequestMismatch({ reason: "request_headers" });
+              const missingOrDifferent = Object.keys(selected.fixture.expect_headers ?? {}).filter(
+                (name) => {
+                  const actual = headers[name.toLowerCase()]?.trim();
+                  const expected = selected.fixture.expect_headers?.[name];
+                  return actual === undefined || (name.toLowerCase() === "content-type"
+                    ? actual.split(";", 1)[0]?.trim().toLowerCase() !== expected?.toLowerCase()
+                    : actual !== expected);
+                },
+              );
+              return yield* new RequestMismatch({
+                reason: "request_headers",
+                operationId: selected.fixture.id,
+                detail: `missing or different headers: ${missingOrDifferent.join(", ")}`,
+              });
             }
             if (
               selected.fixture.body_match === "exact"
               && (
-                !matches(body, selected.fixture.expect)
-                || !matches(selected.fixture.expect, body as Json)
+                !matches(body, exactExpectedBody(selected.fixture, body as Record<string, unknown>))
+                || !matches(
+                  exactExpectedBody(selected.fixture, body as Record<string, unknown>),
+                  body as Json,
+                )
               )
             ) {
-              return yield* new RequestMismatch({ reason: "request_body" });
+              return yield* new RequestMismatch({
+                reason: "request_body",
+                operationId: selected.fixture.id,
+                detail: bodyMismatchDetail(body, selected.fixture),
+              });
             }
             if (
               (selected.fixture.png_fields ?? []).some((field) =>
@@ -215,7 +325,11 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
                 )
               )
             ) {
-              return yield* new RequestMismatch({ reason: "png_document" });
+              return yield* new RequestMismatch({
+                reason: "png_document",
+                operationId: selected.fixture.id,
+                detail: `invalid image fields: ${(selected.fixture.png_fields ?? []).join(", ")}`,
+              });
             }
             return selected;
           }),
@@ -308,15 +422,26 @@ const application = Effect.gen(function*() {
             });
           })
         ),
-        Effect.catchTag("RequestMismatch", ({ reason }) =>
-          Effect.gen(function*() {
-            yield* Ref.update(stats, (current) => ({
-              ...current,
-              failures: current.failures + 1,
-              errors: { ...current.errors, [reason]: (current.errors[reason] ?? 0) + 1 },
-            }));
-            return HttpServerResponse.jsonUnsafe({ error: reason }, { status: 422 });
-          })),
+        Effect.catchTag(
+          "RequestMismatch",
+          ({ detail, operationId, reason }) =>
+            Effect.gen(function*() {
+              const diagnostic: RequestMismatchDiagnostic = {
+                reason,
+                method: request.method,
+                path: request.url,
+                ...(operationId === undefined ? {} : { operation_id: operationId }),
+                detail,
+              };
+              yield* Ref.update(stats, (current) => ({
+                ...current,
+                failures: current.failures + 1,
+                errors: { ...current.errors, [reason]: (current.errors[reason] ?? 0) + 1 },
+                last_mismatch: diagnostic,
+              }));
+              return HttpServerResponse.jsonUnsafe({ error: reason }, { status: 422 });
+            }),
+        ),
       );
     }),
   );

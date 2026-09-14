@@ -96,7 +96,7 @@
       "slo": "At least 6 of 7 trials at a rate must have p95 latency <= 100 ms, window error rate 0, no dropped arrivals, >= 98% achieved/offered RPS, and stable warmup; every lower rate must also pass",
       "warmup": "The same fixed-arrival executor and request path run for 30 seconds before measurement; the final three five-second successful-completion windows must have coefficient of variation <= 5%",
       "window": "Only completions timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
-      "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=false, or the exact allowlisted JSON body",
+      "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, non-stream semantics (stream omitted or false), or the exact allowlisted JSON body",
       "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
       "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; the retained upstream fixture is the sole timing source and explicitly declares zero response delay; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
       "fail_closed": "Missing/invalid telemetry, unstable calibration, unbracketed saturation, request-count mismatch, response-semantic mismatch, or any upstream translation failure invalidates the result"

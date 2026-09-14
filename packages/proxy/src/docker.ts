@@ -201,7 +201,7 @@ export const makeDockerEngine = (
 
   const cleanupContainer = (spec: DockerContainerSpec) =>
     Effect.gen(function*() {
-      if (spec.logPath !== undefined) {
+      if (spec.logPath !== undefined && spec.logDriver !== "none") {
         const output = yield* runAllowFailure(["logs", spec.name], 30_000).pipe(
           Effect.catch(() => Effect.succeed(emptyOutput)),
         );

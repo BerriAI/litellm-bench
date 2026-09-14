@@ -211,4 +211,37 @@ describe("DockerEngine", () => {
     expect(await readFile(join(directory, "container.log"), "utf8"))
       .toBe("container output\n");
   });
+
+  it("does not request unreadable logs from the none logging driver", async () => {
+    const commands: Command[] = [];
+    const docker = makeDockerEngine(
+      {
+        execute: (command) => {
+          commands.push(command);
+          return Effect.succeed({ exitCode: 0, stdout: "ok\n", stderr: "" });
+        },
+      },
+      "/workspace",
+      () => Effect.die("must not write a log"),
+    );
+
+    await Effect.runPromise(Effect.scoped(Effect.gen(function*() {
+      const network = yield* docker.network("bench-network");
+      yield* docker.container({
+        name: "bench-container",
+        image: "image:test",
+        network,
+        logDriver: "none",
+        logPath: "/workspace/container.log",
+      });
+    })));
+
+    expect(commands.some(({ args }) => args?.[0] === "logs")).toBe(false);
+    expect(commands.map(({ args }) => args?.slice(0, 3))).toEqual([
+      ["network", "create", "bench-network"],
+      ["run", "-d", "--rm"],
+      ["rm", "-f", "bench-container"],
+      ["network", "rm", "bench-network"],
+    ]);
+  });
 });

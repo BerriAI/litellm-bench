@@ -1,7 +1,7 @@
 import { expect, it } from "@effect/vitest";
 import type { ProxyRawObservation } from "@litellm-bench/contracts";
 import { InvalidObservation, type RunContext } from "@litellm-bench/harness";
-import { ProxyEnvironment } from "@litellm-bench/proxy";
+import { ProxyEnvironment, ProxyRuntimeError } from "@litellm-bench/proxy";
 import { Effect, Path } from "effect";
 import { OcrArtifacts } from "../src/artifacts.js";
 import { decodeOcrRun } from "../src/config.js";
@@ -104,7 +104,7 @@ const raw = (missingTelemetry = false): ProxyRawObservation => ({
         idle_memory_bytes: 1,
         idle_anon_bytes: 1_048_576,
         cpu_before_usec: 0,
-        cpu_after_usec: 500_000,
+        cpu_after_usec: 950_000,
         cpu_nr_periods_before: 0,
         cpu_nr_periods_after: 1,
         cpu_nr_throttled_before: 0,
@@ -117,6 +117,35 @@ const raw = (missingTelemetry = false): ProxyRawObservation => ({
         window: "load",
       },
     }),
+    mock_telemetry: {
+      image_id: "mock-image",
+      baseline_memory_bytes: 1,
+      baseline_anon_bytes: 1,
+      peak_memory_bytes: 1,
+      loaded_memory_bytes: 1,
+      loaded_anon_bytes: 1,
+      idle_memory_bytes: 1,
+      idle_anon_bytes: 1,
+      cpu_before_usec: 0,
+      cpu_after_usec: 250_000,
+      cpu_nr_periods_before: 0,
+      cpu_nr_periods_after: 1,
+      cpu_nr_throttled_before: 0,
+      cpu_nr_throttled_after: 0,
+      cpu_throttled_usec_before: 0,
+      cpu_throttled_usec_after: 0,
+      cpu_max: "100000 100000",
+      cpuset_cpus_effective: "1",
+      wall_seconds: 1,
+      window: "load",
+    },
+    load_generator_telemetry: {
+      cpu_percent: 50,
+      user_seconds: 0.4,
+      system_seconds: 0.1,
+      max_rss_kib: 1,
+      cpuset_cpus: "2-3",
+    },
     upstream: { requests: 10, failures: 0, errors: {} },
   })),
 });
@@ -190,6 +219,24 @@ it.effect("rejects missing telemetry before writing publishable rows", () =>
       message: expect.stringContaining("missing telemetry"),
     });
     expect(writes).toBe(0);
+  }));
+
+it.effect("classifies proxy runtime failures as runner execution failures", () =>
+  Effect.gen(function*() {
+    const runner = yield* makeTestRunner.pipe(
+      Effect.provideService(ProxyEnvironment, {
+        run: () =>
+          Effect.fail(
+            new ProxyRuntimeError({ operation: "verify Docker", message: "unavailable" }),
+          ),
+      }),
+      Effect.provideService(OcrArtifacts, { writeRows: () => Effect.void }),
+    );
+
+    expect(yield* Effect.flip(runner.run(context))).toMatchObject({
+      _tag: "RunnerExecutionError",
+      message: "verify Docker: unavailable",
+    });
   }));
 
 it.effect("reruns the entire paired round after a failed trial", () =>

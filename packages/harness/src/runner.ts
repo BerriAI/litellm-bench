@@ -25,6 +25,7 @@ export class InvalidObservation extends Data.TaggedError("InvalidObservation")<{
 
 export class RunnerExecutionError extends Data.TaggedError("RunnerExecutionError")<{
   readonly message: string;
+  readonly cause?: unknown;
 }> {}
 
 export class EnvironmentRequirementUnmet extends Data.TaggedError("EnvironmentRequirementUnmet")<{

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import type { DockerContainer, DockerContainerSpec, DockerEngineShape } from "./docker.js";
 import { K6Error, type K6Shape } from "./k6.js";
-import type { ProxyExperiment } from "./models.js";
+import type { K6Measurement, ProxyExperiment } from "./models.js";
 import { parseCgroupValue, runProxyExperiment, validateExperiment } from "./runtime.js";
 
 const platform = await Effect.runPromise(
@@ -79,11 +79,55 @@ const temporaryExperiment = async (): Promise<ProxyExperiment> => {
 };
 
 const commandOutput = (stdout = "") => Effect.succeed({ exitCode: 0, stdout, stderr: "" });
+const successfulMeasurement = (artifactsDirectory: string): K6Measurement => ({
+  engine: "k6",
+  exitCode: 0,
+  artifacts: {
+    result: `${artifactsDirectory}/result`,
+    log: `${artifactsDirectory}/log`,
+    summary: `${artifactsDirectory}/summary`,
+    configuration: `${artifactsDirectory}/config`,
+    payload: `${artifactsDirectory}/payload`,
+  },
+  result: {
+    started: 1,
+    completed: 1,
+    successful: 1,
+    failed: 0,
+    dropped: 0,
+    interrupted: 0,
+    window_completed: 1,
+    window_successful: 1,
+    window_failed: 0,
+    tail_completed: 0,
+    tail_successful: 0,
+    tail_failed: 0,
+    warmup_requests: 0,
+    warmup_failed: 0,
+    measurement_seconds: 1,
+    drain_seconds: 0,
+    elapsed_seconds: 1,
+    completion_rps: 1,
+    error_rate: 0,
+    latency: {
+      samples: 1,
+      mean_ms: 1,
+      p50_ms: 1,
+      p95_ms: 1,
+      p99_ms: 1,
+      max_ms: 1,
+    },
+    errors: {},
+  },
+});
 const runLive = <A, E>(
   effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path>,
 ): Promise<A> => Effect.runPromise(effect.pipe(Effect.provide(NodeServices.layer)));
 
-const fakeDocker = (events: string[]): DockerEngineShape => ({
+const fakeDocker = (
+  events: string[],
+  stats: Record<string, unknown> = { requests: 1, failures: 0, errors: {} },
+): DockerEngineShape => ({
   verify: Effect.succeed({
     version: "27.1",
     os: "linux",
@@ -114,7 +158,7 @@ const fakeDocker = (events: string[]): DockerEngineShape => ({
               spec.name.endsWith("-mock") && args[0] === "node" && args[1] === "-e"
               && args[2]?.includes("__stats")
             ) {
-              return commandOutput("{\"requests\":0,\"failures\":0,\"errors\":{}}\n");
+              return commandOutput(`${JSON.stringify(stats)}\n`);
             }
             if (args[0] === "cat" && args[1]?.endsWith("memory.stat")) {
               return commandOutput("anon 20\nfile 10\n");
@@ -184,16 +228,174 @@ describe("proxy runtime", () => {
     expect(events).toEqual([]);
   });
 
+  it("fails fast with mock diagnostics before timed trials", async () => {
+    const base = await temporaryExperiment();
+    const experiment = base;
+    const events: string[] = [];
+    let runs = 0;
+    const k6: K6Shape = {
+      verify: Effect.succeed("k6 v2.2.0 (test)"),
+      run: (request) =>
+        Effect.sync(() => {
+          runs += 1;
+          return {
+            engine: "k6",
+            exitCode: 0,
+            artifacts: {
+              result: `${request.artifactsDirectory}/result`,
+              log: `${request.artifactsDirectory}/log`,
+              summary: `${request.artifactsDirectory}/summary`,
+              configuration: `${request.artifactsDirectory}/config`,
+              payload: `${request.artifactsDirectory}/payload`,
+            },
+            result: {
+              started: 1,
+              completed: 1,
+              successful: 0,
+              failed: 1,
+              dropped: 0,
+              interrupted: 0,
+              window_completed: 1,
+              window_successful: 0,
+              window_failed: 1,
+              tail_completed: 0,
+              tail_successful: 0,
+              tail_failed: 0,
+              warmup_requests: 0,
+              warmup_failed: 0,
+              measurement_seconds: 1,
+              drain_seconds: 0,
+              elapsed_seconds: 1,
+              completion_rps: 0,
+              error_rate: 1,
+              errors: { http: 1 },
+            },
+          };
+        }),
+    };
+    const error = await runLive(
+      runProxyExperiment(
+        fakeDocker(events, {
+          requests: 1,
+          failures: 1,
+          errors: { request_body: 1 },
+          last_mismatch: {
+            reason: "request_body",
+            method: "POST",
+            path: "/v1/chat/completions",
+            operation_id: "chat",
+            detail: "missing fields: stream",
+          },
+        }),
+        k6,
+        experiment,
+        {
+          networkName: () => "bench-preflight",
+          readinessRequest: async () => ({ ok: true, status: 200 }),
+          mockServerPath: "/mock/main.js",
+        },
+      ).pipe(Effect.flip),
+    );
+
+    expect(runs).toBe(1);
+    expect(error.operation).toBe("preflight trial-1");
+    expect(error.message).toContain("missing fields: stream");
+    expect(events.some((event) => event.includes("bench-preflight-0-mock"))).toBe(false);
+    expect(events.some((event) => event.includes("bench-preflight-preflight-0-mock"))).toBe(true);
+  });
+
+  it("preflights each distinct contract once before timed trials", async () => {
+    const base = await temporaryExperiment();
+    const first = base.trials[0]!;
+    const experiment: ProxyExperiment = {
+      ...base,
+      trials: [first, { ...first, id: "trial-2", round: 2 }],
+    };
+    const events: string[] = [];
+    let runs = 0;
+    const k6: K6Shape = {
+      verify: Effect.succeed("k6 v2.2.0 (test)"),
+      run: (request) =>
+        Effect.sync(() => {
+          runs += 1;
+          return {
+            engine: "k6",
+            exitCode: 0,
+            artifacts: {
+              result: `${request.artifactsDirectory}/result`,
+              log: `${request.artifactsDirectory}/log`,
+              summary: `${request.artifactsDirectory}/summary`,
+              configuration: `${request.artifactsDirectory}/config`,
+              payload: `${request.artifactsDirectory}/payload`,
+            },
+            result: {
+              started: 1,
+              completed: 1,
+              successful: 1,
+              failed: 0,
+              dropped: 0,
+              interrupted: 0,
+              window_completed: 1,
+              window_successful: 1,
+              window_failed: 0,
+              tail_completed: 0,
+              tail_successful: 0,
+              tail_failed: 0,
+              warmup_requests: 0,
+              warmup_failed: 0,
+              measurement_seconds: 1,
+              drain_seconds: 0,
+              elapsed_seconds: 1,
+              completion_rps: 1,
+              error_rate: 0,
+              latency: {
+                samples: 1,
+                mean_ms: 1,
+                p50_ms: 1,
+                p95_ms: 1,
+                p99_ms: 1,
+                max_ms: 1,
+              },
+              errors: {},
+            },
+          };
+        }),
+    };
+
+    const raw = await runLive(runProxyExperiment(
+      fakeDocker(events, { requests: 1, failures: 0, errors: {} }),
+      k6,
+      experiment,
+      {
+        networkName: () => "bench-preflight-ok",
+        readinessRequest: async () => ({ ok: true, status: 200 }),
+        mockServerPath: "/mock/main.js",
+      },
+    ));
+
+    expect(runs).toBe(3);
+    expect(raw.trials).toHaveLength(2);
+    expect(events.filter((event) => event.includes("ok-preflight-0-mock")))
+      .toHaveLength(2);
+  });
+
   it("releases proxy, mock, and network when the load generator fails", async () => {
     const experiment = await temporaryExperiment();
     const events: string[] = [];
     let verifications = 0;
+    let runs = 0;
     const k6: K6Shape = {
       verify: Effect.sync(() => {
         verifications += 1;
         return "k6 v2.2.0 (test)";
       }),
-      run: () => Effect.fail(new K6Error({ message: "load failed" })),
+      run: (request) =>
+        Effect.suspend(() => {
+          runs += 1;
+          return runs === 1
+            ? Effect.succeed(successfulMeasurement(request.artifactsDirectory))
+            : Effect.fail(new K6Error({ message: "load failed" }));
+        }),
     };
     const raw = await runLive(runProxyExperiment(
       fakeDocker(events),
@@ -207,9 +409,14 @@ describe("proxy runtime", () => {
     ));
 
     expect(verifications).toBe(1);
+    expect(runs).toBe(2);
     expect(raw.trials[0]?.error).toContain("load failed");
     expect(events).toEqual([
       "start network bench-network",
+      "start container bench-network-preflight-0-mock",
+      "start container bench-network-preflight-0-proxy",
+      "remove container bench-network-preflight-0-proxy",
+      "remove container bench-network-preflight-0-mock",
       "start container bench-network-0-mock",
       "start container bench-network-0-proxy",
       "remove container bench-network-0-proxy",
@@ -287,7 +494,7 @@ describe("proxy runtime", () => {
       readinessRequest: async () => ({ ok: true, status: 200 }),
       mockServerPath: "/mock/main.js",
     }));
-    expect(runs).toBe(2);
+    expect(runs).toBe(3);
     expect(events.filter((event) => event.startsWith("reset peak"))).toHaveLength(2);
     expect(raw.trials[0]?.client?.result?.warmup_requests).toBe(1);
     expect(raw.trials[0]?.telemetry?.window).toBe("post-warmup measurement process and drain");
@@ -314,11 +521,18 @@ describe("proxy runtime", () => {
       }),
     );
     const events: string[] = [];
+    let runs = 0;
     const raw = await runLive(runProxyExperiment(
       fakeDocker(events),
       {
         verify: Effect.succeed("k6 v2.2.0 (test)"),
-        run: () => Effect.fail(new K6Error({ message: "reached load generator" })),
+        run: (request) =>
+          Effect.suspend(() => {
+            runs += 1;
+            return runs === 1
+              ? Effect.succeed(successfulMeasurement(request.artifactsDirectory))
+              : Effect.fail(new K6Error({ message: "reached load generator" }));
+          }),
       },
       experiment,
       {
@@ -338,23 +552,28 @@ describe("proxy runtime", () => {
       run: () => Effect.die("must not run"),
     };
     const started = performance.now();
-    const raw = await runLive(runProxyExperiment(
-      fakeDocker(events),
-      k6,
-      experiment,
-      {
-        networkName: () => "bench-network",
-        proxyReadinessAttempts: 1,
-        readinessRequestTimeoutMs: 5,
-        readinessRequest: (_url, signal) =>
-          new Promise((_resolve, reject) => {
-            signal.addEventListener("abort", () => reject(signal.reason), { once: true });
-          }),
-      },
-    ));
+    const error = await runLive(
+      runProxyExperiment(
+        fakeDocker(events),
+        k6,
+        experiment,
+        {
+          networkName: () => "bench-network",
+          proxyReadinessAttempts: 1,
+          readinessRequestTimeoutMs: 5,
+          readinessRequest: (_url, signal) =>
+            new Promise((_resolve, reject) => {
+              signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+            }),
+        },
+      ).pipe(Effect.flip),
+    );
 
     expect(performance.now() - started).toBeLessThan(1_000);
-    expect(raw.trials[0]?.error).toMatch(/timeout|aborted/i);
+    expect(error).toMatchObject({
+      operation: "wait for proxy",
+      message: expect.stringMatching(/timeout|aborted/i),
+    });
     expect(events.at(-1)).toBe("remove network bench-network");
   });
 
@@ -366,13 +585,15 @@ describe("proxy runtime", () => {
       verify: Effect.succeed("k6 v2.2.0 (test)"),
       run: () => Effect.die("must not run"),
     };
-    const raw = await runLive(runProxyExperiment(
-      fakeDocker(events),
-      k6,
-      experiment,
-      { networkName: () => "bench-network" },
-    ));
-    expect(raw.trials[0]?.error).toMatch(/Missing key[\s\S]*path|Expected no excess property/);
+    const error = await runLive(
+      runProxyExperiment(
+        fakeDocker(events),
+        k6,
+        experiment,
+        { networkName: () => "bench-network" },
+      ).pipe(Effect.flip),
+    );
+    expect(error.message).toMatch(/Missing key[\s\S]*path|Expected no excess property/);
     expect(events).toEqual([
       "start network bench-network",
       "remove network bench-network",

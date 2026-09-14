@@ -1,7 +1,7 @@
 import { median, pairedRatios } from "@litellm-bench/analysis";
 import type { Analysis, Metric, Trial } from "@litellm-bench/contracts";
-import { createHash } from "node:crypto";
-import { trialSchedule } from "./schedule.js";
+import { OcrApparatusLimits } from "./observation.js";
+import { seededUint32 } from "./random.js";
 import type { OcrObservation, OcrProjection, OcrScenario } from "./types.js";
 
 const scenarioId = (row: OcrObservation): string => row.label.replace(/_r\d+$/, "");
@@ -29,6 +29,13 @@ const measurements = {
     unit: "%",
     better: "neutral",
   },
+  cpu_ms_per_request: {
+    field: "cpu_ms_per_request",
+    short: "cpu_ms_per_request",
+    label: "proxy CPU time per successful request",
+    unit: "ms",
+    better: "lower",
+  },
   peak_memory_mib: {
     field: "peak_memory_mib",
     short: "peak_memory_mib",
@@ -36,10 +43,24 @@ const measurements = {
     unit: "MiB",
     better: "lower",
   },
+  peak_memory_growth_mib: {
+    field: "peak_memory_growth_mib",
+    short: "peak_memory_growth_mib",
+    label: "peak memory growth above the post-warm-up baseline",
+    unit: "MiB",
+    better: "lower",
+  },
   idle_anon_mib: {
     field: "idle_anon_mib",
     short: "idle_anon_mib",
     label: "post-load anonymous memory",
+    unit: "MiB",
+    better: "lower",
+  },
+  idle_anon_growth_mib: {
+    field: "idle_anon_growth_mib",
+    short: "idle_anon_growth_mib",
+    label: "post-load anonymous-memory growth above the post-warm-up baseline",
     unit: "MiB",
     better: "lower",
   },
@@ -53,12 +74,15 @@ export const validatePrimaryRows = (
   rows: readonly OcrObservation[],
   scenarios: readonly OcrScenario[],
   rounds: number,
-  orderSeed = "proxy-ocr-v1",
 ): readonly string[] => {
   const scenarioMap = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
   const actual = rows.map((row) => `${scenarioId(row)}:${roundNumber(row)}:${row.variant}`);
-  const expected = trialSchedule(scenarios, rounds, orderSeed).map(([scenario, variant, round]) =>
-    `${scenario.id}:${round}:${variant}`
+  const expected = new Set(
+    scenarios.flatMap((scenario) =>
+      Array.from({ length: rounds }, (_, index) => index + 1).flatMap((round) =>
+        (["python", "rust"] as const).map((variant) => `${scenario.id}:${round}:${variant}`)
+      )
+    ),
   );
   const rowIssues = rows.flatMap((row) => {
     const scenario = scenarioMap.get(scenarioId(row));
@@ -72,13 +96,27 @@ export const validatePrimaryRows = (
         ? []
         : [`wrong load model for ${row.label}`]),
       ...(row.failures === 0 && row.successes > 0 ? [] : [`invalid responses in ${row.label}`]),
+      ...(row.cpu_average_percent >= OcrApparatusLimits.minimumProxyCpuPercent
+        ? []
+        : [`proxy was not CPU-saturated in ${row.label}: ${row.cpu_average_percent.toFixed(1)}%`]),
+      ...(row.mock_cpu_average_percent < OcrApparatusLimits.maximumMockCpuPercent
+        ? []
+        : [`mock may be limiting ${row.label}: ${row.mock_cpu_average_percent.toFixed(1)}% CPU`]),
+      ...(row.load_generator_cpu_percent < OcrApparatusLimits.maximumLoadGeneratorCpuPercent
+        ? []
+        : [
+          `load generator may be limiting ${row.label}: ${
+            row.load_generator_cpu_percent.toFixed(1)
+          }% CPU`,
+        ]),
     ];
   });
-  const matrixIssues = actual.length === new Set(actual).size
-      && actual.length === expected.length
-      && actual.every((key, index) => key === expected[index])
+  const actualSet = new Set(actual);
+  const matrixIssues = actual.length === actualSet.size
+      && actualSet.size === expected.size
+      && actual.every((key) => expected.has(key))
     ? []
-    : ["primary matrix does not match the seeded adjacent-block design"];
+    : ["primary matrix is incomplete, duplicated, or contains unexpected trials"];
   return [...rowIssues, ...matrixIssues];
 };
 
@@ -109,7 +147,7 @@ export const projectOcr = (
   rounds: number,
   orderSeed = "proxy-ocr-v1",
 ): OcrProjection => {
-  const issues = validatePrimaryRows(rows, scenarios, rounds, orderSeed);
+  const issues = validatePrimaryRows(rows, scenarios, rounds);
   if (issues.length > 0) throw new Error(issues.join(", "));
   const outputs = scenarios.map((scenario) => {
     const selected = rows.filter((row) => scenarioId(row) === scenario.id);
@@ -217,16 +255,15 @@ const bootstrapMedianLogRatio = (
   values: readonly number[],
   seed: string,
 ): { readonly lower: number; readonly upper: number } => {
-  let state = Number.parseInt(createHash("sha256").update(seed).digest("hex").slice(0, 8), 16);
-  const next = () => {
-    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
-    return state / 0x1_0000_0000;
-  };
+  const next = seededUint32(seed);
   const samples = Array.from(
     { length: 10_000 },
     () =>
       median(
-        Array.from({ length: values.length }, () => values[Math.floor(next() * values.length)]!),
+        Array.from(
+          { length: values.length },
+          () => values[Math.floor(next() / 0x1_0000_0000 * values.length)]!,
+        ),
       )!,
   ).toSorted((left, right) => left - right);
   return {

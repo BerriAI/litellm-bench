@@ -3,6 +3,9 @@
 Stable ID: `proxy-chat-completions`. This is an open, fixed-arrival-rate saturation sweep—not a
 closed-loop throughput test. Seven independent rounds cover 25–450 offered RPS in shuffled order.
 The upstream fixture explicitly declares zero response delay; there is no runtime timing override.
+The OpenAI `/v1/chat/completions` contract and canonical JSON fixture are owned by
+`@litellm-bench/provider-openai-chat-completions`.
+Its response is about 8 KiB and includes Markdown, escaped JSON, line breaks, and multibyte Unicode.
 The reported one-worker capacity is the highest contiguous rate for which at least six rounds meet
 all of these predicates: p95 latency at most 100 ms, zero window errors, no dropped arrivals, at
 least 98% achieved load, and stable warmup. The sweep must contain a failing higher rate, otherwise

@@ -258,6 +258,12 @@ importers:
       '@effect/vitest':
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115(effect@4.0.0-rc.115)(vitest@5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)))
+      '@litellm-bench/provider-mistral-ocr':
+        specifier: workspace:*
+        version: link:../../packages/provider-mistral-ocr
+      '@litellm-bench/provider-openai-chat-completions':
+        specifier: workspace:*
+        version: link:../../packages/provider-openai-chat-completions
       '@types/node':
         specifier: 26.5.1
         version: 26.5.1
@@ -282,6 +288,9 @@ importers:
       '@litellm-bench/harness':
         specifier: workspace:*
         version: link:../../packages/harness
+      '@litellm-bench/provider-openai-chat-completions':
+        specifier: workspace:*
+        version: link:../../packages/provider-openai-chat-completions
       '@litellm-bench/proxy':
         specifier: workspace:*
         version: link:../../packages/proxy
@@ -313,6 +322,9 @@ importers:
       '@litellm-bench/harness':
         specifier: workspace:*
         version: link:../../packages/harness
+      '@litellm-bench/provider-openai-chat-completions':
+        specifier: workspace:*
+        version: link:../../packages/provider-openai-chat-completions
       '@litellm-bench/proxy':
         specifier: workspace:*
         version: link:../../packages/proxy
@@ -344,6 +356,9 @@ importers:
       '@litellm-bench/harness':
         specifier: workspace:*
         version: link:../../packages/harness
+      '@litellm-bench/provider-mistral-ocr':
+        specifier: workspace:*
+        version: link:../../packages/provider-mistral-ocr
       '@litellm-bench/proxy':
         specifier: workspace:*
         version: link:../../packages/proxy
@@ -519,6 +534,38 @@ importers:
       '@types/node':
         specifier: 26.5.1
         version: 26.5.1
+      vitest:
+        specifier: 5.0.0
+        version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0))
+
+  packages/provider-mistral-ocr:
+    dependencies:
+      '@litellm-bench/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      '@types/node':
+        specifier: 26.5.1
+        version: 26.5.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.0.0
+        version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0))
+
+  packages/provider-openai-chat-completions:
+    dependencies:
+      '@litellm-bench/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      '@types/node':
+        specifier: 26.5.1
+        version: 26.5.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
       vitest:
         specifier: 5.0.0
         version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0))

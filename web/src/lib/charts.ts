@@ -66,16 +66,40 @@ const detailCharts = {
       metricIds: ["core_1m.python.cpu_average_percent", "core_1m.rust.cpu_average_percent"],
     },
     {
+      title: "1 MiB CPU service demand",
+      description: "Median proxy CPU time per successful request by implementation",
+      unit: "ms",
+      metricIds: ["core_1m.python.cpu_ms_per_request", "core_1m.rust.cpu_ms_per_request"],
+    },
+    {
       title: "1 MiB peak memory",
       description: "Median peak container memory by implementation",
       unit: "MiB",
       metricIds: ["core_1m.python.peak_memory_mib", "core_1m.rust.peak_memory_mib"],
     },
     {
+      title: "1 MiB peak memory growth",
+      description: "Median peak memory above the post-warm-up baseline by implementation",
+      unit: "MiB",
+      metricIds: [
+        "core_1m.python.peak_memory_growth_mib",
+        "core_1m.rust.peak_memory_growth_mib",
+      ],
+    },
+    {
       title: "1 MiB idle memory",
       description: "Median post-load anonymous memory by implementation",
       unit: "MiB",
       metricIds: ["core_1m.python.idle_anon_mib", "core_1m.rust.idle_anon_mib"],
+    },
+    {
+      title: "1 MiB retained-memory growth",
+      description: "Median post-load anonymous memory above baseline by implementation",
+      unit: "MiB",
+      metricIds: [
+        "core_1m.python.idle_anon_growth_mib",
+        "core_1m.rust.idle_anon_growth_mib",
+      ],
     },
     {
       title: "8 MiB p95 latency",
@@ -90,16 +114,40 @@ const detailCharts = {
       metricIds: ["core_8m.python.cpu_average_percent", "core_8m.rust.cpu_average_percent"],
     },
     {
+      title: "8 MiB CPU service demand",
+      description: "Median proxy CPU time per successful request by implementation",
+      unit: "ms",
+      metricIds: ["core_8m.python.cpu_ms_per_request", "core_8m.rust.cpu_ms_per_request"],
+    },
+    {
       title: "8 MiB peak memory",
       description: "Median peak container memory by implementation",
       unit: "MiB",
       metricIds: ["core_8m.python.peak_memory_mib", "core_8m.rust.peak_memory_mib"],
     },
     {
+      title: "8 MiB peak memory growth",
+      description: "Median peak memory above the post-warm-up baseline by implementation",
+      unit: "MiB",
+      metricIds: [
+        "core_8m.python.peak_memory_growth_mib",
+        "core_8m.rust.peak_memory_growth_mib",
+      ],
+    },
+    {
       title: "8 MiB idle memory",
       description: "Median post-load anonymous memory by implementation",
       unit: "MiB",
       metricIds: ["core_8m.python.idle_anon_mib", "core_8m.rust.idle_anon_mib"],
+    },
+    {
+      title: "8 MiB retained-memory growth",
+      description: "Median post-load anonymous memory above baseline by implementation",
+      unit: "MiB",
+      metricIds: [
+        "core_8m.python.idle_anon_growth_mib",
+        "core_8m.rust.idle_anon_growth_mib",
+      ],
     },
   ],
   "sdk-import-time": [

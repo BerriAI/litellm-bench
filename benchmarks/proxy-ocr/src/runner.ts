@@ -1,6 +1,11 @@
 import { type ProxyRawObservation } from "@litellm-bench/contracts";
-import { type BenchmarkRunner, InvalidObservation, type RunContext } from "@litellm-bench/harness";
-import { ProxyEnvironment, type ProxyExperiment } from "@litellm-bench/proxy";
+import { type BenchmarkRunner, type RunContext } from "@litellm-bench/harness";
+import {
+  ProxyEnvironment,
+  type ProxyEnvironmentShape,
+  type ProxyExperiment,
+  toRunnerExecutionError,
+} from "@litellm-bench/proxy";
 import { Effect, Path } from "effect";
 import { OcrArtifacts, OcrArtifactsLive } from "./artifacts.js";
 import { decodeOcrRun } from "./config.js";
@@ -52,7 +57,7 @@ const retryIssue = (trial: ProxyRawObservation["trials"][number]): string | unde
 
 export const runWithBlockRetries = Effect.fn("ProxyOcr.runWithBlockRetries")(
   function*(
-    run: (experiment: ProxyExperiment) => Effect.Effect<ProxyRawObservation, unknown>,
+    run: ProxyEnvironmentShape["run"],
     experiment: ProxyExperiment,
     maximumAttempts: number,
   ) {
@@ -82,11 +87,7 @@ export const runWithBlockRetries = Effect.fn("ProxyOcr.runWithBlockRetries")(
         artifactsDirectory: path.join(experiment.artifactsDirectory, `attempt-${attempt}`),
         trials: plans,
       }).pipe(
-        Effect.mapError((error) =>
-          new InvalidObservation({
-            message: error instanceof Error ? error.message : String(error),
-          })
-        ),
+        Effect.mapError(toRunnerExecutionError),
       );
       metadata = raw.metadata;
       for (const trial of raw.trials) latest.set(trialKey(trial), trial);

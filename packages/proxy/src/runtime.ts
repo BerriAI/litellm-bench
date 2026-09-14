@@ -1,6 +1,7 @@
 import {
   decodeStrict,
   decodeUpstreamFixture,
+  MockStats,
   ProxyRawObservation,
   type ProxyRawObservation as ProxyRawObservationType,
 } from "@litellm-bench/contracts";
@@ -25,7 +26,7 @@ import {
   type DockerError,
 } from "./docker.js";
 import { K6, type K6Shape } from "./k6.js";
-import type { ProxyExperiment, ProxyTrialPlan } from "./models.js";
+import type { K6Measurement, ProxyExperiment, ProxyTrialPlan } from "./models.js";
 
 const mockAlias = "bench-upstream";
 
@@ -324,7 +325,7 @@ const mockStats = (container: DockerContainer) =>
     Effect.mapError((cause) => runtimeError("read mock stats", cause)),
     Effect.flatMap(({ stdout }) =>
       Effect.try({
-        try: () => JSON.parse(stdout) as unknown,
+        try: () => decodeStrict(MockStats)(JSON.parse(stdout) as unknown),
         catch: (cause) => runtimeError("parse mock stats", cause),
       })
     ),
@@ -415,6 +416,131 @@ const startProxy = (
     ],
     logPath: path.join(directory, "proxy.log"),
   });
+
+const preflightKey = (trial: ProxyTrialPlan): string =>
+  sha256(JSON.stringify({
+    proxy_config: sha256(readFileSync(trial.proxyConfigPath)),
+    fixture: sha256(readFileSync(trial.fixturePath)),
+    request: trial.workload.request,
+    response: trial.workload.response,
+    payload: sha256(trial.workload.body),
+    environment: trial.environment ?? {},
+    mock_environment: trial.mockEnvironment ?? {},
+  }));
+
+const distinctPreflightTrials = (trials: readonly ProxyTrialPlan[]): readonly ProxyTrialPlan[] => {
+  const keys = new Set<string>();
+  return trials.filter((trial) => {
+    if (trial.bypassProxy === true) return false;
+    const key = preflightKey(trial);
+    if (keys.has(key)) return false;
+    keys.add(key);
+    return true;
+  });
+};
+
+const preflightIssue = (
+  client: K6Measurement,
+  upstream: typeof MockStats.Type,
+): string | undefined => {
+  const result = client.result;
+  if (client.exitCode !== 0) return client.error ?? `k6 exited ${client.exitCode}`;
+  if (result === undefined) return client.error ?? "missing k6 result";
+  if (result.started < 1) return "probe sent no requests";
+  if (upstream.failures !== 0) {
+    return `upstream rejected ${upstream.failures} request(s): ${
+      JSON.stringify(upstream.last_mismatch ?? upstream.errors)
+    }`;
+  }
+  if (result.failed !== 0 || result.dropped !== 0 || result.interrupted !== 0) {
+    return `probe observed failed=${result.failed}, dropped=${result.dropped}, interrupted=${result.interrupted}, errors=${
+      JSON.stringify(result.errors)
+    }`;
+  }
+  if (upstream.requests !== result.started) {
+    return `request-count mismatch: proxy started ${result.started}, upstream received ${upstream.requests}`;
+  }
+  const streams = upstream.streams;
+  if (
+    streams !== undefined && (
+      streams.failed !== 0 || streams.cancelled !== 0 || streams.started !== streams.completed
+    )
+  ) {
+    return `upstream streams failed, cancelled, or incomplete: ${JSON.stringify(streams)}`;
+  }
+  return undefined;
+};
+
+const preflightTrial = (
+  docker: DockerEngineShape,
+  k6: K6Shape,
+  k6Version: string,
+  experiment: ProxyExperiment,
+  trial: ProxyTrialPlan,
+  network: string,
+  position: number,
+  options: ProxyRuntimeOptions,
+  proxyImageId: string,
+  mockImageId: string,
+) =>
+  Effect.scoped(Effect.gen(function*() {
+    const path = yield* Path.Path;
+    const fs = yield* FileSystem.FileSystem;
+    const directory = path.join(experiment.artifactsDirectory, "preflight", trial.id);
+    yield* fs.makeDirectory(directory, { recursive: true }).pipe(
+      Effect.mapError((cause) => runtimeError("create preflight artifacts", cause)),
+    );
+    yield* validateFixture(trial.fixturePath);
+    const readableExperiment: ProxyExperiment = {
+      ...experiment,
+      resources: { ...experiment.resources, logDriver: "local", idleSeconds: 0 },
+    };
+    const suffix = `${network}-preflight-${position}`;
+    const port = experiment.port ?? 4020;
+    const mock = yield* startMock(
+      path,
+      docker,
+      readableExperiment,
+      trial,
+      mockImageId,
+      network,
+      `${suffix}-mock`,
+      directory,
+      options.mockServerPath ?? path.resolve("apps/mock-provider/dist/main.js"),
+      port,
+    );
+    yield* waitForMock(mock, options);
+    yield* startProxy(
+      path,
+      docker,
+      readableExperiment,
+      trial,
+      proxyImageId,
+      network,
+      `${suffix}-proxy`,
+      port,
+      directory,
+    );
+    yield* waitForProxy(port, experiment.readinessPath ?? "/health/liveliness", options);
+    const client = yield* k6.run({
+      workload: trial.workload,
+      load: { mode: "closed", concurrency: 1, duration_seconds: 1, warmup_seconds: 0 },
+      url: `http://127.0.0.1:${port}`,
+      artifactsDirectory: path.join(directory, "client"),
+      cwd: options.cwd ?? process.cwd(),
+      ...(experiment.resources.loadGeneratorCpuSet === undefined
+        ? {}
+        : { cpuSet: experiment.resources.loadGeneratorCpuSet }),
+    }, k6Version).pipe(Effect.mapError((cause) => runtimeError("run preflight probe", cause)));
+    const upstream = yield* mockStats(mock);
+    const issue = preflightIssue(client, upstream);
+    if (issue !== undefined) {
+      return yield* new ProxyRuntimeError({
+        operation: `preflight ${trial.id}`,
+        message: `${issue}; diagnostics: ${directory}`,
+      });
+    }
+  }));
 
 const retainPlan = (trial: ProxyTrialPlan, directory: string) =>
   Effect.gen(function*() {
@@ -688,7 +814,6 @@ export const runProxyExperiment = (
         ),
       );
     }
-    const pressureBefore = hostPressure();
     yield* fs.makeDirectory(experiment.artifactsDirectory, { recursive: true }).pipe(
       Effect.andThen(
         fs.writeFileString(path.join(experiment.artifactsDirectory, "trials.jsonl"), ""),
@@ -698,6 +823,31 @@ export const runProxyExperiment = (
     const network = yield* docker.network(
       options.networkName?.() ?? `litellm-bench-${randomUUID().replaceAll("-", "").slice(0, 12)}`,
     ).pipe(Effect.mapError((cause) => runtimeError("create Docker network", cause)));
+    const preflights = distinctPreflightTrials(experiment.trials);
+    yield* Effect.logInfo("proxy contract preflight started").pipe(Effect.annotateLogs({
+      contracts: preflights.length,
+    }));
+    yield* Effect.forEach(
+      preflights,
+      (trial, index) =>
+        preflightTrial(
+          docker,
+          k6,
+          k6Version,
+          experiment,
+          trial,
+          network,
+          index,
+          options,
+          proxyImageId,
+          mockImages.get(trial.mockImage)!,
+        ),
+      { concurrency: 1, discard: true },
+    );
+    yield* Effect.logInfo("proxy contract preflight completed").pipe(Effect.annotateLogs({
+      contracts: preflights.length,
+    }));
+    const pressureBefore = hostPressure();
     const trials = yield* Effect.forEach(
       experiment.trials,
       (trial, index) =>

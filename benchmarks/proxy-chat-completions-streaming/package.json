@@ -13,6 +13,7 @@
     "@litellm-bench/contracts": "workspace:*",
     "@litellm-bench/analysis": "workspace:*",
     "@litellm-bench/harness": "workspace:*",
+    "@litellm-bench/provider-openai-chat-completions": "workspace:*",
     "@litellm-bench/proxy": "workspace:*",
     "effect": "4.0.0-rc.115"
   },

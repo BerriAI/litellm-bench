@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/current/upstream.schema.json",
+  "$schema": "../../../schemas/current/upstream.schema.json",
   "version": 2,
   "operations": [
     {
@@ -12,6 +12,7 @@
         "document": { "type": "image_url" }
       },
       "png_fields": ["document.image_url"],
+      "body_match": "exact",
       "response": {
         "kind": "json",
         "timing": { "response_delay_ms": 0 },

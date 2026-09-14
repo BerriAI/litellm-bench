@@ -1,4 +1,5 @@
 import type { RunContext } from "@litellm-bench/harness";
+import { canonicalOpenAiStreamingEventCount } from "@litellm-bench/provider-openai-chat-completions";
 import { expect, it } from "vitest";
 import { makeStreamingChatExperiment } from "./experiment.js";
 import { projectStreamingChatCompletions } from "./projection.js";
@@ -87,7 +88,7 @@ it("builds streaming proxy and direct-calibration workloads", () => {
   expect(experiment.trials.filter(({ bypassProxy }) => bypassProxy)).toHaveLength(5);
   expect(experiment.trials.every(({ dimensions }) => dimensions.stream === true)).toBe(true);
   expect(experiment.trials[0]?.workload.response.sse).toMatchObject({
-    event_count: 7,
+    event_count: canonicalOpenAiStreamingEventCount,
     terminal_data: "[DONE]",
   });
 });

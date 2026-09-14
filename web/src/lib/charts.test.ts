@@ -46,7 +46,7 @@ test("all OCR metrics are charted once and uncovered metrics get isolated fallba
   ) => ({ ...metric, id, label: id, value: 10 }));
   const ocr = { ...record("proxy-ocr"), metrics };
   const definitions = detailDefinitions("proxy-ocr", [ocr, record()]);
-  assert.equal(definitions.length, 12);
+  assert.equal(definitions.length, 18);
   assert.deepEqual(
     definitions.flatMap((item) => item.metricIds).sort(),
     metrics.map((item) => item.id).sort(),
@@ -64,7 +64,7 @@ test("all OCR metrics are charted once and uncovered metrics get isolated fallba
     ],
   };
   const fallback = detailDefinitions("proxy-ocr", [extended, extended, record()]);
-  assert.equal(fallback.length, 13);
+  assert.equal(fallback.length, 19);
   assert.deepEqual(fallback.at(-1)?.metricIds, ["future"]);
   assert.equal(detailSpec("proxy-ocr", [record()], definitions[0], theme), null);
 });

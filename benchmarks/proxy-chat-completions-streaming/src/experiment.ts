@@ -1,4 +1,10 @@
 import type { RunContext } from "@litellm-bench/harness";
+import {
+  canonicalOpenAiChatCompletions,
+  canonicalOpenAiChatCompletionsResponseBytes,
+  canonicalOpenAiStreamingChatCompletionsFixturePath,
+  canonicalOpenAiStreamingEventCount,
+} from "@litellm-bench/provider-openai-chat-completions";
 import type { ProxyExperiment, ProxyTrialPlan } from "@litellm-bench/proxy";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -16,16 +22,27 @@ const shuffled = <T>(values: readonly T[], seed: string): T[] => {
 };
 
 const streamExpectation = {
-  event_count: 7,
+  event_count: canonicalOpenAiStreamingEventCount,
   terminal_data: "[DONE]",
   jsonEquals: [
     { index: 0, path: ["object"], value: "chat.completion.chunk" },
     { index: 0, path: ["choices", 0, "delta", "role"], value: "assistant" },
-    { index: 1, path: ["choices", 0, "delta", "content"], value: "mock " },
-    { index: 2, path: ["choices", 0, "delta", "content"], value: "streaming " },
-    { index: 3, path: ["choices", 0, "delta", "content"], value: "chat " },
-    { index: 4, path: ["choices", 0, "delta", "content"], value: "response" },
-    { index: 5, path: ["choices", 0, "finish_reason"], value: "stop" },
+    ...canonicalOpenAiChatCompletions.streamingChunks.map((value, offset) => ({
+      index: offset + 1,
+      path: ["choices", 0, "delta", "content"],
+      value,
+    })),
+    {
+      index: canonicalOpenAiChatCompletions.streamingChunks.length + 1,
+      path: ["choices", 0, "finish_reason"],
+      value: "stop",
+    },
+    {
+      index: canonicalOpenAiChatCompletions.streamingChunks.length + 2,
+      path: ["usage", "total_tokens"],
+      value: canonicalOpenAiChatCompletions.usage.input
+        + canonicalOpenAiChatCompletions.usage.output,
+    },
   ],
 };
 
@@ -37,13 +54,14 @@ export const makeStreamingChatExperiment = (
   const body = (model: string) =>
     Buffer.from(JSON.stringify({
       model,
-      messages: [{ role: "user", content: "Hello" }],
+      messages: canonicalOpenAiChatCompletions.messages,
       stream: true,
+      stream_options: canonicalOpenAiChatCompletions.streamOptions,
     }));
   const proxyBody = body("mock-chat");
-  const directBody = body("bench-model");
+  const directBody = body(canonicalOpenAiChatCompletions.model);
   const proxyConfigPath = fileURLToPath(new URL("../proxy_config.yaml", import.meta.url));
-  const fixturePath = fileURLToPath(new URL("../upstream.json", import.meta.url));
+  const fixturePath = canonicalOpenAiStreamingChatCompletionsFixturePath;
   const load = (rate: number) => ({
     mode: "fixed" as const,
     rate,
@@ -82,6 +100,7 @@ export const makeStreamingChatExperiment = (
         dimensions: {
           offered_rps: rate,
           wire_body_bytes: proxyBody.byteLength,
+          response_content_bytes: canonicalOpenAiChatCompletionsResponseBytes,
           stream: true,
           stream_events: streamExpectation.event_count,
           calibration: false,
@@ -102,6 +121,7 @@ export const makeStreamingChatExperiment = (
       dimensions: {
         offered_rps: calibrationRate,
         wire_body_bytes: directBody.byteLength,
+        response_content_bytes: canonicalOpenAiChatCompletionsResponseBytes,
         stream: true,
         stream_events: streamExpectation.event_count,
         calibration: true,

@@ -1,7 +1,8 @@
 import { expect, it } from "@effect/vitest";
 import type { ProxyLoadObservation, ProxyRawObservation } from "@litellm-bench/contracts";
 import type { RunContext } from "@litellm-bench/harness";
-import { ProxyEnvironment } from "@litellm-bench/proxy";
+import { canonicalOpenAiStreamingEventCount } from "@litellm-bench/provider-openai-chat-completions";
+import { ProxyEnvironment, ProxyRuntimeError } from "@litellm-bench/proxy";
 import { Effect } from "effect";
 import { makeStreamingChatCompletionsRunner } from "../src/runner.js";
 
@@ -122,8 +123,8 @@ const clientResult = (rate: number, saturated: boolean): ProxyLoadObservation =>
     warmup_window_rps: [rate, rate, rate],
     latency: latency(saturated ? 250 : 45),
     ttfb: latency(saturated ? 150 : 20),
-    stream_events: requests * 7,
-    event_rps: rate * 7,
+    stream_events: requests * canonicalOpenAiStreamingEventCount,
+    event_rps: rate * canonicalOpenAiStreamingEventCount,
     errors: {},
   };
 };
@@ -191,7 +192,9 @@ it.effect("runs the streaming sweep and reports bracketed capacity", () =>
     const result = yield* runner.run(context);
     expect(result.metrics[0]?.value).toBe(20);
     expect(result.trials).toHaveLength(20);
-    expect(experiments[0].trials[0].workload.response.sse.event_count).toBe(7);
+    expect(experiments[0].trials[0].workload.response.sse.event_count).toBe(
+      canonicalOpenAiStreamingEventCount,
+    );
   }));
 
 it.effect("fails closed when streaming timing is absent", () =>
@@ -209,6 +212,24 @@ it.effect("fails closed when streaming timing is absent", () =>
       Effect.provideService(ProxyEnvironment, { run: () => Effect.succeed(broken) }),
     );
     expect(yield* Effect.flip(runner.run(context))).toMatchObject({
+      _tag: "InvalidObservation",
       message: expect.stringContaining("missing streaming TTFB"),
+    });
+  }));
+
+it.effect("classifies proxy runtime failures as runner execution failures", () =>
+  Effect.gen(function*() {
+    const runner = yield* makeStreamingChatCompletionsRunner.pipe(
+      Effect.provideService(ProxyEnvironment, {
+        run: () =>
+          Effect.fail(
+            new ProxyRuntimeError({ operation: "verify Docker", message: "unavailable" }),
+          ),
+      }),
+    );
+
+    expect(yield* Effect.flip(runner.run(context))).toMatchObject({
+      _tag: "RunnerExecutionError",
+      message: "verify Docker: unavailable",
     });
   }));

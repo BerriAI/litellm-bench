@@ -1,11 +1,11 @@
 # Mock provider
 
-Deterministic, validating upstream provider for proxy benchmarks. One process can serve OCR, Chat
-Completions (JSON or SSE), Responses (JSON or SSE), and arbitrary JSON/SSE operations.
+Deterministic replay host for proxy benchmarks. One process can serve provider-route fixtures with
+JSON or SSE responses while validating incoming requests.
 
 ```sh
 pnpm --filter @litellm-bench/mock-provider... build
-MOCK_FIXTURE=apps/mock-provider/fixtures/provider.json \
+MOCK_FIXTURE=packages/provider-openai-chat-completions/fixtures/streaming.json \
   node apps/mock-provider/dist/main.js
 curl -N http://localhost:8080/v1/chat/completions \
   -H 'content-type: application/json' \
@@ -47,9 +47,11 @@ Fixtures use version 2 with named operations and explicit response timing:
 ```
 
 - Matching uses exact method and request URL (including any query), object subsets, and exact arrays.
-  `optional_expect` checks a top-level key only when the request contains it. Use `expect.stream: true`
-  for streaming and `optional_expect.stream: false` for non-streaming variants. Multiple matches reject
-  with `ambiguous_match`; fixture order is never a tie-breaker.
+  `optional_expect` checks a top-level key only when the request contains it. `body_match: "exact"`
+  rejects top-level fields outside `expect`, `optional_expect`, and dynamic `png_fields`; its default is
+  `"subset"`. Use `expect.stream: true` for streaming and `optional_expect.stream: false` for
+  non-streaming variants. Multiple matches reject with `ambiguous_match`; fixture order is never a
+  tie-breaker.
 - `png_fields` checks PNG signatures at dot-separated request paths, preserving existing OCR behavior.
 - JSON responses declare `timing: { "response_delay_ms": 0 }`; zero-delay behavior is never inherited.
   SSE responses declare both `first_event_delay_ms` and `event_interval_ms`. The fixture is the only
@@ -66,16 +68,19 @@ Fixtures use version 2 with named operations and explicit response timing:
 
 ## Operation builders
 
-`@litellm-bench/mock-provider/operations` exports pure `ocr`, `chatCompletion`, and `responses` builders.
-They create serializable operations that can be written to a version 2 fixture:
+`@litellm-bench/mock-provider/operations` currently exports the Responses builder. Provider-route
+packages own provider-specific builders and canonical fixture data; Mistral OCR and OpenAI Chat
+Completions live in their respective `@litellm-bench/provider-*` packages. Every builder produces the
+same version 2 replay format:
 
 ```ts
-import { chatCompletion, responses } from "@litellm-bench/mock-provider/operations";
+import { responses } from "@litellm-bench/mock-provider/operations";
+import { openAiChatCompletion } from "@litellm-bench/provider-openai-chat-completions";
 
 const fixture = {
   version: 2,
   operations: [
-    chatCompletion({
+    openAiChatCompletion({
       id: "chat-stream",
       model: "bench-model",
       chunks: ["Hello", " world"],

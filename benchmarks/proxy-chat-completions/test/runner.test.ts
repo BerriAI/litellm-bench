@@ -268,6 +268,7 @@ it.effect("rejects request-accounting mismatches and preserves runtime operation
       Effect.provideService(ProxyEnvironment, { run: () => Effect.succeed(raw(true)) }),
     );
     expect(yield* Effect.flip(invalidRunner.run(context))).toMatchObject({
+      _tag: "InvalidObservation",
       message: expect.stringContaining("request counts differ"),
     });
     const failedRunner = yield* makeChatCompletionsRunner.pipe(
@@ -279,6 +280,7 @@ it.effect("rejects request-accounting mismatches and preserves runtime operation
       }),
     );
     expect(yield* Effect.flip(failedRunner.run(context))).toMatchObject({
+      _tag: "RunnerExecutionError",
       message: "verify Docker: unavailable",
     });
   }));

@@ -145,16 +145,32 @@ export const StreamStats = Schema.Struct({
   cancelled: NonNegativeInteger,
   failed: NonNegativeInteger,
 });
+export const RequestMismatchReason = Schema.Literals([
+  "method_or_path",
+  "request_body",
+  "request_headers",
+  "png_document",
+  "ambiguous_match",
+]);
+export const RequestMismatchDiagnostic = Schema.Struct({
+  reason: RequestMismatchReason,
+  method: NonEmptyString,
+  path: FixturePath,
+  operation_id: Schema.optionalKey(NonEmptyString),
+  detail: NonEmptyString,
+});
 export const MockStats = Schema.Struct({
   requests: NonNegativeInteger,
   failures: NonNegativeInteger,
   errors: Schema.Record(Schema.String, NonNegativeInteger),
   streams: Schema.optionalKey(StreamStats),
+  last_mismatch: Schema.optionalKey(RequestMismatchDiagnostic),
 });
 export type MockOperation = typeof MockOperation.Type;
 export type FixtureResponse = typeof FixtureResponse.Type;
 export type SseEvent = typeof SseEvent.Type;
 export type MockStats = typeof MockStats.Type;
+export type RequestMismatchDiagnostic = typeof RequestMismatchDiagnostic.Type;
 
 /** Decode once at the boundary; both preflight and the provider use this contract. */
 export const decodeUpstreamFixture = (value: unknown): readonly MockOperation[] => {
@@ -165,6 +181,16 @@ export const decodeUpstreamFixture = (value: unknown): readonly MockOperation[] 
     if (ids.has(op.id)) throw new Error(`duplicate operation ID: ${op.id}`);
     ids.add(op.id);
     if (op.path.split("?")[0] === "/__stats") throw new Error("/__stats is reserved");
+    const overlappingBodyFields = Object.keys(op.optional_expect ?? {}).filter((key) =>
+      Object.hasOwn(op.expect, key)
+    );
+    if (overlappingBodyFields.length > 0) {
+      throw new Error(
+        `operation ${op.id}: body fields cannot be both required and optional: ${
+          overlappingBodyFields.join(", ")
+        }`,
+      );
+    }
     if (op.response.status === 204 || op.response.status === 205 || op.response.status === 304) {
       throw new Error(`operation ${op.id}: bodyless status cannot have a fixture response`);
     }
