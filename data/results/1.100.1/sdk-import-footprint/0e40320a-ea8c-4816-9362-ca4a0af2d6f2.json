@@ -1,0 +1,707 @@
+{
+  "record_id": "dbf4a9fa29c628d26c6dc179995abd263ae00175c3e7612418ec37aed6a72347",
+  "case_id": "7ab5dcbe2c6aec0a6f542795aa18a5e71e59a558ce26ade1c77cf3ec22621d03",
+  "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+  "identity": {
+    "domain": "case",
+    "benchmark_id": "sdk-import-footprint",
+    "output_metrics": [
+      {
+        "id": "import.peak_rss",
+        "unit": "MiB",
+        "better": "lower"
+      },
+      {
+        "id": "import.loaded_modules",
+        "unit": "modules",
+        "better": "lower"
+      },
+      {
+        "id": "import.disk_growth",
+        "unit": "MiB",
+        "better": "lower"
+      }
+    ],
+    "protocol": {
+      "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
+      "scenarios": [
+        {
+          "id": "root-import",
+          "dimensions": {
+            "statement": "import litellm",
+            "isolated_python": true
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "id": "import.peak_rss",
+          "unit": "MiB",
+          "role": "primary",
+          "better": "lower"
+        },
+        {
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
+          "role": "secondary",
+          "better": "lower"
+        }
+      ],
+      "analyses": [
+        {
+          "id": "instrumented_import",
+          "measurement": "import.peak_rss",
+          "additional_measurements": [
+            "import.loaded_modules",
+            "import.disk_growth"
+          ],
+          "scenarios": [
+            "root-import"
+          ],
+          "aggregation": "single observation"
+        }
+      ],
+      "validity": {
+        "trial": "The instrumented import must exit successfully",
+        "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+      }
+    },
+    "job": {
+      "id": "base",
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      },
+      "requirements": {
+        "python": "3.12.10",
+        "tools": [
+          "uv"
+        ]
+      }
+    },
+    "target": {
+      "version": "1.100.1",
+      "artifact": {
+        "requirement": "litellm==1.100.1",
+        "distribution": "litellm"
+      }
+    }
+  },
+  "source": {
+    "provider": "github-actions",
+    "repository": "BerriAI/litellm-bench",
+    "workflow": "Record LiteLLM benchmarks",
+    "workflow_run_id": "34809793476",
+    "commit": "a4cf0e6eaad7c7f77a738a1220a07e697b740e44",
+    "ref": "refs/heads/main"
+  },
+  "spec": {
+    "case_id": "7ab5dcbe2c6aec0a6f542795aa18a5e71e59a558ce26ade1c77cf3ec22621d03",
+    "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+    "benchmark": {
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
+      "kind": "sdk",
+      "output_metrics": [
+        {
+          "id": "import.peak_rss",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
+          "better": "lower"
+        }
+      ],
+      "protocol": {
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
+        "scenarios": [
+          {
+            "id": "root-import",
+            "label": "import litellm",
+            "dimensions": {
+              "statement": "import litellm",
+              "isolated_python": true
+            }
+          }
+        ],
+        "measurements": [
+          {
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
+            "unit": "MiB",
+            "role": "primary",
+            "better": "lower"
+          },
+          {
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          }
+        ],
+        "analyses": [
+          {
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
+            "additional_measurements": [
+              "import.loaded_modules",
+              "import.disk_growth"
+            ],
+            "scenarios": [
+              "root-import"
+            ],
+            "aggregation": "single observation"
+          }
+        ],
+        "validity": {
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+        }
+      }
+    },
+    "job": {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      },
+      "requirements": {
+        "python": "3.12.10",
+        "tools": [
+          "uv"
+        ]
+      }
+    },
+    "version": {
+      "version": "1.100.1",
+      "artifacts": {
+        "sdk": {
+          "requirement": "litellm==1.100.1",
+          "distribution": "litellm"
+        },
+        "proxy": {
+          "image": "ghcr.io/berriai/litellm:v1.100.1"
+        }
+      }
+    },
+    "artifact": {
+      "requirement": "litellm==1.100.1",
+      "distribution": "litellm"
+    }
+  },
+  "result": {
+    "run_id": "0e40320a-ea8c-4816-9362-ca4a0af2d6f2",
+    "created_at": "2026-09-14T05:55:43.238Z",
+    "case_id": "7ab5dcbe2c6aec0a6f542795aa18a5e71e59a558ce26ade1c77cf3ec22621d03",
+    "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+    "benchmark": {
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
+      "kind": "sdk",
+      "output_metrics": [
+        {
+          "id": "import.peak_rss",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
+          "better": "lower"
+        }
+      ],
+      "protocol": {
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
+        "scenarios": [
+          {
+            "id": "root-import",
+            "label": "import litellm",
+            "dimensions": {
+              "statement": "import litellm",
+              "isolated_python": true
+            }
+          }
+        ],
+        "measurements": [
+          {
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
+            "unit": "MiB",
+            "role": "primary",
+            "better": "lower"
+          },
+          {
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          }
+        ],
+        "analyses": [
+          {
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
+            "additional_measurements": [
+              "import.loaded_modules",
+              "import.disk_growth"
+            ],
+            "scenarios": [
+              "root-import"
+            ],
+            "aggregation": "single observation"
+          }
+        ],
+        "validity": {
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+        }
+      }
+    },
+    "job": {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      },
+      "requirements": {
+        "python": "3.12.10",
+        "tools": [
+          "uv"
+        ]
+      }
+    },
+    "version": "1.100.1",
+    "artifact": {
+      "requirement": "litellm==1.100.1",
+      "distribution": "litellm"
+    },
+    "apparatus": {
+      "runner": "@litellm-bench/benchmark-sdk-import-footprint",
+      "host": {
+        "platform": "linux",
+        "architecture": "x86_64",
+        "host": "github-hosted",
+        "node_version": "v24.20.0",
+        "ci": true,
+        "python_version": "3.12.10",
+        "python_implementation": "CPython"
+      },
+      "uv_version": "uv 0.8.17",
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-gZ36Hg/resolver/lib/python3.12/site-packages/pip (python 3.12)"
+    },
+    "metrics": [
+      {
+        "id": "import.peak_rss",
+        "label": "Process-lifetime peak RSS during import",
+        "value": 212.73046875,
+        "unit": "MiB",
+        "better": "lower"
+      },
+      {
+        "id": "import.loaded_modules",
+        "label": "Modules loaded by import",
+        "value": 2289,
+        "unit": "modules",
+        "better": "lower"
+      },
+      {
+        "id": "import.disk_growth",
+        "label": "First-import site-packages growth",
+        "value": 17.9027738571167,
+        "unit": "MiB",
+        "better": "lower"
+      }
+    ],
+    "trials": [],
+    "analyses": [],
+    "details": {
+      "runtime": {
+        "requested_python": "3.12.10",
+        "resolved_package_version": "1.100.1",
+        "version": "3.12.10",
+        "implementation": "CPython",
+        "cache_tag": "cpython-312",
+        "executable": "/tmp/litellm-bench-sdk-gZ36Hg/target/bin/python",
+        "platform": "linux",
+        "architecture": "x86_64"
+      },
+      "diagnostics": {
+        "import_only_seconds": 2.0489017019999665,
+        "new_module_count": 2289,
+        "peak_rss_bytes": 223064064
+      },
+      "resolution": {
+        "artifact_count": 55,
+        "download_bytes": 61737544,
+        "package_artifact_bytes": 24063121,
+        "artifacts": [
+          {
+            "filename": "aiohappyeyeballs-2.7.1-py3-none-any.whl",
+            "bytes": 15038,
+            "sha256": "9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472"
+          },
+          {
+            "filename": "aiohttp-3.14.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 1792122,
+            "sha256": "543906c127fb1d929b95076db19b83fa2d46751006ff1e23b093aa5ac4d8db42"
+          },
+          {
+            "filename": "aiosignal-1.4.0-py3-none-any.whl",
+            "bytes": 7490,
+            "sha256": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e"
+          },
+          {
+            "filename": "annotated_types-0.8.0-py3-none-any.whl",
+            "bytes": 13427,
+            "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0"
+          },
+          {
+            "filename": "anyio-4.15.1-py3-none-any.whl",
+            "bytes": 132079,
+            "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101"
+          },
+          {
+            "filename": "attrs-26.1.0-py3-none-any.whl",
+            "bytes": 67548,
+            "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+          },
+          {
+            "filename": "boto3-1.43.93-py3-none-any.whl",
+            "bytes": 140022,
+            "sha256": "3c948fe231490d446bf90bf3322d1452632107329d3683b37d88b7399bf481a0"
+          },
+          {
+            "filename": "botocore-1.43.93-py3-none-any.whl",
+            "bytes": 15794156,
+            "sha256": "3ca57bb5d26d88b554a74de708a5c991f45306436c91aacca931252d1d4d54ff"
+          },
+          {
+            "filename": "certifi-2026.7.22-py3-none-any.whl",
+            "bytes": 136983,
+            "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775"
+          },
+          {
+            "filename": "charset_normalizer-3.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 248801,
+            "sha256": "b9af956078716df40d985fb0dfeb2c2120c5ca92ba4ff4b388acfd01cdc14d08"
+          },
+          {
+            "filename": "click-8.5.0-py3-none-any.whl",
+            "bytes": 125251,
+            "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"
+          },
+          {
+            "filename": "distro-1.9.0-py3-none-any.whl",
+            "bytes": 20277,
+            "sha256": "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"
+          },
+          {
+            "filename": "fastuuid-0.14.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            "bytes": 278105,
+            "sha256": "808527f2407f58a76c916d6aa15d58692a4a019fdf8d4c32ac7ff303b7d7af09"
+          },
+          {
+            "filename": "filelock-3.32.6-py3-none-any.whl",
+            "bytes": 100189,
+            "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+          },
+          {
+            "filename": "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+            "bytes": 242411,
+            "sha256": "494a5952b1c597ba44e0e78113a7266e656b9794eec897b19ead706bd7074383"
+          },
+          {
+            "filename": "fsspec-2026.7.0-py3-none-any.whl",
+            "bytes": 206583,
+            "sha256": "b57ddbafedfaef7018c1ecab32aa200a9d7ca26b77965f64e48b70061249d279"
+          },
+          {
+            "filename": "h11-0.16.0-py3-none-any.whl",
+            "bytes": 37515,
+            "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+          },
+          {
+            "filename": "hf_xet-1.6.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+            "bytes": 4464663,
+            "sha256": "d62671bb130879cef0ee4c9ebe47a14af6c66ec53e6d84dc15936e5ffdfac82f"
+          },
+          {
+            "filename": "httpcore-1.0.9-py3-none-any.whl",
+            "bytes": 78784,
+            "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
+          },
+          {
+            "filename": "httpx-0.28.1-py3-none-any.whl",
+            "bytes": 73517,
+            "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+          },
+          {
+            "filename": "huggingface_hub-1.31.0-py3-none-any.whl",
+            "bytes": 798313,
+            "sha256": "9dbb6a503cbe2494ea666695207e7262d410659e09134059deb83e5480864667"
+          },
+          {
+            "filename": "idna-3.19-py3-none-any.whl",
+            "bytes": 68550,
+            "sha256": "815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4"
+          },
+          {
+            "filename": "importlib_metadata-8.9.0-py3-none-any.whl",
+            "bytes": 27220,
+            "sha256": "e0f761b6ea91ced3b0844c14c9d955224d538105921f8e6754c00f6ca79fba7f"
+          },
+          {
+            "filename": "jinja2-3.1.6-py3-none-any.whl",
+            "bytes": 134899,
+            "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"
+          },
+          {
+            "filename": "jiter-0.17.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            "bytes": 345025,
+            "sha256": "8c21265b251d99bbb40080d178a8953e35601d3a1564e05c4de4c0d2ca616797"
+          },
+          {
+            "filename": "jmespath-1.1.0-py3-none-any.whl",
+            "bytes": 20419,
+            "sha256": "a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64"
+          },
+          {
+            "filename": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+            "bytes": 18437,
+            "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe"
+          },
+          {
+            "filename": "jsonschema-4.26.0-py3-none-any.whl",
+            "bytes": 90630,
+            "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce"
+          },
+          {
+            "filename": "litellm-1.100.1-cp310-abi3-manylinux_2_28_x86_64.whl",
+            "bytes": 24063121,
+            "sha256": "8f53d917ece795e35c125ec24d342ddc2103a806c22b1f7b1517110d31f45362"
+          },
+          {
+            "filename": "markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 22947,
+            "sha256": "d6dd0be5b5b189d31db7cda48b91d7e0a9795f31430b7f271219ab30f1d3ac9d"
+          },
+          {
+            "filename": "multidict-6.8.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 287410,
+            "sha256": "003a3bddb32915c3f67096ea41d24e53edf710edb65a1f5d0c70ab40b0e4d20b"
+          },
+          {
+            "filename": "openai-2.54.0-py3-none-any.whl",
+            "bytes": 1660351,
+            "sha256": "89089789197ccdb87f173a03145ed1598d00795220c93e96cf712b1cbf5e5f2b"
+          },
+          {
+            "filename": "packaging-26.3-py3-none-any.whl",
+            "bytes": 129956,
+            "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
+          },
+          {
+            "filename": "propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 61639,
+            "sha256": "6f328175a2cde1f0ff2c4ed8ce968b9dcfb55f3a7153f39e2957ed994da13476"
+          },
+          {
+            "filename": "pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            "bytes": 2066284,
+            "sha256": "0fc5be0abd4a407e200d844b404e33639a554e7bd0d448e7b9ae181be4789ac2"
+          },
+          {
+            "filename": "pydantic_settings-2.15.0-py3-none-any.whl",
+            "bytes": 69413,
+            "sha256": "0ba092c291c94baceb5eff768aa0d56400a457585bc0175925a5a5510303da42"
+          },
+          {
+            "filename": "pydantic-2.13.5-py3-none-any.whl",
+            "bytes": 472589,
+            "sha256": "346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73"
+          },
+          {
+            "filename": "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+            "bytes": 229892,
+            "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
+          },
+          {
+            "filename": "python_dotenv-1.2.3-py3-none-any.whl",
+            "bytes": 22780,
+            "sha256": "904552145e8bfed22162c09dab1c2b9b54fefa7b23ba780f4f26ca0316b0f0d9"
+          },
+          {
+            "filename": "pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 807870,
+            "sha256": "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc"
+          },
+          {
+            "filename": "referencing-0.37.0-py3-none-any.whl",
+            "bytes": 26766,
+            "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231"
+          },
+          {
+            "filename": "regex-2026.9.10-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 804587,
+            "sha256": "2e67f8843f0e4b931f1fa860bf3bbe4134b714c0155cc5c7c0d7ea450230aae0"
+          },
+          {
+            "filename": "requests-2.34.2-py3-none-any.whl",
+            "bytes": 73075,
+            "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0"
+          },
+          {
+            "filename": "rpds_py-2026.6.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            "bytes": 366189,
+            "sha256": "ecabd69db66de867690f9797f2f8fa27ba501bbc24540cbdbdc649cd15888ba6"
+          },
+          {
+            "filename": "s3transfer-0.19.2-py3-none-any.whl",
+            "bytes": 90216,
+            "sha256": "d8168eccca828cbb2cd573675333f3bddd254313a9c42494b84c76b539e8ba25"
+          },
+          {
+            "filename": "six-1.17.0-py2.py3-none-any.whl",
+            "bytes": 11050,
+            "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
+          },
+          {
+            "filename": "sniffio-1.3.1-py3-none-any.whl",
+            "bytes": 10235,
+            "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
+          },
+          {
+            "filename": "tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+            "bytes": 1204197,
+            "sha256": "7896eea257fe497a2b7134474d909156c6744ce8da35bce88011a960e008aa0d"
+          },
+          {
+            "filename": "tokenizers-0.23.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            "bytes": 3386843,
+            "sha256": "41c2f84d172449b4dadb9cdc508e3e364076613c35b16e76ecfe47a60d1e3305"
+          },
+          {
+            "filename": "tqdm-4.70.1-py3-none-any.whl",
+            "bytes": 80199,
+            "sha256": "c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73"
+          },
+          {
+            "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+            "bytes": 45571,
+            "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+          },
+          {
+            "filename": "typing_inspection-0.4.4-py3-none-any.whl",
+            "bytes": 14750,
+            "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
+          },
+          {
+            "filename": "urllib3-2.7.0-py3-none-any.whl",
+            "bytes": 131087,
+            "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
+          },
+          {
+            "filename": "yarl-1.24.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 109835,
+            "sha256": "f08c7513ecef5aad65687bfdf6bc601ae9fccd04a42904501f8f7141abad9eb9"
+          },
+          {
+            "filename": "zipp-4.1.0-py3-none-any.whl",
+            "bytes": 10238,
+            "sha256": "25ad4e16390cd314347dd8f1de67a2ac538ae658ed4ab9db16029c07c188e97f"
+          }
+        ]
+      },
+      "size": {
+        "installed_before_first_run": {
+          "logical_bytes": 166520945
+        },
+        "installed_after_first_run": {
+          "logical_bytes": 185293364
+        },
+        "first_run_logical_delta_bytes": 18772419
+      }
+    },
+    "status": "ok"
+  }
+}
