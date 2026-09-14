@@ -22,9 +22,9 @@ jobs:
       - uses: ./.github/actions/setup-node-workspace
         with:
           build-cli: "false"
+      - run: pnpm build
       - run: pnpm check
       - run: pnpm test
-      - run: pnpm build
       - run: pnpm schema:check
       - run: pnpm bench plan --versions 1.102.0rc1 --selection all
       - name: Check shell scripts
