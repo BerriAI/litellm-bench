@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/annotations.schema.json",
+  "$ref": "#/$defs/AnnotationDocument",
+  "$defs": {
+    "AnnotationSource": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "url": {
+          "type": "string",
+          "allOf": [
+            {
+              "pattern": "^https?:\\/\\/[^\\s]+$",
+              "description": "an HTTP or HTTPS URL",
+              "format": "uri"
+            }
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "BenchmarkAnnotation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "benchmark_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "introduced_in": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "metric_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnnotationSource"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "benchmark_id",
+        "introduced_in",
+        "title",
+        "explanation",
+        "sources"
+      ],
+      "additionalProperties": false
+    },
+    "AnnotationDocument": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "enum": [
+            "../schemas/current/annotations.schema.json"
+          ]
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BenchmarkAnnotation"
+          }
+        }
+      },
+      "required": [
+        "annotations"
+      ],
+      "additionalProperties": false,
+      "title": "LiteLLM benchmark annotations"
+    }
+  }
+}

@@ -1,0 +1,512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/benchmark.schema.json",
+  "$ref": "#/$defs/BenchmarkDefinition",
+  "$defs": {
+    "OutputMetricDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "better": {
+          "type": "string",
+          "enum": [
+            "higher",
+            "lower",
+            "neutral"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "unit",
+        "better"
+      ],
+      "additionalProperties": false
+    },
+    "ProtocolScenario": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "dimensions"
+      ],
+      "additionalProperties": false
+    },
+    "ProtocolAttempts": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "count_from": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "isolation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "order": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "pair_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "retention": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "trials_per_attempt": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "warmups": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        }
+      },
+      "required": [
+        "count",
+        "count_from"
+      ],
+      "additionalProperties": false
+    },
+    "ProtocolMeasurement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "primary",
+            "secondary",
+            "diagnostic"
+          ]
+        },
+        "better": {
+          "type": "string",
+          "enum": [
+            "higher",
+            "lower",
+            "neutral"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "unit",
+        "role"
+      ],
+      "additionalProperties": false
+    },
+    "ProtocolAnalysis": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "measurement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "additional_measurements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "group_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "pair_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "aggregation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "report": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "measurement",
+        "aggregation"
+      ],
+      "additionalProperties": false
+    },
+    "ProtocolVariant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "MeasurementProtocol": {
+      "type": "object",
+      "properties": {
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "claim_scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "experimental_unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProtocolScenario"
+          }
+        },
+        "attempts": {
+          "$ref": "#/$defs/ProtocolAttempts"
+        },
+        "measurements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProtocolMeasurement"
+          }
+        },
+        "analyses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProtocolAnalysis"
+          }
+        },
+        "validity": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProtocolVariant"
+          }
+        }
+      },
+      "required": [
+        "question",
+        "scenarios",
+        "measurements",
+        "analyses"
+      ],
+      "additionalProperties": false
+    },
+    "DockerRequirements": {
+      "type": "object",
+      "properties": {
+        "architecture": {
+          "type": "string",
+          "enum": [
+            "x86_64",
+            "arm64"
+          ]
+        },
+        "cgroup_version": {
+          "type": "string",
+          "enum": [
+            "2"
+          ]
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "description": "an integer",
+            "allOf": [
+              {
+                "minimum": 1,
+                "description": "a value greater than or equal to 1"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "architecture"
+      ],
+      "additionalProperties": false
+    },
+    "EnvironmentRequirements": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": [
+            "linux",
+            "macos",
+            "windows"
+          ]
+        },
+        "architecture": {
+          "type": "string",
+          "enum": [
+            "x86_64",
+            "arm64"
+          ]
+        },
+        "python": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "uv",
+              "k6"
+            ]
+          }
+        },
+        "host": {
+          "type": "string",
+          "enum": [
+            "existing",
+            "github-hosted"
+          ]
+        },
+        "docker": {
+          "$ref": "#/$defs/DockerRequirements"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BenchmarkJob": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "canonical": {
+          "type": "boolean"
+        },
+        "runner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "requirements": {
+          "$ref": "#/$defs/EnvironmentRequirements"
+        }
+      },
+      "required": [
+        "id",
+        "runner",
+        "config"
+      ],
+      "additionalProperties": false
+    },
+    "BenchmarkDefinition": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "artifact": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "output_metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OutputMetricDefinition"
+          }
+        },
+        "protocol": {
+          "$ref": "#/$defs/MeasurementProtocol"
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BenchmarkJob"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "artifact",
+        "output_metrics",
+        "protocol",
+        "jobs"
+      ],
+      "additionalProperties": false,
+      "title": "LiteLLM benchmark definition"
+    }
+  }
+}

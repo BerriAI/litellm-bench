@@ -1,0 +1,25 @@
+{
+  "name": "litellm-bench-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.4.1",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "bench": "node apps/cli/dist/bin.js",
+    "build": "pnpm -r --if-present build",
+    "catalog:generate": "pnpm --filter @litellm-bench/catalog generate",
+    "check": "pnpm typecheck && pnpm --filter @litellm-bench/catalog generate:check",
+    "schema:check": "pnpm --filter @litellm-bench/contracts schema:check",
+    "schema:generate": "pnpm --filter @litellm-bench/contracts schema:generate",
+    "test": "pnpm -r --if-present test",
+    "test:integration": "pnpm -r --if-present test:integration",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.1",
+    "typescript": "6.0.3",
+    "vitest": "5.0.0"
+  }
+}

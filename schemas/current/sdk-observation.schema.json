@@ -1,0 +1,258 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/sdk-observation.schema.json",
+  "$ref": "#/$defs/SdkRawObservation",
+  "$defs": {
+    "FreshProcessObservation": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "samples_seconds": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "a finite number"
+          }
+        },
+        "minimum_seconds": {
+          "type": "number",
+          "description": "a finite number"
+        },
+        "median_seconds": {
+          "type": "number",
+          "description": "a finite number"
+        },
+        "p95_seconds": {
+          "type": "number",
+          "description": "a finite number"
+        },
+        "maximum_seconds": {
+          "type": "number",
+          "description": "a finite number"
+        }
+      },
+      "required": [
+        "count",
+        "samples_seconds",
+        "minimum_seconds",
+        "median_seconds",
+        "p95_seconds",
+        "maximum_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "DiagnosticProbe": {
+      "type": "object",
+      "properties": {
+        "import_only_seconds": {
+          "type": "number",
+          "description": "a finite number"
+        },
+        "new_module_count": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "peak_rss_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "importtime": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ResolutionObservation": {
+      "type": "object",
+      "properties": {
+        "artifact_count": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "download_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "package_artifact_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "description": "JSON value"
+            }
+          }
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "required": [
+        "artifact_count",
+        "download_bytes",
+        "artifacts"
+      ],
+      "additionalProperties": false
+    },
+    "DirectoryMeasurement": {
+      "type": "object",
+      "properties": {
+        "logical_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "allocated_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        }
+      },
+      "required": [
+        "logical_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "SdkRawObservation": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "timing": {
+          "type": "object",
+          "properties": {
+            "first_ever_process_seconds": {
+              "type": "number",
+              "description": "a finite number"
+            },
+            "warmup_samples_seconds": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "description": "a finite number"
+              }
+            },
+            "fresh_process": {
+              "$ref": "#/$defs/FreshProcessObservation"
+            }
+          },
+          "required": [
+            "first_ever_process_seconds",
+            "warmup_samples_seconds",
+            "fresh_process"
+          ],
+          "additionalProperties": false
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/DiagnosticProbe"
+        },
+        "resolution": {
+          "$ref": "#/$defs/ResolutionObservation"
+        },
+        "size": {
+          "type": "object",
+          "properties": {
+            "installed_before_first_run": {
+              "$ref": "#/$defs/DirectoryMeasurement"
+            },
+            "installed_after_first_run": {
+              "$ref": "#/$defs/DirectoryMeasurement"
+            },
+            "first_run_logical_delta_bytes": {
+              "type": "integer",
+              "description": "an integer"
+            },
+            "first_run_allocated_delta_bytes": {
+              "type": "integer",
+              "description": "an integer"
+            }
+          },
+          "required": [
+            "installed_before_first_run"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "runtime",
+        "diagnostics",
+        "resolution",
+        "size"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

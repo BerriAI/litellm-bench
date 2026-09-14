@@ -1,0 +1,25 @@
+{
+  "name": "@litellm-bench/analysis",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./paired": {
+      "types": "./dist/paired.d.ts",
+      "default": "./dist/paired.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "pnpm typecheck",
+    "test": "pnpm build && node --test dist/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@litellm-bench/contracts": "workspace:*",
+    "@litellm-bench/versions": "workspace:*"
+  }
+}

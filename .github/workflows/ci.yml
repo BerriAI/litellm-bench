@@ -1,0 +1,34 @@
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Formatting (dprint)
+        uses: dprint/check@v2.3
+        with:
+          dprint-version: 0.57.4
+          cache: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm schema:check
+      - run: pnpm bench plan --versions 1.102.0rc1 --selection all
+      - name: Check shell scripts
+        run: find benchmarks -name '*.sh' -print0 | xargs -0 -n1 bash -n

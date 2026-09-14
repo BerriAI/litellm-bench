@@ -1,0 +1,49 @@
+@layer base {
+  :root {
+    color-scheme: light;
+    font-synthesis: none;
+  }
+  body {
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--line-height-body);
+  }
+  h1, h2, h3, p {
+    margin: 0;
+  }
+  h1, h2, h3 {
+    line-height: var(--line-height-heading);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-heading);
+  }
+  h1 {
+    font-size: var(--text-title);
+  }
+  h2 {
+    font-size: var(--text-section);
+  }
+  h3 {
+    font-size: var(--text-lead);
+  }
+  a {
+    color: inherit;
+    text-underline-offset: var(--space-1);
+  }
+  button, input, select {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+  [hidden] {
+    display: none !important;
+  }
+  ::selection {
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-strong);
+  }
+}

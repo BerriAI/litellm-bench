@@ -1,0 +1,19 @@
+{
+  "$schema": "../schemas/current/annotations.schema.json",
+  "annotations": [
+    {
+      "id": "example-import-improvement",
+      "benchmark_id": "sdk-import-time",
+      "introduced_in": "v1.102.0-rc.1",
+      "metric_id": "import.median",
+      "title": "Example import-time improvement",
+      "explanation": "Illustrative annotation; replace this text and source with verified details.",
+      "sources": [
+        {
+          "label": "Example evidence",
+          "url": "https://example.com/change"
+        }
+      ]
+    }
+  ]
+}

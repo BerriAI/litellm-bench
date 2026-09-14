@@ -1,0 +1,54 @@
+{
+  "name": "@litellm-bench/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./annotations": {
+      "types": "./dist/annotations.d.ts",
+      "default": "./dist/annotations.js"
+    },
+    "./identity": {
+      "types": "./dist/identity.d.ts",
+      "default": "./dist/identity.js"
+    },
+    "./metadata": {
+      "types": "./dist/metadata.d.ts",
+      "default": "./dist/metadata.js"
+    },
+    "./proxy": {
+      "types": "./dist/proxy.d.ts",
+      "default": "./dist/proxy.js"
+    },
+    "./results": {
+      "types": "./dist/results.d.ts",
+      "default": "./dist/results.js"
+    },
+    "./sdk": {
+      "types": "./dist/sdk.d.ts",
+      "default": "./dist/sdk.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "pnpm typecheck",
+    "schema:check": "vitest run src/schema-documents.test.ts",
+    "schema:generate": "pnpm build && node dist/generate-schemas.js",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-rc.115",
+    "@noble/hashes": "2.0.1",
+    "canonicalize": "2.1.0",
+    "effect": "4.0.0-rc.115"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.0-rc.115",
+    "vitest": "5.0.0"
+  }
+}

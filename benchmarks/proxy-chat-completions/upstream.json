@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/current/upstream.schema.json",
+  "version": 2,
+  "operations": [
+    {
+      "id": "nonstream-chat-completion",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [{ "role": "user", "content": "Hello" }],
+        "stream": false
+      },
+      "body_match": "exact",
+      "expect_headers": {
+        "authorization": "Bearer sk-mock",
+        "content-type": "application/json"
+      },
+      "response": {
+        "kind": "json",
+        "timing": { "response_delay_ms": 0 },
+        "body": {
+          "id": "chatcmpl-mock",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "bench-model",
+          "choices": [
+            {
+              "index": 0,
+              "message": { "role": "assistant", "content": "mock chat response" },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": { "prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2 }
+        }
+      }
+    }
+  ]
+}

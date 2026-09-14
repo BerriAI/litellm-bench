@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/sdk-spec.schema.json",
+  "$ref": "#/$defs/SdkBenchmarkSpec",
+  "$defs": {
+    "SdkSubject": {
+      "type": "object",
+      "properties": {
+        "requirement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "distribution": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "requirement",
+        "distribution"
+      ],
+      "additionalProperties": false
+    },
+    "SdkRuntime": {
+      "type": "object",
+      "properties": {
+        "python": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "platform": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "python"
+      ],
+      "additionalProperties": false
+    },
+    "SdkWorkload": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "name",
+        "statement"
+      ],
+      "additionalProperties": false
+    },
+    "SdkMeasurements": {
+      "type": "object",
+      "properties": {
+        "warmups": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "samples": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "timing": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "boolean"
+        },
+        "importtime": {
+          "type": "boolean"
+        },
+        "network": {
+          "type": "boolean"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        }
+      },
+      "required": [
+        "warmups",
+        "samples",
+        "timing",
+        "diagnostics",
+        "importtime",
+        "network",
+        "timeout_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "SdkResolver": {
+      "type": "object",
+      "properties": {
+        "index_url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "extra_index_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "find_links": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "binary_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "extra_index_urls",
+        "find_links",
+        "binary_only"
+      ],
+      "additionalProperties": false
+    },
+    "SdkBenchmarkSpec": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/SdkSubject"
+        },
+        "runtime": {
+          "$ref": "#/$defs/SdkRuntime"
+        },
+        "workload": {
+          "$ref": "#/$defs/SdkWorkload"
+        },
+        "measurements": {
+          "$ref": "#/$defs/SdkMeasurements"
+        },
+        "resolver": {
+          "$ref": "#/$defs/SdkResolver"
+        },
+        "environment": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "subject",
+        "runtime",
+        "workload",
+        "measurements",
+        "resolver",
+        "environment",
+        "profile"
+      ],
+      "additionalProperties": false,
+      "title": "LiteLLM SDK benchmark specification"
+    }
+  }
+}

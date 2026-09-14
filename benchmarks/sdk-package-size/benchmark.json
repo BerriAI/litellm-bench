@@ -1,0 +1,127 @@
+{
+  "$schema": "../../schemas/current/benchmark.schema.json",
+  "id": "sdk-package-size",
+  "label": "Clean LiteLLM package size",
+  "kind": "sdk",
+  "artifact": "sdk",
+  "output_metrics": [
+    {
+      "id": "package.wheel",
+      "unit": "MiB",
+      "better": "lower"
+    },
+    {
+      "id": "package.download",
+      "unit": "MiB",
+      "better": "lower"
+    },
+    {
+      "id": "package.installed",
+      "unit": "MiB",
+      "better": "lower"
+    },
+    {
+      "id": "package.artifacts",
+      "unit": "artifacts",
+      "better": "lower"
+    }
+  ],
+  "protocol": {
+    "question": "How large are the LiteLLM wheel, resolved wheel-only dependency closure, and files installed from that closure?",
+    "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Installed logical size covers every regular file and symlink named by installed wheel RECORDs, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
+    "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
+    "scenarios": [
+      {
+        "id": "base-install",
+        "label": "Base LiteLLM installation",
+        "dimensions": {
+          "binary_only": true,
+          "extras": []
+        }
+      }
+    ],
+    "measurements": [
+      {
+        "id": "package.wheel",
+        "label": "LiteLLM wheel",
+        "unit": "MiB",
+        "role": "primary",
+        "better": "lower"
+      },
+      {
+        "id": "package.download",
+        "label": "Dependency download closure",
+        "unit": "MiB",
+        "role": "secondary",
+        "better": "lower"
+      },
+      {
+        "id": "package.installed",
+        "label": "Installed RECORD footprint before import",
+        "unit": "MiB",
+        "role": "secondary",
+        "better": "lower"
+      },
+      {
+        "id": "package.artifacts",
+        "label": "Downloaded artifact count",
+        "unit": "artifacts",
+        "role": "diagnostic",
+        "better": "lower"
+      }
+    ],
+    "analyses": [
+      {
+        "id": "clean_install_sizes",
+        "label": "Clean resolution and installation sizes",
+        "measurement": "package.wheel",
+        "additional_measurements": [
+          "package.download",
+          "package.installed",
+          "package.artifacts"
+        ],
+        "scenarios": [
+          "base-install"
+        ],
+        "aggregation": "exact byte counts converted to MiB for display"
+      }
+    ],
+    "validity": {
+      "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
+      "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
+      "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
+    }
+  },
+  "jobs": [
+    {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "requirements": {
+        "python": "3.12.10",
+        "tools": ["uv"]
+      },
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": false,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        },
+        "resolver": {
+          "extra_index_urls": [],
+          "find_links": [],
+          "binary_only": true
+        }
+      }
+    }
+  ]
+}

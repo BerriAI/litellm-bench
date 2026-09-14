@@ -1,0 +1,26 @@
+{
+  "$schema": "../../schemas/current/upstream.schema.json",
+  "version": 2,
+  "operations": [
+    {
+      "id": "ocr",
+      "operation": "ocr",
+      "method": "POST",
+      "path": "/v1/ocr",
+      "expect": {
+        "model": "mistral-ocr-latest",
+        "document": { "type": "image_url" }
+      },
+      "png_fields": ["document.image_url"],
+      "response": {
+        "kind": "json",
+        "timing": { "response_delay_ms": 0 },
+        "body": {
+          "model": "mistral-ocr-latest",
+          "pages": [{ "index": 0, "markdown": "mock OCR response", "images": [] }],
+          "usage_info": { "pages_processed": 1 }
+        }
+      }
+    }
+  ]
+}

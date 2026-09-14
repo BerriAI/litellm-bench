@@ -1,0 +1,29 @@
+{
+  "name": "@litellm-bench/proxy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && mkdir -p dist/assets && cp assets/*.js dist/assets/",
+    "check": "pnpm typecheck",
+    "test": "vitest run src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@litellm-bench/contracts": "workspace:*",
+    "@litellm-bench/harness": "workspace:*",
+    "effect": "4.0.0-rc.115"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "4.0.0-rc.115",
+    "@effect/vitest": "4.0.0-rc.115",
+    "@types/node": "26.5.1",
+    "vitest": "5.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+name: Set up k6
+description: Install the checksum-verified k6 2.2.0 Linux x64 release
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        curl -fsSL https://github.com/grafana/k6/releases/download/v2.2.0/k6-v2.2.0-linux-amd64.tar.gz -o "$RUNNER_TEMP/k6-v2.2.0-linux-amd64.tar.gz"
+        curl -fsSL https://github.com/grafana/k6/releases/download/v2.2.0/k6-v2.2.0-checksums.txt -o "$RUNNER_TEMP/k6-checksums.txt"
+        cd "$RUNNER_TEMP"
+        awk '$2 == "k6-v2.2.0-linux-amd64.tar.gz"' k6-checksums.txt > k6-selected-checksum.txt
+        test -s k6-selected-checksum.txt
+        sha256sum --check k6-selected-checksum.txt
+        tar -xzf k6-v2.2.0-linux-amd64.tar.gz
+        echo "$RUNNER_TEMP/k6-v2.2.0-linux-amd64" >> "$GITHUB_PATH"

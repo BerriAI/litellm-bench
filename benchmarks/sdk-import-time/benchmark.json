@@ -1,0 +1,123 @@
+{
+  "$schema": "../../schemas/current/benchmark.schema.json",
+  "id": "sdk-import-time",
+  "label": "Fresh-process LiteLLM import time",
+  "kind": "sdk",
+  "artifact": "sdk",
+  "output_metrics": [
+    {
+      "id": "import.median",
+      "unit": "ms",
+      "better": "lower"
+    },
+    {
+      "id": "import.p95",
+      "unit": "ms",
+      "better": "lower"
+    },
+    {
+      "id": "import.minimum",
+      "unit": "ms",
+      "better": "lower"
+    },
+    {
+      "id": "import.maximum",
+      "unit": "ms",
+      "better": "lower"
+    },
+    {
+      "id": "import.first",
+      "unit": "ms",
+      "better": "lower"
+    }
+  ],
+  "protocol": {
+    "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
+    "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
+    "experimental_unit": "One fresh isolated Python process executing import litellm",
+    "scenarios": [
+      {
+        "id": "root-import",
+        "label": "import litellm",
+        "dimensions": {
+          "statement": "import litellm",
+          "isolated_python": true
+        }
+      }
+    ],
+    "attempts": {
+      "count": 20,
+      "count_from": "measurements.samples",
+      "unit": "fresh-process sample",
+      "warmups": 3,
+      "retention": "Retain every sample in execution order"
+    },
+    "measurements": [
+      {
+        "id": "import_duration_ms",
+        "label": "Fresh-process wall time",
+        "unit": "ms",
+        "role": "primary",
+        "better": "lower"
+      },
+      {
+        "id": "first_import_duration_ms",
+        "label": "First process in the prepared environment",
+        "unit": "ms",
+        "role": "secondary",
+        "better": "lower"
+      }
+    ],
+    "analyses": [
+      {
+        "id": "fresh_import_distribution",
+        "label": "Fresh-process import distribution",
+        "measurement": "import_duration_ms",
+        "group_by": [
+          "scenario"
+        ],
+        "aggregation": "median and nearest-rank p95",
+        "report": [
+          "all_samples",
+          "minimum",
+          "median",
+          "p95",
+          "maximum",
+          "attempt_count"
+        ]
+      }
+    ],
+    "validity": {
+      "trial": "The isolated process must exit successfully",
+      "outliers": "Do not remove samples",
+      "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+    }
+  },
+  "jobs": [
+    {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "requirements": {
+        "python": "3.12",
+        "tools": ["uv"]
+      },
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 3,
+          "samples": 20,
+          "timing": true,
+          "diagnostics": false,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      }
+    }
+  ]
+}

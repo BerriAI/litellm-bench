@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/probe-response.schema.json",
+  "$ref": "#/$defs/PythonProbeResponse",
+  "$defs": {
+    "DiagnosticProbe": {
+      "type": "object",
+      "properties": {
+        "import_only_seconds": {
+          "type": "number",
+          "description": "a finite number"
+        },
+        "new_module_count": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "peak_rss_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "importtime": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PythonProbeResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "ok"
+              ]
+            },
+            "observation": {
+              "$ref": "#/$defs/DiagnosticProbe"
+            }
+          },
+          "required": [
+            "status",
+            "observation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "failed"
+              ]
+            },
+            "error": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "a value with a length of at least 1"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "error"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

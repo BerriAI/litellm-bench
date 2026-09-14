@@ -1,0 +1,178 @@
+name: Record LiteLLM benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "Exact versions/tags, including RC/dev; cannot combine with backfill"
+        type: string
+        required: false
+      backfill_months:
+        description: "Stable releases from last N 30-day months; blank means latest stable"
+        type: string
+        required: false
+      run_note:
+        description: "Optional reason or context stored with every resulting record"
+        type: string
+        required: false
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Validate inputs and plan jobs
+    runs-on: ubuntu-24.04
+    outputs:
+      scope: ${{ steps.plan.outputs.scope }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_jobs: ${{ steps.plan.outputs.has_jobs }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-workspace
+      - id: plan
+        uses: ./.github/actions/plan-benchmarks
+        with:
+          versions: ${{ inputs.versions }}
+          backfill_months: ${{ inputs.backfill_months }}
+          default_branch: ${{ github.event.repository.default_branch }}
+          order_seed: ${{ github.run_id }}
+
+  benchmark:
+    needs: plan
+    if: needs.plan.outputs.has_jobs == 'true'
+    concurrency:
+      group: litellm-bench-campaign-${{ needs.plan.outputs.scope }}
+      cancel-in-progress: true
+    name: Blocked version campaign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - uses: ./.github/actions/setup-node-workspace
+      - uses: ./.github/actions/setup-k6
+        if: contains(needs.plan.outputs.matrix, '"needs_proxy":true')
+      - name: Verify proxy load generator
+        if: contains(needs.plan.outputs.matrix, '"needs_proxy":true')
+        run: k6 version
+      - name: Run every version sequentially on this VM
+        shell: bash
+        env:
+          PYTHONUNBUFFERED: "1"
+          LITELLM_BENCH_HOST: ${{ runner.environment }}
+          CAMPAIGN_PLAN: ${{ needs.plan.outputs.matrix }}
+        run: |
+          status=0
+          mkdir -p data/runs/benchmark-output
+          while IFS= read -r version_plan; do
+            version="$(jq -r '.version' <<<"$version_plan")"
+            position="$(jq -r '.comparison_order.position' <<<"$version_plan")"
+            if ! pnpm bench run-version \
+              --version "$version" \
+              --plan-json "$version_plan" \
+              --output "data/runs/benchmark-output/$position"; then
+              status=1
+            fi
+          done < <(jq -c '.include[]' <<<"$CAMPAIGN_PLAN")
+          exit "$status"
+      - name: Upload result and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-campaign-${{ github.run_id }}-${{ github.run_attempt }}
+          path: data/runs/benchmark-output/
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
+
+  persist:
+    name: Publish LiteLLM ${{ matrix.version }} data
+    concurrency:
+      group: litellm-bench-results-${{ matrix.version }}
+      cancel-in-progress: false
+    needs: [plan, benchmark]
+    if: always() && needs.plan.outputs.has_jobs == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    env:
+      BENCHMARK_RUN_NOTE: ${{ inputs.run_note }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ secrets.LITELLM_BENCH_BOT_TOKEN || github.token }}
+      - uses: ./.github/actions/setup-node-workspace
+      - uses: actions/download-artifact@v5
+        with:
+          name: benchmark-campaign-${{ github.run_id }}-${{ github.run_attempt }}
+          path: collected-results
+      - name: Validate new results and overwrite matching version data
+        run: >-
+          pnpm bench data ingest
+          --input collected-results/${{ matrix.comparison_order.position }}
+          --data data --mode replace-case-version
+      - id: changes
+        name: Detect dataset changes
+        shell: bash
+        run: |
+          git add data
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new records were produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          record_count="$(git diff --cached --name-only -- data/results | wc -l | tr -d ' ')"
+          echo "Updated $record_count result files (including replaced records)." >> "$GITHUB_STEP_SUMMARY"
+      - id: benchmark_job
+        name: Resolve benchmark job URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          job_url="$(
+            gh api \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" \
+              --jq '.jobs[] | select(.name == "Blocked version campaign") | .html_url' |
+              head -n 1
+          )"
+          if [[ -z "$job_url" ]]; then
+            echo "Could not resolve the benchmark job URL." >&2
+            exit 1
+          fi
+          echo "url=$job_url" >> "$GITHUB_OUTPUT"
+      - name: Create or overwrite existing results branch and pull request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
+        with:
+          token: ${{ secrets.LITELLM_BENCH_BOT_TOKEN || github.token }}
+          base: ${{ github.event.repository.default_branch }}
+          branch: bench-results-${{ matrix.version }}
+          add-paths: data/
+          commit-message: "data: record LiteLLM ${{ matrix.version }} benchmarks"
+          title: "data: record LiteLLM ${{ matrix.version }} benchmarks"
+          body: |
+            Automated benchmark evidence generated by the committed harness
+
+            - LiteLLM version: `${{ matrix.version }}`
+            - Benchmark job: ${{ steps.benchmark_job.outputs.url }}
+            - Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Reruns of this version overwrite the version-specific branch's
+            pending data changes and update this PR, including its title and body.
+            Results already on the default branch for the same case and version are
+            replaced by this run, including failed results. Other versions remain unchanged.
+            All benchmarks for this version ran sequentially on the campaign's blocked Ubuntu VM.

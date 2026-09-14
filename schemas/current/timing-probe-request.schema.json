@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/timing-probe-request.schema.json",
+  "$ref": "#/$defs/TimingProbeRequest",
+  "$defs": {
+    "TimingProbeRequest": {
+      "type": "object",
+      "properties": {
+        "python": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "samples": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "output_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "python",
+        "statement",
+        "timeout_seconds",
+        "samples",
+        "output_path"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

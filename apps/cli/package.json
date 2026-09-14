@@ -1,0 +1,44 @@
+{
+  "name": "@litellm-bench/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "litellm-bench": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "pnpm typecheck",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-rc.115",
+    "@litellm-bench/benchmark-proxy-chat-completions": "workspace:*",
+    "@litellm-bench/benchmark-proxy-chat-completions-streaming": "workspace:*",
+    "@litellm-bench/benchmark-proxy-ocr": "workspace:*",
+    "@litellm-bench/benchmark-sdk-import-footprint": "workspace:*",
+    "@litellm-bench/benchmark-sdk-import-time": "workspace:*",
+    "@litellm-bench/benchmark-sdk-package-size": "workspace:*",
+    "@litellm-bench/catalog": "workspace:*",
+    "@litellm-bench/contracts": "workspace:*",
+    "@litellm-bench/harness": "workspace:*",
+    "@litellm-bench/python-environment": "workspace:*",
+    "@litellm-bench/proxy": "workspace:*",
+    "@litellm-bench/result-store": "workspace:*",
+    "@litellm-bench/suite": "workspace:*",
+    "@litellm-bench/versions": "workspace:*",
+    "effect": "4.0.0-rc.115"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.0-rc.115",
+    "@types/node": "26.5.1",
+    "vitest": "5.0.0"
+  }
+}

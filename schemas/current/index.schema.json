@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/index.schema.json",
+  "$ref": "#/$defs/BenchmarkIndex",
+  "$defs": {
+    "IndexBenchmark": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "Metric": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "value": {
+          "type": "number",
+          "description": "a finite number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "better": {
+          "type": "string",
+          "enum": [
+            "higher",
+            "lower",
+            "neutral"
+          ]
+        },
+        "group": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value",
+        "unit",
+        "better"
+      ],
+      "additionalProperties": false
+    },
+    "IndexRecord": {
+      "type": "object",
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "a lowercase SHA-256 digest"
+        },
+        "comparison_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "a lowercase SHA-256 digest"
+        },
+        "benchmark_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "failed"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metric"
+          }
+        },
+        "case_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "a lowercase SHA-256 digest"
+        },
+        "benchmark_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "created_at": {
+          "type": "string",
+          "allOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$",
+              "description": "an RFC 3339 timestamp with a UTC or numeric offset",
+              "format": "date-time"
+            }
+          ]
+        },
+        "job": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "canonical": {
+          "type": "boolean"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "platform": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "required": [
+        "record_id",
+        "comparison_id",
+        "benchmark_id",
+        "status",
+        "path",
+        "metrics",
+        "case_id",
+        "benchmark_label",
+        "kind",
+        "created_at",
+        "job",
+        "version",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "BenchmarkIndex": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "allOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$",
+              "description": "an RFC 3339 timestamp with a UTC or numeric offset",
+              "format": "date-time"
+            }
+          ]
+        },
+        "record_count": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "benchmarks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IndexBenchmark"
+          }
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IndexRecord"
+          }
+        }
+      },
+      "required": [
+        "generated_at",
+        "record_count",
+        "benchmarks",
+        "records"
+      ],
+      "additionalProperties": false,
+      "title": "LiteLLM benchmark index"
+    }
+  }
+}

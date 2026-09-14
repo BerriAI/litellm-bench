@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/probe-request.schema.json",
+  "$ref": "#/$defs/PythonProbeRequest",
+  "$defs": {
+    "SdkWorkload": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "name",
+        "statement"
+      ],
+      "additionalProperties": false
+    },
+    "PythonProbeRequest": {
+      "type": "object",
+      "properties": {
+        "workload": {
+          "$ref": "#/$defs/SdkWorkload"
+        },
+        "output_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "collect_import_time": {
+          "type": "boolean"
+        },
+        "collect_modules": {
+          "type": "boolean"
+        },
+        "collect_peak_rss": {
+          "type": "boolean"
+        },
+        "collect_network": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "workload",
+        "output_path",
+        "collect_import_time",
+        "collect_modules",
+        "collect_peak_rss",
+        "collect_network"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

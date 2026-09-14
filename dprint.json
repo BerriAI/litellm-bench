@@ -1,0 +1,38 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "lineWidth": 100,
+  "indentWidth": 2,
+  "useTabs": false,
+  "newLineKind": "lf",
+  "includes": [
+    "**/*.{py,pyi,js,jsx,mjs,cjs,ts,tsx,json,jsonc,md,toml,yaml,yml,css,scss,sass,less,html,vue,svelte}"
+  ],
+  "excludes": [
+    "**/pnpm-lock.yaml",
+    "packages/catalog/src/generated.ts",
+    "**/*.generated.json",
+    "**/generated/**/*.json",
+    "**/benchmark-result.json",
+    "**/benchmark-spec.json",
+    "**/pip-report.json",
+    "data/index.json",
+    "data/results/**/*.json",
+    "data/runs/**/*.json",
+    "site/**/*.json"
+  ],
+  "ruff": {
+    "indentStyle": "space",
+    "indentWidth": 4,
+    "lineLength": 100
+  },
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.96.1.wasm",
+    "https://plugins.dprint.dev/json-0.23.0.wasm",
+    "https://plugins.dprint.dev/markdown-0.24.0.wasm",
+    "https://plugins.dprint.dev/toml-0.8.0.wasm",
+    "https://plugins.dprint.dev/ruff-0.8.7.wasm",
+    "https://plugins.dprint.dev/g-plane/malva-v0.16.0.wasm",
+    "https://plugins.dprint.dev/g-plane/markup_fmt-v0.27.3.wasm",
+    "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm"
+  ]
+}

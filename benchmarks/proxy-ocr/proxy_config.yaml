@@ -1,0 +1,9 @@
+model_list:
+  - model_name: mock-ocr
+    litellm_params:
+      model: mistral/mistral-ocr-latest
+      api_key: sk-mock
+      api_base: os.environ/LITELLM_BENCH_UPSTREAM_API_BASE
+
+litellm_settings:
+  request_timeout: 30

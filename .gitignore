@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+site/
+web/.svelte-kit/
+web/dist/
+node_modules/
+apps/*/dist/
+packages/*/dist/
+packages/*/coverage/
+benchmarks/*/dist/
+data/runs/
+
+web/test-results/
+web/playwright-report/

@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/upstream.schema.json",
+  "$ref": "#/$defs/UpstreamFixture",
+  "$defs": {
+    "JsonResponseTiming": {
+      "type": "object",
+      "properties": {
+        "response_delay_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        }
+      },
+      "required": [
+        "response_delay_ms"
+      ],
+      "additionalProperties": false
+    },
+    "SseResponseTiming": {
+      "type": "object",
+      "properties": {
+        "first_event_delay_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "event_interval_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        }
+      },
+      "required": [
+        "first_event_delay_ms",
+        "event_interval_ms"
+      ],
+      "additionalProperties": false
+    },
+    "MockOperation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "generic",
+            "ocr",
+            "chat-completions",
+            "responses"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+            "HEAD"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^\\/",
+          "description": "a string matching the RegExp ^\\/"
+        },
+        "expect": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "optional_expect": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        },
+        "body_match": {
+          "type": "string",
+          "enum": [
+            "subset",
+            "exact"
+          ]
+        },
+        "expect_headers": {
+          "type": "object",
+          "patternProperties": {
+            "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$": {
+              "type": "string",
+              "pattern": "^[^\\r\\n]*$",
+              "description": "a string matching the RegExp ^[^\\r\\n]*$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "png_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "a value with a length of at least 1"
+          }
+        },
+        "response": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "json"
+                  ]
+                },
+                "timing": {
+                  "$ref": "#/$defs/JsonResponseTiming"
+                },
+                "body": {
+                  "description": "JSON value"
+                },
+                "status": {
+                  "type": "integer",
+                  "description": "an integer",
+                  "allOf": [
+                    {
+                      "minimum": 200,
+                      "maximum": 599,
+                      "description": "a value between 200 and 599"
+                    }
+                  ]
+                },
+                "headers": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$": {
+                      "type": "string",
+                      "pattern": "^[^\\r\\n]*$",
+                      "description": "a string matching the RegExp ^[^\\r\\n]*$"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "kind",
+                "timing",
+                "body"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "sse"
+                  ]
+                },
+                "timing": {
+                  "$ref": "#/$defs/SseResponseTiming"
+                },
+                "events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "event": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "a value with a length of at least 1",
+                        "allOf": [
+                          {
+                            "pattern": "^[^\\r\\n]+$",
+                            "description": "a string matching the RegExp ^[^\\r\\n]+$"
+                          }
+                        ]
+                      },
+                      "data": {
+                        "description": "JSON value"
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1,
+                  "description": "a value with a length of at least 1"
+                },
+                "status": {
+                  "type": "integer",
+                  "description": "an integer",
+                  "allOf": [
+                    {
+                      "minimum": 200,
+                      "maximum": 599,
+                      "description": "a value between 200 and 599"
+                    }
+                  ]
+                },
+                "headers": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$": {
+                      "type": "string",
+                      "pattern": "^[^\\r\\n]*$",
+                      "description": "a string matching the RegExp ^[^\\r\\n]*$"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "kind",
+                "timing",
+                "events"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "operation",
+        "method",
+        "path",
+        "expect",
+        "response"
+      ],
+      "additionalProperties": false
+    },
+    "UpstreamFixture": {
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "version": {
+          "type": "number",
+          "enum": [
+            2
+          ]
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MockOperation"
+          },
+          "minItems": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "version",
+        "operations"
+      ],
+      "additionalProperties": false,
+      "title": "LiteLLM upstream fixture"
+    }
+  }
+}

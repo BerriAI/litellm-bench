@@ -1,0 +1,65 @@
+name: Plan benchmarks
+description: Validate workflow inputs and build the benchmark job matrix
+
+inputs:
+  versions:
+    description: Exact LiteLLM versions; empty discovers stable releases
+    required: false
+  backfill_months:
+    description: Number of 30-day months of stable releases to discover
+    required: false
+  default_branch:
+    description: Repository default branch
+    required: true
+  order_seed:
+    description: Seed used to shuffle version order
+    required: true
+
+outputs:
+  scope:
+    description: Campaign concurrency scope
+    value: ${{ steps.settings.outputs.scope }}
+  matrix:
+    description: Benchmark job matrix
+    value: ${{ steps.plan.outputs.matrix }}
+  has_jobs:
+    description: Whether the matrix contains benchmark jobs
+    value: ${{ steps.plan.outputs.has_jobs }}
+
+runs:
+  using: composite
+  steps:
+    - id: settings
+      name: Resolve dispatch and schedule defaults
+      shell: bash
+      env:
+        REQUESTED_VERSIONS: ${{ inputs.versions }}
+        BACKFILL_MONTHS: ${{ inputs.backfill_months }}
+        DEFAULT_BRANCH: ${{ inputs.default_branch }}
+      run: |
+        if [[ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]]; then
+          echo "benchmark recording must run from $DEFAULT_BRANCH" >&2
+          exit 2
+        fi
+        scope="$(printf '%s\n%s' "${REQUESTED_VERSIONS:-latest-stable}" "$BACKFILL_MONTHS" | sha256sum | cut -c1-20)"
+        echo "scope=$scope" >> "$GITHUB_OUTPUT"
+    - id: plan
+      name: Build benchmark matrix
+      shell: bash
+      env:
+        REQUESTED_VERSIONS: ${{ inputs.versions }}
+        BACKFILL_MONTHS: ${{ inputs.backfill_months }}
+        ORDER_SEED: ${{ inputs.order_seed }}
+      run: |
+        args=(
+          pnpm bench plan
+          --order-seed "$ORDER_SEED"
+          --github-output "$GITHUB_OUTPUT"
+        )
+        if [[ -n "$REQUESTED_VERSIONS" ]]; then
+          args+=(--versions "$REQUESTED_VERSIONS")
+        fi
+        if [[ -n "$BACKFILL_MONTHS" ]]; then
+          args+=(--backfill-months "$BACKFILL_MONTHS")
+        fi
+        "${args[@]}"

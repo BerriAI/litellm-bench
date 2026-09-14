@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+  - benchmarks/*
+  - web
+allowBuilds:
+  esbuild: true
+overrides:
+  effect: 4.0.0-rc.115
+  "@effect/platform-node": 4.0.0-rc.115
+  "@effect/vitest": 4.0.0-rc.115
+  enhanced-resolve: 5.25.0

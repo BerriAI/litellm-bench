@@ -1,0 +1,1003 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://litellm.ai/schemas/current/proxy-observation.schema.json",
+  "$ref": "#/$defs/ProxyRawObservation",
+  "$defs": {
+    "ClosedLoad": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "closed"
+          ]
+        },
+        "concurrency": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "warmup_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "concurrency",
+        "duration_seconds",
+        "warmup_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "ArrivalLoad": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "fixed"
+          ]
+        },
+        "rate": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "exclusiveMinimum": 0,
+              "description": "a value greater than 0"
+            }
+          ]
+        },
+        "preallocated_vus": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "max_vus": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 1,
+              "description": "a value greater than or equal to 1"
+            }
+          ]
+        },
+        "warmup_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "steady_state": {
+          "type": "object",
+          "properties": {
+            "window_seconds": {
+              "type": "integer",
+              "description": "an integer",
+              "allOf": [
+                {
+                  "minimum": 1,
+                  "description": "a value greater than or equal to 1"
+                }
+              ]
+            },
+            "windows": {
+              "type": "integer",
+              "description": "an integer",
+              "allOf": [
+                {
+                  "minimum": 1,
+                  "description": "a value greater than or equal to 1"
+                }
+              ]
+            },
+            "maximum_cv": {
+              "type": "number",
+              "description": "a finite number",
+              "allOf": [
+                {
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "a value between 0 and 1"
+                }
+              ]
+            }
+          },
+          "required": [
+            "window_seconds",
+            "windows",
+            "maximum_cv"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mode",
+        "rate",
+        "preallocated_vus",
+        "max_vus",
+        "duration_seconds",
+        "warmup_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyObservation": {
+      "type": "object",
+      "properties": {
+        "samples": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "mean_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "p50_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "p95_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "p99_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "max_ms": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        }
+      },
+      "required": [
+        "samples",
+        "mean_ms",
+        "p50_ms",
+        "p95_ms",
+        "p99_ms",
+        "max_ms"
+      ],
+      "additionalProperties": false
+    },
+    "ProxyLoadObservation": {
+      "type": "object",
+      "properties": {
+        "started": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "completed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "successful": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "failed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "dropped": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "interrupted": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "window_completed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "window_successful": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "window_failed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "tail_completed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "tail_successful": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "tail_failed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "warmup_requests": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "warmup_failed": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "measurement_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "drain_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "elapsed_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "exclusiveMinimum": 0,
+              "description": "a value greater than 0"
+            }
+          ]
+        },
+        "completion_rps": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "error_rate": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "maximum": 1,
+              "description": "a value between 0 and 1"
+            }
+          ]
+        },
+        "warmup_stable": {
+          "type": "boolean"
+        },
+        "warmup_cv": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "warmup_window_rps": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "a finite number",
+            "allOf": [
+              {
+                "minimum": 0,
+                "description": "a value greater than or equal to 0"
+              }
+            ]
+          }
+        },
+        "latency": {
+          "$ref": "#/$defs/LatencyObservation"
+        },
+        "ttfb": {
+          "$ref": "#/$defs/LatencyObservation"
+        },
+        "stream_events": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "event_rps": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "errors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "description": "an integer",
+            "allOf": [
+              {
+                "minimum": 0,
+                "description": "a value greater than or equal to 0"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "started",
+        "completed",
+        "successful",
+        "failed",
+        "dropped",
+        "interrupted",
+        "window_completed",
+        "window_successful",
+        "window_failed",
+        "tail_completed",
+        "tail_successful",
+        "tail_failed",
+        "warmup_requests",
+        "warmup_failed",
+        "measurement_seconds",
+        "drain_seconds",
+        "elapsed_seconds",
+        "completion_rps",
+        "error_rate",
+        "errors"
+      ],
+      "additionalProperties": false
+    },
+    "ContainerTelemetry": {
+      "type": "object",
+      "properties": {
+        "image_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "baseline_memory_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "baseline_anon_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "peak_memory_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "loaded_memory_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "loaded_anon_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "idle_memory_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "idle_anon_bytes": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_before_usec": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_after_usec": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_nr_periods_before": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_nr_periods_after": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_nr_throttled_before": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_nr_throttled_after": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_throttled_usec_before": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_throttled_usec_after": {
+          "type": "integer",
+          "description": "an integer",
+          "allOf": [
+            {
+              "minimum": 0,
+              "description": "a value greater than or equal to 0"
+            }
+          ]
+        },
+        "cpu_max": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "cpuset_cpus_effective": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        },
+        "wall_seconds": {
+          "type": "number",
+          "description": "a finite number",
+          "allOf": [
+            {
+              "exclusiveMinimum": 0,
+              "description": "a value greater than 0"
+            }
+          ]
+        },
+        "window": {
+          "type": "string",
+          "minLength": 1,
+          "description": "a value with a length of at least 1"
+        }
+      },
+      "required": [
+        "image_id",
+        "baseline_memory_bytes",
+        "baseline_anon_bytes",
+        "peak_memory_bytes",
+        "loaded_memory_bytes",
+        "loaded_anon_bytes",
+        "idle_memory_bytes",
+        "idle_anon_bytes",
+        "cpu_before_usec",
+        "cpu_after_usec",
+        "cpu_nr_periods_before",
+        "cpu_nr_periods_after",
+        "cpu_nr_throttled_before",
+        "cpu_nr_throttled_after",
+        "cpu_throttled_usec_before",
+        "cpu_throttled_usec_after",
+        "cpu_max",
+        "cpuset_cpus_effective",
+        "wall_seconds",
+        "window"
+      ],
+      "additionalProperties": false
+    },
+    "ProxyRawObservation": {
+      "type": "object",
+      "properties": {
+        "trials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "a value with a length of at least 1"
+              },
+              "scenario": {
+                "type": "string",
+                "minLength": 1,
+                "description": "a value with a length of at least 1"
+              },
+              "variant": {
+                "type": "string",
+                "minLength": 1,
+                "description": "a value with a length of at least 1"
+              },
+              "round": {
+                "type": "integer",
+                "description": "an integer",
+                "allOf": [
+                  {
+                    "minimum": 1,
+                    "description": "a value greater than or equal to 1"
+                  }
+                ]
+              },
+              "load": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/ClosedLoad"
+                  },
+                  {
+                    "$ref": "#/$defs/ArrivalLoad"
+                  }
+                ]
+              },
+              "dimensions": {
+                "type": "object",
+                "additionalProperties": {
+                  "description": "JSON value"
+                }
+              },
+              "client": {
+                "type": "object",
+                "properties": {
+                  "engine": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "a value with a length of at least 1"
+                  },
+                  "exit_code": {
+                    "type": "integer",
+                    "description": "an integer"
+                  },
+                  "result": {
+                    "$ref": "#/$defs/ProxyLoadObservation"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "artifacts": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "a value with a length of at least 1"
+                    }
+                  }
+                },
+                "required": [
+                  "engine",
+                  "exit_code",
+                  "artifacts"
+                ],
+                "additionalProperties": false
+              },
+              "telemetry": {
+                "$ref": "#/$defs/ContainerTelemetry"
+              },
+              "mock_telemetry": {
+                "$ref": "#/$defs/ContainerTelemetry"
+              },
+              "load_generator_telemetry": {
+                "type": "object",
+                "properties": {
+                  "cpu_percent": {
+                    "type": "number",
+                    "description": "a finite number",
+                    "allOf": [
+                      {
+                        "minimum": 0,
+                        "description": "a value greater than or equal to 0"
+                      }
+                    ]
+                  },
+                  "user_seconds": {
+                    "type": "number",
+                    "description": "a finite number",
+                    "allOf": [
+                      {
+                        "minimum": 0,
+                        "description": "a value greater than or equal to 0"
+                      }
+                    ]
+                  },
+                  "system_seconds": {
+                    "type": "number",
+                    "description": "a finite number",
+                    "allOf": [
+                      {
+                        "minimum": 0,
+                        "description": "a value greater than or equal to 0"
+                      }
+                    ]
+                  },
+                  "max_rss_kib": {
+                    "type": "integer",
+                    "description": "an integer",
+                    "allOf": [
+                      {
+                        "minimum": 0,
+                        "description": "a value greater than or equal to 0"
+                      }
+                    ]
+                  },
+                  "cpuset_cpus": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "a value with a length of at least 1"
+                  }
+                },
+                "required": [
+                  "cpu_percent",
+                  "user_seconds",
+                  "system_seconds",
+                  "max_rss_kib"
+                ],
+                "additionalProperties": false
+              },
+              "upstream": {
+                "type": "object",
+                "properties": {
+                  "requests": {
+                    "type": "integer",
+                    "description": "an integer",
+                    "allOf": [
+                      {
+                        "minimum": 0,
+                        "description": "a value greater than or equal to 0"
+                      }
+                    ]
+                  },
+                  "failures": {
+                    "type": "integer",
+                    "description": "an integer",
+                    "allOf": [
+                      {
+                        "minimum": 0,
+                        "description": "a value greater than or equal to 0"
+                      }
+                    ]
+                  },
+                  "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer",
+                      "description": "an integer",
+                      "allOf": [
+                        {
+                          "minimum": 0,
+                          "description": "a value greater than or equal to 0"
+                        }
+                      ]
+                    }
+                  },
+                  "streams": {
+                    "type": "object",
+                    "properties": {
+                      "started": {
+                        "type": "integer",
+                        "description": "an integer",
+                        "allOf": [
+                          {
+                            "minimum": 0,
+                            "description": "a value greater than or equal to 0"
+                          }
+                        ]
+                      },
+                      "completed": {
+                        "type": "integer",
+                        "description": "an integer",
+                        "allOf": [
+                          {
+                            "minimum": 0,
+                            "description": "a value greater than or equal to 0"
+                          }
+                        ]
+                      },
+                      "cancelled": {
+                        "type": "integer",
+                        "description": "an integer",
+                        "allOf": [
+                          {
+                            "minimum": 0,
+                            "description": "a value greater than or equal to 0"
+                          }
+                        ]
+                      },
+                      "failed": {
+                        "type": "integer",
+                        "description": "an integer",
+                        "allOf": [
+                          {
+                            "minimum": 0,
+                            "description": "a value greater than or equal to 0"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "started",
+                      "completed",
+                      "cancelled",
+                      "failed"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "requests",
+                  "failures",
+                  "errors"
+                ],
+                "additionalProperties": false
+              },
+              "error": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "scenario",
+              "variant",
+              "round",
+              "load",
+              "dimensions"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "description": "JSON value"
+          }
+        }
+      },
+      "required": [
+        "trials",
+        "metadata"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
