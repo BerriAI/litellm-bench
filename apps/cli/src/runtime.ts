@@ -3,11 +3,12 @@ import { CliConfig, CliError, CliOutput, Command, GlobalFlag } from "effect/unst
 import { ChildProcessSpawner } from "effect/unstable/process";
 
 import { RunMetadataGenerator, RunnerRegistry } from "@litellm-bench/harness";
+import { ProxyEnvironment } from "@litellm-bench/proxy";
 import { makeCliCommand } from "./commands.js";
 import { BenchmarkCatalog, CliResponse, errorResponse, ExitCode } from "./model.js";
 
 const usage =
-  "Usage: litellm-bench <list | describe | plan | run | run-version | validate | data | schema>";
+  "Usage: litellm-bench <list | describe | plan | run | run-version | smoke | validate | data | schema>";
 
 const cliRuntimeLayer = Layer.mergeAll(
   Stdio.layerTest({}),
@@ -41,7 +42,12 @@ export const runCli = (
 ): Effect.Effect<
   CliResponse,
   never,
-  BenchmarkCatalog | FileSystem.FileSystem | Path.Path | RunnerRegistry | RunMetadataGenerator
+  | BenchmarkCatalog
+  | FileSystem.FileSystem
+  | Path.Path
+  | RunnerRegistry
+  | RunMetadataGenerator
+  | ProxyEnvironment
 > =>
   Effect.gen(function*() {
     const response = yield* Ref.make(errorResponse(ExitCode.UsageError, `${usage}\n`));

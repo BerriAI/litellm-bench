@@ -111,6 +111,7 @@ export const SseFixtureResponse = Schema.Struct({
   kind: Schema.Literal("sse"),
   timing: SseResponseTiming,
   events: Schema.Array(SseEvent).pipe(Schema.check(Schema.isMinLength(1))),
+  max_write_bytes: Schema.optionalKey(PositiveInteger),
   ...ResponseOptions,
 });
 export const FixtureResponse = Schema.Union([JsonFixtureResponse, SseFixtureResponse]);
@@ -137,6 +138,31 @@ export const ProviderFixture = Schema.Struct({
 export const UpstreamFixture = ProviderFixture.annotate({
   identifier: "UpstreamFixture",
   title: "LiteLLM upstream fixture",
+});
+
+export const FixtureProvenance = Schema.Struct({
+  source: Schema.Literals(["synthetic", "recorded"]),
+  generator: NonEmptyString,
+  upstream_version: Schema.optionalKey(NonEmptyString),
+  recorded_at: Schema.optionalKey(NonEmptyString),
+});
+export const ProviderRouteFixture = Schema.Struct({
+  id: NonEmptyString,
+  export: NonEmptyString,
+  purpose: Schema.Literals(["capacity", "conformance"]),
+  modes: Schema.Array(Schema.Literals(["json", "sse"])).pipe(Schema.check(Schema.isMinLength(1))),
+  provenance: FixtureProvenance,
+});
+export const ProviderRouteManifest = Schema.Struct({
+  version: Schema.Literal(1),
+  provider: NonEmptyString,
+  route: FixturePath,
+  fixtures: Schema.Array(ProviderRouteFixture).pipe(Schema.check(Schema.isMinLength(1))),
+}).annotate({ identifier: "ProviderRouteManifest" });
+export type ProviderRouteManifest = typeof ProviderRouteManifest.Type;
+
+export const decodeProviderRouteManifest = Schema.decodeUnknownSync(ProviderRouteManifest, {
+  onExcessProperty: "error",
 });
 
 export const StreamStats = Schema.Struct({

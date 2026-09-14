@@ -1,4 +1,4 @@
-import type { ProxyLoad, ProxyLoadObservation } from "@litellm-bench/contracts/proxy";
+import { ProxyLoad, type ProxyLoadObservation } from "@litellm-bench/contracts/proxy";
 import { Schema } from "effect";
 
 const HttpStatus = Schema.Int.pipe(
@@ -12,6 +12,8 @@ const JsonCheck = Schema.Struct({
   path: Schema.Array(PathSegment),
   value: Schema.Json,
 });
+const Positive = Schema.Finite.pipe(Schema.check(Schema.isGreaterThan(0)));
+const PositiveInteger = Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1)));
 
 export const K6WorkloadDefinition = Schema.Struct({
   request: Schema.Struct({
@@ -109,6 +111,48 @@ export interface ProxyExperiment {
   readonly readinessPath?: string;
   readonly artifactsDirectory: string;
 }
+
+export const ProxyResourcesSchema = Schema.Struct({
+  cpus: Positive,
+  memory: Schema.NonEmptyString,
+  workers: PositiveInteger,
+  idleSeconds: Schema.Finite.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
+  logDriver: Schema.NonEmptyString,
+  proxyCpuSet: Schema.optionalKey(Schema.NonEmptyString),
+  mockCpuSet: Schema.optionalKey(Schema.NonEmptyString),
+  loadGeneratorCpuSet: Schema.optionalKey(Schema.NonEmptyString),
+  mockCpus: Schema.optionalKey(Positive),
+  mockMemory: Schema.optionalKey(Schema.NonEmptyString),
+});
+
+export const ProxyExperimentSchema = Schema.Struct({
+  image: Schema.NonEmptyString,
+  resources: ProxyResourcesSchema,
+  trials: Schema.Array(Schema.Struct({
+    id: Schema.NonEmptyString,
+    scenario: Schema.NonEmptyString,
+    variant: Schema.NonEmptyString,
+    round: PositiveInteger,
+    load: ProxyLoad,
+    workload: Schema.Struct({
+      ...K6WorkloadDefinition.fields,
+      body: Schema.instanceOf(Uint8Array),
+    }),
+    proxyConfigPath: Schema.NonEmptyString,
+    fixturePath: Schema.NonEmptyString,
+    mockImage: Schema.NonEmptyString,
+    mockEnvironment: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+    isolateMeasurementWindow: Schema.optionalKey(Schema.Boolean),
+    bypassProxy: Schema.optionalKey(Schema.Boolean),
+    environment: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+    dimensions: Schema.Record(Schema.String, Schema.Json),
+  })).pipe(Schema.check(Schema.isMinLength(1))),
+  port: Schema.optionalKey(
+    Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 65_535 }))),
+  ),
+  readinessPath: Schema.optionalKey(Schema.NonEmptyString),
+  artifactsDirectory: Schema.NonEmptyString,
+}).annotate({ identifier: "ProxyExperiment" });
 
 export interface ContainerTelemetry {
   readonly imageId: string;

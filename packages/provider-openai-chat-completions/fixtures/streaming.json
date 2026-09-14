@@ -27,6 +27,7 @@
       },
       "response": {
         "kind": "sse",
+        "max_write_bytes": 64,
         "timing": {
           "first_event_delay_ms": 10,
           "event_interval_ms": 1

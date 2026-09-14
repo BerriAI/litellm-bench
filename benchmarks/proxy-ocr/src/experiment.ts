@@ -6,15 +6,32 @@ import {
 import type { ProxyExperiment, ProxyTrialPlan } from "@litellm-bench/proxy";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import type { OcrConfig } from "./config.js";
 import { multipartBody } from "./payload.js";
 import { type ScheduledTrial, trialSchedule } from "./schedule.js";
 import type { OcrScenario } from "./types.js";
 
 type Multipart = ReturnType<typeof multipartBody>;
 
+export interface OcrExperimentConfig {
+  readonly cpus: number;
+  readonly proxy_cpu_set?: string;
+  readonly mock_cpu_set?: string;
+  readonly load_generator_cpu_set?: string;
+  readonly mock_cpus?: number;
+  readonly memory: string;
+  readonly mock_memory?: string;
+  readonly workers: number;
+  readonly mock_image: string;
+  readonly rounds: number;
+  readonly order_seed: string;
+  readonly warmup_seconds: number;
+  readonly duration_seconds: number;
+  readonly idle_seconds: number;
+  readonly log_driver: string;
+}
+
 const buildTrialPlan = (
-  config: typeof OcrConfig.Type,
+  config: OcrExperimentConfig,
   payloads: ReadonlyMap<string, Multipart>,
 ) =>
 ({ scenario, variant, round }: ScheduledTrial): ProxyTrialPlan => {
@@ -70,7 +87,7 @@ const buildTrialPlan = (
 
 export const makeOcrExperiment = (
   context: RunContext,
-  config: typeof OcrConfig.Type,
+  config: OcrExperimentConfig,
   scenarios: readonly OcrScenario[],
   image: string,
 ): ProxyExperiment => {
@@ -82,12 +99,14 @@ export const makeOcrExperiment = (
     artifactsDirectory: context.artifactsDirectory,
     resources: {
       cpus: config.cpus,
-      proxyCpuSet: config.proxy_cpu_set,
-      mockCpuSet: config.mock_cpu_set,
-      loadGeneratorCpuSet: config.load_generator_cpu_set,
-      mockCpus: config.mock_cpus,
+      ...(config.proxy_cpu_set === undefined ? {} : { proxyCpuSet: config.proxy_cpu_set }),
+      ...(config.mock_cpu_set === undefined ? {} : { mockCpuSet: config.mock_cpu_set }),
+      ...(config.load_generator_cpu_set === undefined
+        ? {}
+        : { loadGeneratorCpuSet: config.load_generator_cpu_set }),
+      ...(config.mock_cpus === undefined ? {} : { mockCpus: config.mock_cpus }),
       memory: config.memory,
-      mockMemory: config.mock_memory,
+      ...(config.mock_memory === undefined ? {} : { mockMemory: config.mock_memory }),
       workers: config.workers,
       idleSeconds: config.idle_seconds,
       logDriver: config.log_driver,

@@ -1,0 +1,67 @@
+{
+  "$schema": "../../../schemas/current/upstream.schema.json",
+  "version": 2,
+  "operations": [
+    {
+      "id": "response",
+      "operation": "responses",
+      "method": "POST",
+      "path": "/v1/responses",
+      "expect": {
+        "model": "bench-model"
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "response": {
+        "kind": "json",
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "id": "resp_response",
+          "object": "response",
+          "created_at": 1,
+          "model": "bench-model",
+          "error": null,
+          "incomplete_details": null,
+          "instructions": null,
+          "metadata": {},
+          "parallel_tool_calls": true,
+          "temperature": 1,
+          "tool_choice": "auto",
+          "tools": [],
+          "top_p": 1,
+          "status": "completed",
+          "output": [
+            {
+              "id": "msg_response",
+              "type": "message",
+              "status": "completed",
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "output_text",
+                  "text": "Hello from Responses 🙂",
+                  "annotations": [],
+                  "logprobs": []
+                }
+              ]
+            }
+          ],
+          "usage": {
+            "input_tokens": 1,
+            "input_tokens_details": {
+              "cached_tokens": 0
+            },
+            "output_tokens": 4,
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            },
+            "total_tokens": 5
+          }
+        }
+      }
+    }
+  ]
+}

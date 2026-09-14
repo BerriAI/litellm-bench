@@ -3,19 +3,21 @@ import { expect, it } from "@effect/vitest";
 import { canonicalMistralOcrFixturePath, mistralOcr } from "@litellm-bench/provider-mistral-ocr";
 import {
   canonicalOpenAiChatCompletions,
+  canonicalOpenAiChatCompletionsConformanceFixturePath,
   canonicalOpenAiChatCompletionsFixturePath,
   canonicalOpenAiStreamingChatCompletionsFixturePath,
   canonicalOpenAiStreamingEventCount,
   openAiChatCompletion,
 } from "@litellm-bench/provider-openai-chat-completions";
+import { openAiResponse } from "@litellm-bench/provider-openai-responses";
 import { Effect, Exit, Fiber, FileSystem, Path, Ref, Scope, Stream } from "effect";
 import { TestClock } from "effect/testing";
 import { afterEach, describe } from "vitest";
-import { responses } from "./operations.js";
 import {
   createMockServer,
   decodePngExpectations,
   encodeSse,
+  fragmentBytes,
   isPngDocument,
   matches,
   pacedStream,
@@ -106,13 +108,13 @@ const multi = {
       timing: { firstEventDelayMs: 0, eventIntervalMs: 0 },
       includeUsage: true,
     }),
-    responses({
+    openAiResponse({
       id: "response",
       model: "bench",
       chunks: ["Hello", " world"],
       timing: { responseDelayMs: 0 },
     }),
-    responses({
+    openAiResponse({
       id: "response-stream",
       model: "bench",
       chunks: ["Hello", " world"],
@@ -176,6 +178,13 @@ describe("mock provider", () => {
     );
   });
 
+  it("fragments transport writes without corrupting UTF-8 bytes", () => {
+    const input = new TextEncoder().encode("café 東京 🙂");
+    const fragments = fragmentBytes(input, 3);
+    expect(fragments.every(({ byteLength }) => byteLength <= 3)).toBe(true);
+    expect(Buffer.concat(fragments.map((part) => Buffer.from(part)))).toEqual(Buffer.from(input));
+  });
+
   it("serves JSON responses and records rejection reasons", async () => {
     const server = await start(validateFixture(single));
     expect(
@@ -208,6 +217,18 @@ describe("mock provider", () => {
         detail: "no operation accepts POST /missing",
       },
     });
+  });
+
+  it("serves the Chat Completions conformance profile independently", async () => {
+    const fixture = JSON.parse(
+      await readFile(canonicalOpenAiChatCompletionsConformanceFixturePath, "utf8"),
+    );
+    const server = await start(validateFixture(fixture));
+    for (const operation of fixture.operations) {
+      const response = await server.post("/v1/chat/completions", operation.expect);
+      expect(response.status).toBe(operation.response.status ?? 200);
+    }
+    expect(await server.stats()).toMatchObject({ requests: 6, failures: 0 });
   });
 
   it("rejects overlapping required and optional body fields", () => {

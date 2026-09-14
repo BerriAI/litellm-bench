@@ -13,6 +13,7 @@ import {
 } from "./model.js";
 import { respondWithCatalog, respondWithEffect } from "./responses.js";
 import { makeRunCommand } from "./runs.js";
+import { makeSmokeCommand } from "./smoke.js";
 import { sourceMetadata } from "./source-metadata.js";
 import { makePlanCommand, makeRunVersionCommand } from "./suite.js";
 
@@ -139,6 +140,7 @@ export const makeCliCommand = (respond: CliResponder) =>
         makePlanCommand(respond),
         makeRunCommand(respond),
         makeRunVersionCommand(respond),
+        makeSmokeCommand(respond),
         makeValidateCommand(respond),
         makeDataCommand(respond),
         makeSchemaCommand(respond, path.resolve("schemas/current")),

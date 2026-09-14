@@ -2,7 +2,10 @@
   "name": "@litellm-bench/benchmark-proxy-chat-completions-streaming",
   "private": true,
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./experiment": { "types": "./dist/experiment.d.ts", "default": "./dist/experiment.js" }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "pnpm typecheck",

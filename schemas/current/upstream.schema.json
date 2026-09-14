@@ -211,6 +211,16 @@
                   "minItems": 1,
                   "description": "a value with a length of at least 1"
                 },
+                "max_write_bytes": {
+                  "type": "integer",
+                  "description": "an integer",
+                  "allOf": [
+                    {
+                      "minimum": 1,
+                      "description": "a value greater than or equal to 1"
+                    }
+                  ]
+                },
                 "status": {
                   "type": "integer",
                   "description": "an integer",

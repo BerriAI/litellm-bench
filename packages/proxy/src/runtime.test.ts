@@ -205,6 +205,31 @@ describe("proxy runtime", () => {
     }
   });
 
+  it("rejects explicit undefined fields at the experiment boundary", async () => {
+    const experiment = await temporaryExperiment();
+    const invalid = {
+      ...experiment,
+      resources: { ...experiment.resources, proxyCpuSet: undefined },
+    } as unknown as ProxyExperiment;
+    const error = await Effect.runPromise(validateExperiment(invalid).pipe(Effect.flip));
+    expect(error.operation).toBe("validate experiment");
+  });
+
+  it("rejects CPU pinning on non-Linux hosts before infrastructure setup", async () => {
+    const experiment = await temporaryExperiment();
+    const events: string[] = [];
+    const error = await runLive(
+      runProxyExperiment(
+        fakeDocker(events),
+        { verify: Effect.die("must not verify"), run: () => Effect.die("must not run") },
+        { ...experiment, resources: { ...experiment.resources, proxyCpuSet: "0" } },
+        { host: { platform: "darwin", architecture: "arm64" } },
+      ).pipe(Effect.flip),
+    );
+    expect(error.message).toMatch(/require a Linux host/);
+    expect(events).toEqual([]);
+  });
+
   it("parses cgroup scalar and keyed values strictly", async () => {
     await expect(Effect.runPromise(parseCgroupValue("42\n", "memory.current"))).resolves.toBe(42);
     await expect(Effect.runPromise(parseCgroupValue("anon 21\nfile 8\n", "memory.stat", "anon")))

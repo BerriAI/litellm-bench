@@ -1,4 +1,8 @@
-import type { MockOperation, UpstreamFixture } from "@litellm-bench/contracts";
+import type {
+  MockOperation,
+  ProviderRouteManifest,
+  UpstreamFixture,
+} from "@litellm-bench/contracts";
 import { fileURLToPath } from "node:url";
 
 export interface MistralOcrOptions {
@@ -42,3 +46,16 @@ export const canonicalMistralOcr = {
   model: "mistral-ocr-latest",
   markdown: "mock OCR response",
 } as const;
+
+export const mistralOcrManifest = {
+  version: 1,
+  provider: "mistral",
+  route: "/v1/ocr",
+  fixtures: [{
+    id: "canonical",
+    export: "./fixture",
+    purpose: "capacity",
+    modes: ["json"],
+    provenance: { source: "synthetic", generator: "scripts/generate-fixtures.mjs" },
+  }],
+} as const satisfies ProviderRouteManifest;

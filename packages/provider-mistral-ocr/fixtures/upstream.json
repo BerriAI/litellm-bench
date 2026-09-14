@@ -9,17 +9,31 @@
       "path": "/v1/ocr",
       "expect": {
         "model": "mistral-ocr-latest",
-        "document": { "type": "image_url" }
+        "document": {
+          "type": "image_url"
+        }
       },
-      "png_fields": ["document.image_url"],
+      "png_fields": [
+        "document.image_url"
+      ],
       "body_match": "exact",
       "response": {
         "kind": "json",
-        "timing": { "response_delay_ms": 0 },
+        "timing": {
+          "response_delay_ms": 0
+        },
         "body": {
           "model": "mistral-ocr-latest",
-          "pages": [{ "index": 0, "markdown": "mock OCR response", "images": [] }],
-          "usage_info": { "pages_processed": 1 }
+          "pages": [
+            {
+              "index": 0,
+              "markdown": "mock OCR response",
+              "images": []
+            }
+          ],
+          "usage_info": {
+            "pages_processed": 1
+          }
         }
       }
     }

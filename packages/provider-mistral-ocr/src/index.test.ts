@@ -1,7 +1,12 @@
-import { decodeUpstreamFixture } from "@litellm-bench/contracts";
+import { decodeProviderRouteManifest, decodeUpstreamFixture } from "@litellm-bench/contracts";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { canonicalMistralOcr, canonicalMistralOcrFixturePath, mistralOcrFixture } from "./index.js";
+import {
+  canonicalMistralOcr,
+  canonicalMistralOcrFixturePath,
+  mistralOcrFixture,
+  mistralOcrManifest,
+} from "./index.js";
 
 describe("Mistral OCR provider contract", () => {
   it("keeps the canonical fixture equivalent to its synthetic source", () => {
@@ -13,5 +18,9 @@ describe("Mistral OCR provider contract", () => {
         timing: { responseDelayMs: 0 },
       }).operations,
     );
+  });
+
+  it("declares route and fixture provenance", () => {
+    expect(decodeProviderRouteManifest(mistralOcrManifest).route).toBe("/v1/ocr");
   });
 });

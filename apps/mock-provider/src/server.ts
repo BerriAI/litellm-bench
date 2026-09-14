@@ -207,8 +207,25 @@ export const encodeSse = (event: { readonly event?: string; readonly data: Json 
 
 interface CompiledOperation {
   readonly fixture: MockOperation;
-  readonly bytes: readonly Uint8Array[];
+  readonly bytes: readonly (readonly Uint8Array[])[];
 }
+
+export const fragmentBytes = (bytes: Uint8Array, maximum?: number): readonly Uint8Array[] => {
+  if (maximum === undefined || bytes.byteLength <= maximum) return [bytes];
+  const fragments: Uint8Array[] = [];
+  for (let offset = 0; offset < bytes.byteLength; offset += maximum) {
+    fragments.push(bytes.subarray(offset, Math.min(offset + maximum, bytes.byteLength)));
+  }
+  return fragments;
+};
+
+const compileResponse = (fixture: MockOperation): readonly (readonly Uint8Array[])[] => {
+  const response = fixture.response;
+  if (response.kind === "json") return [[Buffer.from(JSON.stringify(response.body))]];
+  return response.events.map((event) =>
+    fragmentBytes(Buffer.from(encodeSse(event)), response.max_write_bytes)
+  );
+};
 
 export class OperationRegistry extends Context.Service<OperationRegistry, {
   readonly select: (
@@ -227,9 +244,7 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
         try: () =>
           decodeUpstreamFixture(input).map((fixture): CompiledOperation => ({
             fixture,
-            bytes: fixture.response.kind === "json"
-              ? [Buffer.from(JSON.stringify(fixture.response.body))]
-              : fixture.response.events.map((event) => Buffer.from(encodeSse(event))),
+            bytes: compileResponse(fixture),
           })),
         catch: (cause) => new FixtureError({ message: "invalid upstream fixture", cause }),
       });
@@ -357,15 +372,16 @@ const streamStat = (stats: Ref.Ref<MockStats>, key: keyof typeof emptyStreams) =
 
 /** Delay the first event separately; pacing applies between events, never after the terminal event. */
 export const pacedStream = (
-  bytes: readonly Uint8Array[],
+  groups: readonly (Uint8Array | readonly Uint8Array[])[],
   timing: { readonly first_event_delay_ms: number; readonly event_interval_ms: number },
 ) =>
-  Stream.fromIterable(bytes).pipe(
-    Stream.mapEffect((bytes, index) =>
+  Stream.fromIterable(groups).pipe(
+    Stream.mapEffect((group, index) =>
       Effect.sleep(
         index === 0 ? timing.first_event_delay_ms : timing.event_interval_ms,
-      ).pipe(Effect.as(bytes))
+      ).pipe(Effect.as(group instanceof Uint8Array ? [group] : group))
     ),
+    Stream.flatMap(Stream.fromIterable),
   );
 
 const application = Effect.gen(function*() {
@@ -393,7 +409,7 @@ const application = Effect.gen(function*() {
             const options = { status: response.status ?? 200, headers: response.headers ?? {} };
             if (response.kind === "json") {
               yield* Effect.sleep(response.timing.response_delay_ms);
-              return HttpServerResponse.uint8Array(bytes[0]!, {
+              return HttpServerResponse.uint8Array(bytes[0]![0]!, {
                 ...options,
                 contentType: "application/json",
               });

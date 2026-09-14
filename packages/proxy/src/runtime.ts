@@ -5,7 +5,7 @@ import {
   ProxyRawObservation,
   type ProxyRawObservation as ProxyRawObservationType,
 } from "@litellm-bench/contracts";
-import { Clock, Context, Data, Effect, FileSystem, Layer, Path, type Scope } from "effect";
+import { Clock, Context, Data, Effect, FileSystem, Layer, Path, Schema, type Scope } from "effect";
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
@@ -26,7 +26,12 @@ import {
   type DockerError,
 } from "./docker.js";
 import { K6, type K6Shape } from "./k6.js";
-import type { K6Measurement, ProxyExperiment, ProxyTrialPlan } from "./models.js";
+import {
+  type K6Measurement,
+  type ProxyExperiment,
+  ProxyExperimentSchema,
+  type ProxyTrialPlan,
+} from "./models.js";
 
 const mockAlias = "bench-upstream";
 
@@ -115,6 +120,17 @@ const cpuSetIds = (set: string): readonly number[] =>
 export const validateExperiment = (
   experiment: ProxyExperiment,
 ): Effect.Effect<void, ProxyRuntimeError> => {
+  try {
+    Schema.decodeUnknownSync(ProxyExperimentSchema, { onExcessProperty: "error" })(experiment);
+  } catch (cause) {
+    return Effect.fail(
+      new ProxyRuntimeError({
+        operation: "validate experiment",
+        message: errorMessage(cause),
+        cause,
+      }),
+    );
+  }
   if (experiment.trials.length === 0) {
     return Effect.fail(
       new ProxyRuntimeError({
@@ -202,7 +218,12 @@ const waitForMock = (container: DockerContainer, options: ProxyRuntimeOptions) =
         "node",
         "-e",
         "require('net').connect(8080,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))",
-      ], { timeoutMs: 2_000 }).pipe(
+      ], { timeoutMs: 2_000, allowFailure: true }).pipe(
+        Effect.flatMap((output) =>
+          output.exitCode === 0
+            ? Effect.void
+            : Effect.fail(new Error(`probe exited ${output.exitCode}`))
+        ),
         Effect.mapError((cause) => runtimeError("wait for mock", cause)),
       ),
   );
@@ -796,6 +817,20 @@ export const runProxyExperiment = (
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     yield* validateExperiment(experiment);
+    const executionPlatform = options.host?.platform ?? process.platform;
+    if (
+      executionPlatform !== "linux"
+      && (
+        experiment.resources.proxyCpuSet !== undefined
+        || experiment.resources.mockCpuSet !== undefined
+        || experiment.resources.loadGeneratorCpuSet !== undefined
+      )
+    ) {
+      return yield* new ProxyRuntimeError({
+        operation: "validate experiment",
+        message: `CPU-pinned proxy experiments require a Linux host; found ${executionPlatform}`,
+      });
+    }
     const dockerMetadata = yield* docker.verify.pipe(
       Effect.mapError((cause) => runtimeError("verify Docker", cause)),
     );

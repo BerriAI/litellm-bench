@@ -13,6 +13,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "pnpm typecheck",
+    "fixtures:generate": "pnpm build && node scripts/generate-fixtures.mjs",
+    "fixtures:check": "pnpm build && node scripts/generate-fixtures.mjs --check",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json"
   },

@@ -8,7 +8,35 @@ import {
 import type { ProxyExperiment, ProxyTrialPlan } from "@litellm-bench/proxy";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import type { StreamingChatConfig } from "./config.js";
+export interface StreamingChatExperimentConfig {
+  readonly rounds: number;
+  readonly arrival_rates: readonly number[];
+  readonly duration_seconds: number;
+  readonly warmup_seconds: number;
+  readonly steady_state?: {
+    readonly window_seconds: number;
+    readonly windows: number;
+    readonly maximum_cv: number;
+  };
+  readonly preallocated_vus: number;
+  readonly max_vus: number;
+  readonly calibration_rate_multiplier: number;
+  readonly mock_image: string;
+  readonly resources: {
+    readonly cpus: number;
+    readonly memory: string;
+    readonly workers: number;
+    readonly idle_seconds: number;
+    readonly log_driver: string;
+    readonly mock_cpus?: number;
+    readonly mock_memory?: string;
+    readonly cpu_sets?: {
+      readonly proxy: string;
+      readonly mock: string;
+      readonly load_generator: string;
+    };
+  };
+}
 
 const shuffled = <T>(values: readonly T[], seed: string): T[] => {
   const output = [...values];
@@ -48,7 +76,7 @@ const streamExpectation = {
 
 export const makeStreamingChatExperiment = (
   context: RunContext,
-  config: typeof StreamingChatConfig.Type,
+  config: StreamingChatExperimentConfig,
   image: string,
 ): ProxyExperiment => {
   const body = (model: string) =>
@@ -69,7 +97,7 @@ export const makeStreamingChatExperiment = (
     max_vus: config.max_vus,
     duration_seconds: config.duration_seconds,
     warmup_seconds: config.warmup_seconds,
-    steady_state: config.steady_state,
+    ...(config.steady_state === undefined ? {} : { steady_state: config.steady_state }),
   });
   const common = { proxyConfigPath, fixturePath, mockImage: config.mock_image };
   const workload = (payload: Uint8Array, direct = false) => ({
@@ -137,11 +165,19 @@ export const makeStreamingChatExperiment = (
       workers: config.resources.workers,
       idleSeconds: config.resources.idle_seconds,
       logDriver: config.resources.log_driver,
-      proxyCpuSet: config.resources.cpu_sets.proxy,
-      mockCpuSet: config.resources.cpu_sets.mock,
-      loadGeneratorCpuSet: config.resources.cpu_sets.load_generator,
-      mockCpus: config.resources.mock_cpus,
-      mockMemory: config.resources.mock_memory,
+      ...(config.resources.cpu_sets?.proxy === undefined
+        ? {}
+        : { proxyCpuSet: config.resources.cpu_sets.proxy }),
+      ...(config.resources.cpu_sets?.mock === undefined
+        ? {}
+        : { mockCpuSet: config.resources.cpu_sets.mock }),
+      ...(config.resources.cpu_sets?.load_generator === undefined
+        ? {}
+        : { loadGeneratorCpuSet: config.resources.cpu_sets.load_generator }),
+      ...(config.resources.mock_cpus === undefined ? {} : { mockCpus: config.resources.mock_cpus }),
+      ...(config.resources.mock_memory === undefined
+        ? {}
+        : { mockMemory: config.resources.mock_memory }),
     },
     trials,
   };

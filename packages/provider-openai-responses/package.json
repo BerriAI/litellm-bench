@@ -1,16 +1,12 @@
 {
-  "name": "@litellm-bench/provider-openai-chat-completions",
+  "name": "@litellm-bench/provider-openai-responses",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./fixture": "./fixtures/nonstream.json",
-    "./fixture-streaming": "./fixtures/streaming.json",
-    "./fixture-conformance": "./fixtures/conformance.json"
+    "./fixture-streaming": "./fixtures/streaming.json"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -20,12 +16,6 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json"
   },
-  "dependencies": {
-    "@litellm-bench/contracts": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/node": "26.5.1",
-    "typescript": "6.0.3",
-    "vitest": "5.0.0"
-  }
+  "dependencies": { "@litellm-bench/contracts": "workspace:*" },
+  "devDependencies": { "@types/node": "26.5.1", "typescript": "6.0.3", "vitest": "5.0.0" }
 }

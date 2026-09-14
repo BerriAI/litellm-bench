@@ -2,7 +2,6 @@ import {
   type CommandOutput,
   ProcessExecutor,
   type ProcessExecutorShape,
-  ProcessFailure,
 } from "@litellm-bench/harness";
 import { Context, Data, Effect, FileSystem, Layer, Schema, type Scope } from "effect";
 
@@ -51,7 +50,7 @@ export interface DockerContainer {
   readonly name: string;
   readonly exec: (
     args: ReadonlyArray<string>,
-    options?: { readonly timeoutMs?: number },
+    options?: { readonly timeoutMs?: number; readonly allowFailure?: boolean },
   ) => Effect.Effect<CommandOutput, DockerError>;
 }
 
@@ -188,8 +187,7 @@ export const makeDockerEngine = (
     args: ReadonlyArray<string>,
     timeoutMs: number,
   ): Effect.Effect<CommandOutput, DockerError> =>
-    executor.execute({ executable: "docker", args, cwd, timeoutMs }).pipe(
-      Effect.catchTag("ProcessFailure", (error: ProcessFailure) => Effect.succeed(error.output)),
+    executor.execute({ executable: "docker", args, cwd, timeoutMs, allowFailure: true }).pipe(
       Effect.mapError((cause) =>
         new DockerError({
           operation: args.slice(0, 2).join(" "),
@@ -243,7 +241,10 @@ export const makeDockerEngine = (
           {
             name: spec.name,
             exec: (args, options) =>
-              run(["exec", spec.name, ...args], options?.timeoutMs ?? 30_000),
+              (options?.allowFailure === true ? runAllowFailure : run)(
+                ["exec", spec.name, ...args],
+                options?.timeoutMs ?? 30_000,
+              ),
           } satisfies DockerContainer,
         )),
         () => cleanupContainer(spec),

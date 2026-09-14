@@ -1,0 +1,283 @@
+{
+  "$schema": "../../../schemas/current/upstream.schema.json",
+  "version": 2,
+  "operations": [
+    {
+      "id": "conformance-short-text",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "conformance:short-text"
+          }
+        ]
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "body_match": "exact",
+      "response": {
+        "kind": "json",
+        "status": 200,
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "id": "chatcmpl-short",
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "ok"
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "total_tokens": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "conformance-multiple-choices",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "conformance:multiple-choices"
+          }
+        ]
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "body_match": "exact",
+      "response": {
+        "kind": "json",
+        "status": 200,
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "id": "chatcmpl-multi",
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "first"
+              },
+              "finish_reason": "stop"
+            },
+            {
+              "index": 1,
+              "message": {
+                "role": "assistant",
+                "content": "second"
+              },
+              "finish_reason": "length"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 1,
+            "completion_tokens": 2,
+            "total_tokens": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "conformance-tool-call",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "conformance:tool-call"
+          }
+        ]
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "body_match": "exact",
+      "response": {
+        "kind": "json",
+        "status": 200,
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "id": "chatcmpl-tool",
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": null,
+                "tool_calls": [
+                  {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                      "name": "lookup",
+                      "arguments": "{\"city\":\"東京\"}"
+                    }
+                  }
+                ]
+              },
+              "finish_reason": "tool_calls"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 2,
+            "completion_tokens": 4,
+            "total_tokens": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "conformance-refusal",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "conformance:refusal"
+          }
+        ]
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "body_match": "exact",
+      "response": {
+        "kind": "json",
+        "status": 200,
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "id": "chatcmpl-refusal",
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": null,
+                "refusal": "Cannot comply."
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 1,
+            "completion_tokens": 2,
+            "total_tokens": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "conformance-empty-content",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "conformance:empty-content"
+          }
+        ]
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "body_match": "exact",
+      "response": {
+        "kind": "json",
+        "status": 200,
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "id": "chatcmpl-empty",
+          "object": "chat.completion",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": ""
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "conformance-provider-error",
+      "operation": "chat-completions",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "expect": {
+        "model": "bench-model",
+        "messages": [
+          {
+            "role": "user",
+            "content": "conformance:provider-error"
+          }
+        ]
+      },
+      "optional_expect": {
+        "stream": false
+      },
+      "body_match": "exact",
+      "response": {
+        "kind": "json",
+        "status": 429,
+        "timing": {
+          "response_delay_ms": 0
+        },
+        "body": {
+          "error": {
+            "message": "synthetic rate limit",
+            "type": "rate_limit_error",
+            "code": "rate_limit_exceeded"
+          }
+        }
+      }
+    }
+  ]
+}

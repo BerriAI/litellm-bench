@@ -10,7 +10,7 @@
     "bench": "node apps/cli/dist/bin.js",
     "build": "pnpm -r --if-present build",
     "catalog:generate": "pnpm --filter @litellm-bench/catalog generate",
-    "check": "pnpm typecheck && pnpm --filter @litellm-bench/catalog generate:check",
+    "check": "pnpm typecheck && pnpm --filter @litellm-bench/catalog generate:check && pnpm -r --if-present fixtures:check",
     "schema:check": "pnpm --filter @litellm-bench/contracts schema:check",
     "schema:generate": "pnpm --filter @litellm-bench/contracts schema:generate",
     "test": "pnpm -r --if-present test",

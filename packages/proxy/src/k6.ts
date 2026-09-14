@@ -132,12 +132,12 @@ const writeArtifacts = (run: K6Run) =>
     new K6Error({ message: `could not prepare k6 artifacts: ${String(cause)}`, cause })
   ));
 
-const parseResult = (stdout: string) => {
+export const parseK6Result = (stdout: string) => {
   try {
     const parsed = JSON.parse(stdout) as Record<string, unknown>;
-    const normalized = parsed.latency === null
-      ? Object.fromEntries(Object.entries(parsed).filter(([key]) => key !== "latency"))
-      : parsed;
+    const normalized = Object.fromEntries(
+      Object.entries(parsed).filter(([, value]) => value !== null),
+    );
     const result = decodeStrict(ProxyLoadObservation)(normalized);
     if (!validateProxyLoadObservation(result)) {
       throw new Error("inconsistent request or latency counts");
@@ -173,6 +173,11 @@ export const runK6 = (
   ProcessExecutor | FileSystem.FileSystem | Path.Path
 > =>
   Effect.gen(function*() {
+    if (run.cpuSet !== undefined && process.platform !== "linux") {
+      return yield* new K6Error({
+        message: `CPU-pinned k6 requires Linux taskset and GNU time; found ${process.platform}`,
+      });
+    }
     yield* Schema.decodeUnknownEffect(K6WorkloadDefinition, { onExcessProperty: "error" })({
       request: run.workload.request,
       response: run.workload.response,
@@ -224,7 +229,7 @@ export const runK6 = (
         new K6Error({ message: `could not retain k6 output: ${String(cause)}`, cause })
       ),
     );
-    const parsed = parseResult(output.stdout);
+    const parsed = parseK6Result(output.stdout);
     const telemetry = parseTimeTelemetry(output.stderr, run.cpuSet);
     return {
       engine,

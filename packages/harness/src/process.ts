@@ -10,6 +10,8 @@ export interface Command {
   readonly env?: Readonly<Record<string, string>>;
   readonly extendEnv?: boolean;
   readonly timeoutMs?: number;
+  /** Return non-zero exits as output. Intended for probes and idempotent cleanup. */
+  readonly allowFailure?: boolean;
 }
 
 export interface CommandOutput {
@@ -86,7 +88,7 @@ const makeProcessExecutor = Effect.gen(function*() {
             stdout,
             stderr,
           };
-          return yield* output.exitCode === 0
+          return yield* output.exitCode === 0 || command.allowFailure === true
             ? Effect.succeed(output)
             : Effect.fail(new ProcessFailure({ command, output }));
         }),

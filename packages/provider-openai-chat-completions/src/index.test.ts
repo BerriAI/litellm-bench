@@ -1,11 +1,15 @@
-import { decodeUpstreamFixture } from "@litellm-bench/contracts";
+import { decodeProviderRouteManifest, decodeUpstreamFixture } from "@litellm-bench/contracts";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   canonicalOpenAiChatCompletions,
+  canonicalOpenAiChatCompletionsConformanceFixture,
+  canonicalOpenAiChatCompletionsConformanceFixturePath,
   canonicalOpenAiChatCompletionsFixturePath,
   canonicalOpenAiStreamingChatCompletionsFixturePath,
+  canonicalOpenAiStreamingMaxWriteBytes,
   openAiChatCompletionsFixture,
+  openAiChatCompletionsManifest,
 } from "./index.js";
 
 const canonicalOptions = {
@@ -47,8 +51,19 @@ describe("OpenAI Chat Completions provider contract", () => {
         usage: canonicalOpenAiChatCompletions.usage,
         stream: true,
         includeUsage: true,
+        maxWriteBytes: canonicalOpenAiStreamingMaxWriteBytes,
         timing: { firstEventDelayMs: 10, eventIntervalMs: 1 },
       }).operations,
     );
+  });
+
+  it("keeps conformance shapes separate and declares fixture provenance", () => {
+    const fixture = JSON.parse(
+      readFileSync(canonicalOpenAiChatCompletionsConformanceFixturePath, "utf8"),
+    );
+    expect(decodeUpstreamFixture(fixture)).toEqual(
+      canonicalOpenAiChatCompletionsConformanceFixture.operations,
+    );
+    expect(decodeProviderRouteManifest(openAiChatCompletionsManifest).fixtures).toHaveLength(3);
   });
 });

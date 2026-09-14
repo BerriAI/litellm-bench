@@ -28,12 +28,16 @@ const catalog: ReadonlyArray<CatalogBenchmark> = Object.entries(benchmarkCatalog
   ([id, entry]) => ({ id, ...entry }),
 );
 
-const runnerDependencies = Layer.mergeAll(
-  PythonEnvironmentLive.pipe(Layer.provideMerge(ProcessExecutorLive)),
-  ProxyEnvironmentLive.pipe(Layer.provide(Layer.mergeAll(
+const proxyEnvironment = ProxyEnvironmentLive.pipe(
+  Layer.provide(Layer.mergeAll(
     DockerEngineLive.pipe(Layer.provide(ProcessExecutorLive)),
     K6Live.pipe(Layer.provide(ProcessExecutorLive)),
-  ))),
+  )),
+  Layer.provide(NodeServices.layer),
+);
+const runnerDependencies = Layer.mergeAll(
+  PythonEnvironmentLive.pipe(Layer.provideMerge(ProcessExecutorLive)),
+  proxyEnvironment,
 );
 const runners = runnerRegistryLayer(Effect.all([
   chatCompletionsRunner,
@@ -64,6 +68,7 @@ const program = Effect.gen(function*() {
     catalogLayer(catalog),
     runners,
     RunMetadataGeneratorLive,
+    proxyEnvironment,
   )),
 );
 

@@ -90,6 +90,19 @@ describe("ProcessExecutorLive", () => {
     });
   });
 
+  it("can return an expected non-zero exit as output", async () => {
+    const directory = await temporaryDirectory();
+    const output = await Effect.runPromise(
+      runCommand({
+        executable: process.execPath,
+        args: ["-e", "process.stderr.write('absent'); process.exit(4)"],
+        cwd: directory,
+        allowFailure: true,
+      }).pipe(Effect.provide(ProcessExecutorLive)),
+    );
+    expect(output).toEqual({ exitCode: 4, stdout: "", stderr: "absent" });
+  });
+
   it("can replace rather than extend the ambient environment", async () => {
     const directory = await temporaryDirectory();
     process.env.LITELLM_BENCH_AMBIENT_TEST = "ambient";

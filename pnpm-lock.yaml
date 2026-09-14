@@ -264,6 +264,9 @@ importers:
       '@litellm-bench/provider-openai-chat-completions':
         specifier: workspace:*
         version: link:../../packages/provider-openai-chat-completions
+      '@litellm-bench/provider-openai-responses':
+        specifier: workspace:*
+        version: link:../../packages/provider-openai-responses
       '@types/node':
         specifier: 26.5.1
         version: 26.5.1
@@ -555,6 +558,22 @@ importers:
         version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0))
 
   packages/provider-openai-chat-completions:
+    dependencies:
+      '@litellm-bench/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      '@types/node':
+        specifier: 26.5.1
+        version: 26.5.1
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.0.0
+        version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0))
+
+  packages/provider-openai-responses:
     dependencies:
       '@litellm-bench/contracts':
         specifier: workspace:*

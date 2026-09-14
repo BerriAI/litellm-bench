@@ -68,14 +68,14 @@ Fixtures use version 2 with named operations and explicit response timing:
 
 ## Operation builders
 
-`@litellm-bench/mock-provider/operations` currently exports the Responses builder. Provider-route
+Provider-route
 packages own provider-specific builders and canonical fixture data; Mistral OCR and OpenAI Chat
 Completions live in their respective `@litellm-bench/provider-*` packages. Every builder produces the
 same version 2 replay format:
 
 ```ts
-import { responses } from "@litellm-bench/mock-provider/operations";
 import { openAiChatCompletion } from "@litellm-bench/provider-openai-chat-completions";
+import { openAiResponse } from "@litellm-bench/provider-openai-responses";
 
 const fixture = {
   version: 2,
@@ -88,7 +88,7 @@ const fixture = {
       timing: { firstEventDelayMs: 0, eventIntervalMs: 25 },
       includeUsage: true,
     }),
-    responses({
+    openAiResponse({
       id: "response",
       model: "bench-model",
       chunks: ["Hello world"],

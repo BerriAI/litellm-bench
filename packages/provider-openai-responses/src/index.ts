@@ -1,38 +1,32 @@
-import type { JsonRecord, MockOperation } from "@litellm-bench/contracts";
+import type {
+  JsonRecord,
+  MockOperation,
+  ProviderRouteManifest,
+  UpstreamFixture,
+} from "@litellm-bench/contracts";
+import { fileURLToPath } from "node:url";
 
 interface TextOperationBase {
   readonly id: string;
   readonly model: string;
   readonly chunks: readonly string[];
-  readonly includeUsage?: boolean;
   readonly expect?: JsonRecord;
   readonly path?: `/${string}`;
   readonly usage?: { readonly input: number; readonly output: number };
 }
 
-export type TextOperationOptions =
+export type OpenAiResponseOptions =
   & TextOperationBase
   & (
     | {
       readonly stream: true;
-      readonly timing: {
-        readonly firstEventDelayMs: number;
-        readonly eventIntervalMs: number;
-      };
+      readonly timing: { readonly firstEventDelayMs: number; readonly eventIntervalMs: number };
     }
-    | {
-      readonly stream?: false;
-      readonly timing: { readonly responseDelayMs: number };
-    }
+    | { readonly stream?: false; readonly timing: { readonly responseDelayMs: number } }
   );
 
-const matcher = (options: TextOperationOptions) => ({
-  expect: { ...options.expect, model: options.model, ...(options.stream ? { stream: true } : {}) },
-  ...(options.stream ? {} : { optional_expect: { stream: false } }),
-});
-
-/** Text-only Responses lifecycle. Explicit SSE fixtures can model tools and other event types. */
-export const responses = (options: TextOperationOptions): MockOperation => {
+/** A synthetic text-only OpenAI Responses exchange in the shared replay format. */
+export const openAiResponse = (options: OpenAiResponseOptions): MockOperation => {
   const id = `resp_${options.id}`;
   const itemId = `msg_${options.id}`;
   const text = options.chunks.join("");
@@ -100,7 +94,12 @@ export const responses = (options: TextOperationOptions): MockOperation => {
     operation: "responses",
     method: "POST",
     path: options.path ?? "/v1/responses",
-    ...matcher(options),
+    expect: {
+      ...options.expect,
+      model: options.model,
+      ...(options.stream ? { stream: true } : {}),
+    },
+    ...(options.stream ? {} : { optional_expect: { stream: false } }),
     response: options.stream
       ? {
         kind: "sse",
@@ -120,3 +119,41 @@ export const responses = (options: TextOperationOptions): MockOperation => {
       },
   };
 };
+
+export const openAiResponsesFixture = (options: OpenAiResponseOptions): UpstreamFixture => ({
+  version: 2,
+  operations: [openAiResponse(options)],
+});
+
+export const canonicalOpenAiResponse = {
+  model: "bench-model",
+  chunks: ["Hello", " ", "from Responses", " 🙂"],
+} as const;
+export const canonicalOpenAiResponseFixturePath = fileURLToPath(
+  import.meta.resolve("@litellm-bench/provider-openai-responses/fixture"),
+);
+export const canonicalOpenAiStreamingResponseFixturePath = fileURLToPath(
+  import.meta.resolve("@litellm-bench/provider-openai-responses/fixture-streaming"),
+);
+
+export const openAiResponsesManifest = {
+  version: 1,
+  provider: "openai",
+  route: "/v1/responses",
+  fixtures: [
+    {
+      id: "canonical-nonstream",
+      export: "./fixture",
+      purpose: "conformance",
+      modes: ["json"],
+      provenance: { source: "synthetic", generator: "scripts/generate-fixtures.mjs" },
+    },
+    {
+      id: "canonical-streaming",
+      export: "./fixture-streaming",
+      purpose: "conformance",
+      modes: ["sse"],
+      provenance: { source: "synthetic", generator: "scripts/generate-fixtures.mjs" },
+    },
+  ],
+} as const satisfies ProviderRouteManifest;

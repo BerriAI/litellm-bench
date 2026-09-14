@@ -93,6 +93,18 @@ pnpm bench run \
   --output data/runs/one-case
 ```
 
+Run the fast local proxy gate before a benchmark campaign:
+
+```bash
+pnpm bench smoke \
+  --image ghcr.io/berriai/litellm:v1.102.0-rc.1 \
+  --output artifacts/smoke
+```
+
+It covers non-streaming Chat Completions, fragmented streaming Chat Completions, and OCR
+Python/Rust. Smoke runs are unpinned functional checks; canonical capacity runs retain Linux CPU
+isolation and statistical gates.
+
 Ingest validated results:
 
 ```bash
