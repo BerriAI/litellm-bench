@@ -18,6 +18,7 @@
   "dependencies": {
     "@litellm-bench/contracts": "workspace:*",
     "@litellm-bench/harness": "workspace:*",
+    "@litellm-bench/mock-provider": "workspace:*",
     "effect": "4.0.0-rc.115"
   },
   "devDependencies": {

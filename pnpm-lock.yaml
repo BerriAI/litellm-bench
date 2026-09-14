@@ -531,6 +531,9 @@ importers:
       '@litellm-bench/harness':
         specifier: workspace:*
         version: link:../harness
+      '@litellm-bench/mock-provider':
+        specifier: workspace:*
+        version: link:../../apps/mock-provider
       effect:
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115
