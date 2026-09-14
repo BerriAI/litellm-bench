@@ -1,0 +1,639 @@
+{
+  "record_id": "e842f9cf023dd6985f9d1b2a55b7f77427b088df1021a34b78674a2981588237",
+  "case_id": "f68d7ffcbd0f952b05a31b9c960a78279009d18bdf44728c4055bd0a8404014a",
+  "comparison_id": "6c93b49ea601f4776daf03b74c0c889318320f7ffe5dcf0d6cc15e8c9bba1dc4",
+  "identity": {
+    "domain": "case",
+    "benchmark_id": "proxy-chat-completions-streaming",
+    "output_metrics": [
+      {
+        "id": "stream.sustainable_rps",
+        "unit": "RPS",
+        "better": "higher"
+      }
+    ],
+    "protocol": {
+      "experimental_unit": "One fresh proxy and mock container for each independently measured rate/round; bypass calibrations use a fresh mock",
+      "scenarios": [
+        {
+          "id": "stream-arrival-sweep",
+          "dimensions": {
+            "arrival_rates": [
+              25,
+              50,
+              100,
+              150,
+              200,
+              300,
+              450
+            ],
+            "stream": true
+          }
+        }
+      ],
+      "attempts": {
+        "count": 7,
+        "count_from": "rounds",
+        "isolation": "Fresh proxy and mock containers for every rate/round; immutable local image IDs are resolved before container start",
+        "order": "Rates are deterministically shuffled within each round from the comparison ID; workflow versions are Fisher–Yates shuffled per dispatch and executed serially",
+        "retention": "Retain every rate trial, bypass calibration, exact plan, client summary/log, container log, SSE fixture, configuration, and payload",
+        "trials_per_attempt": 8,
+        "unit": "independent round"
+      },
+      "measurements": [
+        {
+          "id": "slo_pass",
+          "unit": "boolean",
+          "role": "primary",
+          "better": "higher"
+        },
+        {
+          "id": "window_completion_rps",
+          "unit": "RPS",
+          "role": "secondary",
+          "better": "higher"
+        },
+        {
+          "id": "window_event_rps",
+          "unit": "events/s",
+          "role": "secondary",
+          "better": "higher"
+        },
+        {
+          "id": "p95_ttfb_ms",
+          "unit": "ms",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "p95_stream_duration_ms",
+          "unit": "ms",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "window_error_rate",
+          "unit": "ratio",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "drain_seconds",
+          "unit": "s",
+          "role": "diagnostic",
+          "better": "lower"
+        }
+      ],
+      "analyses": [
+        {
+          "id": "stream.capacity-knee",
+          "measurement": "slo_pass",
+          "additional_measurements": [
+            "window_completion_rps",
+            "window_event_rps",
+            "p95_ttfb_ms",
+            "p95_stream_duration_ms",
+            "window_error_rate",
+            "drain_seconds"
+          ],
+          "aggregation": "contiguous SLO knee with per-round capacities, dispersion, and deterministic 10,000-resample bootstrap 95% CI",
+          "report": [
+            "rate pass fractions",
+            "per-round capacity",
+            "standard deviation",
+            "median absolute deviation",
+            "bootstrap 95% CI"
+          ]
+        }
+      ],
+      "validity": {
+        "slo": "At least 6 of 7 trials at a rate must have p95 TTFB <= 100 ms, p95 complete-stream duration <= 200 ms, window error rate 0, no dropped arrivals, >= 98% achieved/offered RPS, and stable warmup; every lower rate must also pass",
+        "warmup": "The same fixed-arrival executor, streaming request path, SSE validation, and timing profile run for 30 seconds before measurement; the final three five-second successful-completion windows must have coefficient of variation <= 5%",
+        "window": "Only complete streams timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
+        "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=true, or the exact allowlisted JSON body; the client validates content-type, all seven SSE events, semantic chunk contents, finish reason, and terminal [DONE]",
+        "timing": "The mock waits 10 ms before its first SSE event and 5 ms between subsequent events; TTFB is measured by k6 at the first response byte and complete-stream duration ends after the terminal event",
+        "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
+        "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
+        "fail_closed": "Missing/invalid telemetry, missing stream timing/statistics, malformed or semantically incorrect SSE, unstable calibration, unbracketed saturation, request-count mismatch, or any upstream translation failure invalidates the result"
+      }
+    },
+    "job": {
+      "id": "base",
+      "config": {
+        "rounds": 7,
+        "arrival_rates": [
+          25,
+          50,
+          100,
+          150,
+          200,
+          300,
+          450
+        ],
+        "duration_seconds": 30,
+        "warmup_seconds": 30,
+        "steady_state": {
+          "window_seconds": 5,
+          "windows": 3,
+          "maximum_cv": 0.05
+        },
+        "slo": {
+          "p95_ttfb_ms": 100,
+          "p95_stream_duration_ms": 200,
+          "maximum_error_rate": 0,
+          "minimum_achievement_ratio": 0.98,
+          "required_pass_fraction": 0.8571428571428571
+        },
+        "preallocated_vus": 128,
+        "max_vus": 512,
+        "calibration_rate_multiplier": 1.5,
+        "calibration_headroom": {
+          "maximum_cpu_percent": 85,
+          "maximum_throttled_usec": 0
+        },
+        "mock_image": "node:24.8.0-slim@sha256:cadbfafeb6baf87eaaffa40b3640209c4b7fd38cebde65059d15bc39cd636b85",
+        "resources": {
+          "cpus": 1,
+          "memory": "2g",
+          "workers": 1,
+          "idle_seconds": 5,
+          "log_driver": "none",
+          "mock_cpus": 1,
+          "mock_memory": "1g",
+          "cpu_sets": {
+            "proxy": "0",
+            "mock": "1",
+            "load_generator": "2"
+          }
+        }
+      },
+      "requirements": {
+        "platform": "linux",
+        "architecture": "x86_64",
+        "tools": [
+          "k6"
+        ],
+        "host": "github-hosted",
+        "docker": {
+          "architecture": "x86_64",
+          "cgroup_version": "2",
+          "ports": [
+            4020
+          ]
+        }
+      }
+    },
+    "target": {
+      "version": "1.100.0",
+      "artifact": {
+        "image": "ghcr.io/berriai/litellm:v1.100.0"
+      }
+    }
+  },
+  "source": {
+    "provider": "github-actions",
+    "repository": "BerriAI/litellm-bench",
+    "workflow": "Record LiteLLM benchmarks",
+    "workflow_run_id": "34809328520",
+    "commit": "a4cf0e6eaad7c7f77a738a1220a07e697b740e44",
+    "ref": "refs/heads/main"
+  },
+  "spec": {
+    "case_id": "f68d7ffcbd0f952b05a31b9c960a78279009d18bdf44728c4055bd0a8404014a",
+    "comparison_id": "6c93b49ea601f4776daf03b74c0c889318320f7ffe5dcf0d6cc15e8c9bba1dc4",
+    "benchmark": {
+      "id": "proxy-chat-completions-streaming",
+      "label": "LiteLLM proxy streaming chat-completions sustainable capacity",
+      "kind": "proxy",
+      "output_metrics": [
+        {
+          "id": "stream.sustainable_rps",
+          "unit": "RPS",
+          "better": "higher"
+        }
+      ],
+      "protocol": {
+        "question": "What fixed streaming arrival rate can one proxy worker sustain while meeting the declared TTFB, stream-duration, error, and achieved-load SLO?",
+        "claim_scope": "One CPU-quota, one-worker streaming chat-completions proxy capacity against a deterministic local validating SSE mock. Capacity is the highest contiguous offered rate whose independent-trial pass fraction meets the declared rule; it excludes provider inference.",
+        "experimental_unit": "One fresh proxy and mock container for each independently measured rate/round; bypass calibrations use a fresh mock",
+        "scenarios": [
+          {
+            "id": "stream-arrival-sweep",
+            "label": "Streaming fixed-arrival-rate saturation sweep",
+            "dimensions": {
+              "arrival_rates": [
+                25,
+                50,
+                100,
+                150,
+                200,
+                300,
+                450
+              ],
+              "stream": true
+            }
+          }
+        ],
+        "attempts": {
+          "count": 7,
+          "count_from": "rounds",
+          "isolation": "Fresh proxy and mock containers for every rate/round; immutable local image IDs are resolved before container start",
+          "order": "Rates are deterministically shuffled within each round from the comparison ID; workflow versions are Fisher–Yates shuffled per dispatch and executed serially",
+          "retention": "Retain every rate trial, bypass calibration, exact plan, client summary/log, container log, SSE fixture, configuration, and payload",
+          "trials_per_attempt": 8,
+          "unit": "independent round"
+        },
+        "measurements": [
+          {
+            "id": "slo_pass",
+            "label": "Arrival rate meets all streaming sustainable-capacity SLO predicates",
+            "unit": "boolean",
+            "role": "primary",
+            "better": "higher"
+          },
+          {
+            "id": "window_completion_rps",
+            "label": "Successful complete streams timestamped inside the fixed measurement window divided by exactly 30 seconds",
+            "unit": "RPS",
+            "role": "secondary",
+            "better": "higher"
+          },
+          {
+            "id": "window_event_rps",
+            "label": "Validated SSE events from successful streams completed inside the measurement window divided by exactly 30 seconds",
+            "unit": "events/s",
+            "role": "secondary",
+            "better": "higher"
+          },
+          {
+            "id": "p95_ttfb_ms",
+            "label": "p95 time from request start to the first response byte for successful streams inside the measurement window",
+            "unit": "ms",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "p95_stream_duration_ms",
+            "label": "p95 time from request start through the terminal SSE event for successful streams inside the measurement window",
+            "unit": "ms",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "window_error_rate",
+            "label": "Failed streams divided by all streams completed inside the fixed measurement window",
+            "unit": "ratio",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "drain_seconds",
+            "label": "Time after the fixed measurement deadline until the final started stream completed",
+            "unit": "s",
+            "role": "diagnostic",
+            "better": "lower"
+          }
+        ],
+        "analyses": [
+          {
+            "id": "stream.capacity-knee",
+            "label": "Highest contiguous offered streaming rate meeting the required trial pass fraction",
+            "measurement": "slo_pass",
+            "additional_measurements": [
+              "window_completion_rps",
+              "window_event_rps",
+              "p95_ttfb_ms",
+              "p95_stream_duration_ms",
+              "window_error_rate",
+              "drain_seconds"
+            ],
+            "aggregation": "contiguous SLO knee with per-round capacities, dispersion, and deterministic 10,000-resample bootstrap 95% CI",
+            "report": [
+              "rate pass fractions",
+              "per-round capacity",
+              "standard deviation",
+              "median absolute deviation",
+              "bootstrap 95% CI"
+            ]
+          }
+        ],
+        "validity": {
+          "slo": "At least 6 of 7 trials at a rate must have p95 TTFB <= 100 ms, p95 complete-stream duration <= 200 ms, window error rate 0, no dropped arrivals, >= 98% achieved/offered RPS, and stable warmup; every lower rate must also pass",
+          "warmup": "The same fixed-arrival executor, streaming request path, SSE validation, and timing profile run for 30 seconds before measurement; the final three five-second successful-completion windows must have coefficient of variation <= 5%",
+          "window": "Only complete streams timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
+          "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=true, or the exact allowlisted JSON body; the client validates content-type, all seven SSE events, semantic chunk contents, finish reason, and terminal [DONE]",
+          "timing": "The mock waits 10 ms before its first SSE event and 5 ms between subsequent events; TTFB is measured by k6 at the first response byte and complete-stream duration ends after the terminal event",
+          "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
+          "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
+          "fail_closed": "Missing/invalid telemetry, missing stream timing/statistics, malformed or semantically incorrect SSE, unstable calibration, unbracketed saturation, request-count mismatch, or any upstream translation failure invalidates the result"
+        }
+      }
+    },
+    "job": {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "config": {
+        "rounds": 7,
+        "arrival_rates": [
+          25,
+          50,
+          100,
+          150,
+          200,
+          300,
+          450
+        ],
+        "duration_seconds": 30,
+        "warmup_seconds": 30,
+        "steady_state": {
+          "window_seconds": 5,
+          "windows": 3,
+          "maximum_cv": 0.05
+        },
+        "slo": {
+          "p95_ttfb_ms": 100,
+          "p95_stream_duration_ms": 200,
+          "maximum_error_rate": 0,
+          "minimum_achievement_ratio": 0.98,
+          "required_pass_fraction": 0.8571428571428571
+        },
+        "preallocated_vus": 128,
+        "max_vus": 512,
+        "calibration_rate_multiplier": 1.5,
+        "calibration_headroom": {
+          "maximum_cpu_percent": 85,
+          "maximum_throttled_usec": 0
+        },
+        "mock_image": "node:24.8.0-slim@sha256:cadbfafeb6baf87eaaffa40b3640209c4b7fd38cebde65059d15bc39cd636b85",
+        "resources": {
+          "cpus": 1,
+          "memory": "2g",
+          "workers": 1,
+          "idle_seconds": 5,
+          "log_driver": "none",
+          "mock_cpus": 1,
+          "mock_memory": "1g",
+          "cpu_sets": {
+            "proxy": "0",
+            "mock": "1",
+            "load_generator": "2"
+          }
+        }
+      },
+      "requirements": {
+        "platform": "linux",
+        "architecture": "x86_64",
+        "tools": [
+          "k6"
+        ],
+        "host": "github-hosted",
+        "docker": {
+          "architecture": "x86_64",
+          "cgroup_version": "2",
+          "ports": [
+            4020
+          ]
+        }
+      }
+    },
+    "version": {
+      "version": "1.100.0",
+      "artifacts": {
+        "sdk": {
+          "requirement": "litellm==1.100.0",
+          "distribution": "litellm"
+        },
+        "proxy": {
+          "image": "ghcr.io/berriai/litellm:v1.100.0"
+        }
+      }
+    },
+    "artifact": {
+      "image": "ghcr.io/berriai/litellm:v1.100.0"
+    }
+  },
+  "result": {
+    "run_id": "efec87f9-7bac-4631-bd54-d63e59e9485e",
+    "created_at": "2026-09-14T05:31:09.978Z",
+    "case_id": "f68d7ffcbd0f952b05a31b9c960a78279009d18bdf44728c4055bd0a8404014a",
+    "comparison_id": "6c93b49ea601f4776daf03b74c0c889318320f7ffe5dcf0d6cc15e8c9bba1dc4",
+    "benchmark": {
+      "id": "proxy-chat-completions-streaming",
+      "label": "LiteLLM proxy streaming chat-completions sustainable capacity",
+      "kind": "proxy",
+      "output_metrics": [
+        {
+          "id": "stream.sustainable_rps",
+          "unit": "RPS",
+          "better": "higher"
+        }
+      ],
+      "protocol": {
+        "question": "What fixed streaming arrival rate can one proxy worker sustain while meeting the declared TTFB, stream-duration, error, and achieved-load SLO?",
+        "claim_scope": "One CPU-quota, one-worker streaming chat-completions proxy capacity against a deterministic local validating SSE mock. Capacity is the highest contiguous offered rate whose independent-trial pass fraction meets the declared rule; it excludes provider inference.",
+        "experimental_unit": "One fresh proxy and mock container for each independently measured rate/round; bypass calibrations use a fresh mock",
+        "scenarios": [
+          {
+            "id": "stream-arrival-sweep",
+            "label": "Streaming fixed-arrival-rate saturation sweep",
+            "dimensions": {
+              "arrival_rates": [
+                25,
+                50,
+                100,
+                150,
+                200,
+                300,
+                450
+              ],
+              "stream": true
+            }
+          }
+        ],
+        "attempts": {
+          "count": 7,
+          "count_from": "rounds",
+          "isolation": "Fresh proxy and mock containers for every rate/round; immutable local image IDs are resolved before container start",
+          "order": "Rates are deterministically shuffled within each round from the comparison ID; workflow versions are Fisher–Yates shuffled per dispatch and executed serially",
+          "retention": "Retain every rate trial, bypass calibration, exact plan, client summary/log, container log, SSE fixture, configuration, and payload",
+          "trials_per_attempt": 8,
+          "unit": "independent round"
+        },
+        "measurements": [
+          {
+            "id": "slo_pass",
+            "label": "Arrival rate meets all streaming sustainable-capacity SLO predicates",
+            "unit": "boolean",
+            "role": "primary",
+            "better": "higher"
+          },
+          {
+            "id": "window_completion_rps",
+            "label": "Successful complete streams timestamped inside the fixed measurement window divided by exactly 30 seconds",
+            "unit": "RPS",
+            "role": "secondary",
+            "better": "higher"
+          },
+          {
+            "id": "window_event_rps",
+            "label": "Validated SSE events from successful streams completed inside the measurement window divided by exactly 30 seconds",
+            "unit": "events/s",
+            "role": "secondary",
+            "better": "higher"
+          },
+          {
+            "id": "p95_ttfb_ms",
+            "label": "p95 time from request start to the first response byte for successful streams inside the measurement window",
+            "unit": "ms",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "p95_stream_duration_ms",
+            "label": "p95 time from request start through the terminal SSE event for successful streams inside the measurement window",
+            "unit": "ms",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "window_error_rate",
+            "label": "Failed streams divided by all streams completed inside the fixed measurement window",
+            "unit": "ratio",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "drain_seconds",
+            "label": "Time after the fixed measurement deadline until the final started stream completed",
+            "unit": "s",
+            "role": "diagnostic",
+            "better": "lower"
+          }
+        ],
+        "analyses": [
+          {
+            "id": "stream.capacity-knee",
+            "label": "Highest contiguous offered streaming rate meeting the required trial pass fraction",
+            "measurement": "slo_pass",
+            "additional_measurements": [
+              "window_completion_rps",
+              "window_event_rps",
+              "p95_ttfb_ms",
+              "p95_stream_duration_ms",
+              "window_error_rate",
+              "drain_seconds"
+            ],
+            "aggregation": "contiguous SLO knee with per-round capacities, dispersion, and deterministic 10,000-resample bootstrap 95% CI",
+            "report": [
+              "rate pass fractions",
+              "per-round capacity",
+              "standard deviation",
+              "median absolute deviation",
+              "bootstrap 95% CI"
+            ]
+          }
+        ],
+        "validity": {
+          "slo": "At least 6 of 7 trials at a rate must have p95 TTFB <= 100 ms, p95 complete-stream duration <= 200 ms, window error rate 0, no dropped arrivals, >= 98% achieved/offered RPS, and stable warmup; every lower rate must also pass",
+          "warmup": "The same fixed-arrival executor, streaming request path, SSE validation, and timing profile run for 30 seconds before measurement; the final three five-second successful-completion windows must have coefficient of variation <= 5%",
+          "window": "Only complete streams timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
+          "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=true, or the exact allowlisted JSON body; the client validates content-type, all seven SSE events, semantic chunk contents, finish reason, and terminal [DONE]",
+          "timing": "The mock waits 10 ms before its first SSE event and 5 ms between subsequent events; TTFB is measured by k6 at the first response byte and complete-stream duration ends after the terminal event",
+          "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
+          "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
+          "fail_closed": "Missing/invalid telemetry, missing stream timing/statistics, malformed or semantically incorrect SSE, unstable calibration, unbracketed saturation, request-count mismatch, or any upstream translation failure invalidates the result"
+        }
+      }
+    },
+    "job": {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "config": {
+        "rounds": 7,
+        "arrival_rates": [
+          25,
+          50,
+          100,
+          150,
+          200,
+          300,
+          450
+        ],
+        "duration_seconds": 30,
+        "warmup_seconds": 30,
+        "steady_state": {
+          "window_seconds": 5,
+          "windows": 3,
+          "maximum_cv": 0.05
+        },
+        "slo": {
+          "p95_ttfb_ms": 100,
+          "p95_stream_duration_ms": 200,
+          "maximum_error_rate": 0,
+          "minimum_achievement_ratio": 0.98,
+          "required_pass_fraction": 0.8571428571428571
+        },
+        "preallocated_vus": 128,
+        "max_vus": 512,
+        "calibration_rate_multiplier": 1.5,
+        "calibration_headroom": {
+          "maximum_cpu_percent": 85,
+          "maximum_throttled_usec": 0
+        },
+        "mock_image": "node:24.8.0-slim@sha256:cadbfafeb6baf87eaaffa40b3640209c4b7fd38cebde65059d15bc39cd636b85",
+        "resources": {
+          "cpus": 1,
+          "memory": "2g",
+          "workers": 1,
+          "idle_seconds": 5,
+          "log_driver": "none",
+          "mock_cpus": 1,
+          "mock_memory": "1g",
+          "cpu_sets": {
+            "proxy": "0",
+            "mock": "1",
+            "load_generator": "2"
+          }
+        }
+      },
+      "requirements": {
+        "platform": "linux",
+        "architecture": "x86_64",
+        "tools": [
+          "k6"
+        ],
+        "host": "github-hosted",
+        "docker": {
+          "architecture": "x86_64",
+          "cgroup_version": "2",
+          "ports": [
+            4020
+          ]
+        }
+      }
+    },
+    "version": "1.100.0",
+    "artifact": {
+      "image": "ghcr.io/berriai/litellm:v1.100.0"
+    },
+    "apparatus": {
+      "host": {
+        "platform": "linux",
+        "architecture": "x86_64",
+        "host": "github-hosted",
+        "node_version": "v24.20.0",
+        "ci": true
+      }
+    },
+    "metrics": [],
+    "trials": [],
+    "analyses": [],
+    "status": "failed",
+    "error": {
+      "code": "invalid_observation",
+      "message": "Invalid proxy trial stream_rate150_r1: Error response from daemon: No such container: litellm-bench-aa272ae9643a-0-mock"
+    }
+  }
+}
