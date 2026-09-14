@@ -1,0 +1,38 @@
+name: Set up benchmark runtime
+description: Install and verify the fixed toolchain used by the benchmark suite
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        # Satisfies both the exact 3.12.10 jobs and the 3.12 import-time job.
+        python-version: "3.12.10"
+    - uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.17"
+    - name: Verify Python discovery
+      shell: bash
+      run: |
+        interpreter="$(uv --no-config python find)"
+        "$interpreter" --version
+    - uses: ./.github/actions/setup-k6
+    - name: Verify Docker using the benchmark adapter
+      shell: bash
+      working-directory: packages/proxy
+      run: |
+        node --input-type=module <<'NODE'
+        import { Effect } from 'effect';
+        import { ProcessExecutor, ProcessExecutorLive } from '@litellm-bench/harness';
+        import { makeDockerEngine } from './dist/docker.js';
+
+        const metadata = await Effect.runPromise(
+          Effect.flatMap(ProcessExecutor, (executor) =>
+            makeDockerEngine(executor, process.cwd(), () => Effect.void).verify
+          ).pipe(Effect.provide(ProcessExecutorLive)),
+        );
+        console.log(JSON.stringify(metadata));
+        NODE
+    - name: Verify load generator
+      shell: bash
+      run: k6 version

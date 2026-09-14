@@ -4,7 +4,7 @@ import {
   type ProcessExecutorShape,
   ProcessFailure,
 } from "@litellm-bench/harness";
-import { Context, Data, Effect, FileSystem, Layer, type Scope } from "effect";
+import { Context, Data, Effect, FileSystem, Layer, Schema, type Scope } from "effect";
 
 export class DockerError extends Data.TaggedError("DockerError")<{
   readonly operation: string;
@@ -84,49 +84,58 @@ const normalizeArchitecture = (value: string): DockerMetadata["architecture"] | 
   }
 };
 
+const DockerInfo = Schema.fromJsonString(Schema.Struct({
+  ServerVersion: Schema.NonEmptyString,
+  OSType: Schema.String,
+  Architecture: Schema.String,
+  CgroupVersion: Schema.String,
+}));
+
 export const parseDockerMetadata = (
-  versionOutput: string,
-  cgroupOutput: string,
-): Effect.Effect<DockerMetadata, DockerError> => {
-  const [version, os, rawArchitecture] = versionOutput.trim().split("\t");
-  const architecture = rawArchitecture === undefined
-    ? undefined
-    : normalizeArchitecture(rawArchitecture);
-  const cgroupVersion = cgroupOutput.trim();
-  if (version === undefined || version.length === 0) {
-    return Effect.fail(
-      new DockerError({
-        operation: "verify",
-        message: "Docker returned an empty server version",
-      }),
+  infoOutput: string,
+): Effect.Effect<DockerMetadata, DockerError> =>
+  Effect.gen(function*() {
+    const {
+      ServerVersion: version,
+      OSType: os,
+      Architecture: rawArchitecture,
+      CgroupVersion: cgroupVersion,
+    } = yield* Schema.decodeUnknownEffect(DockerInfo)(infoOutput).pipe(
+      Effect.mapError((cause) =>
+        new DockerError({
+          operation: "verify",
+          message: `Docker returned invalid daemon metadata: ${errorMessage(cause)}`,
+          cause,
+        })
+      ),
     );
-  }
-  if (os !== "linux") {
-    return Effect.fail(
-      new DockerError({
-        operation: "verify",
-        message: `Docker must use a Linux daemon; found ${os ?? "unknown"}`,
-      }),
-    );
-  }
-  if (architecture === undefined) {
-    return Effect.fail(
-      new DockerError({
-        operation: "verify",
-        message: `unsupported Docker architecture: ${rawArchitecture ?? "unknown"}`,
-      }),
-    );
-  }
-  if (cgroupVersion !== "2") {
-    return Effect.fail(
-      new DockerError({
-        operation: "verify",
-        message: `Docker must use cgroup v2; found ${cgroupVersion || "unknown"}`,
-      }),
-    );
-  }
-  return Effect.succeed({ version, os, architecture, cgroupVersion });
-};
+    const architecture = normalizeArchitecture(rawArchitecture);
+    if (os !== "linux") {
+      return yield* Effect.fail(
+        new DockerError({
+          operation: "verify",
+          message: `Docker must use a Linux daemon; found ${os || "unknown"}`,
+        }),
+      );
+    }
+    if (architecture === undefined) {
+      return yield* Effect.fail(
+        new DockerError({
+          operation: "verify",
+          message: `unsupported Docker architecture: ${rawArchitecture || "unknown"}`,
+        }),
+      );
+    }
+    if (cgroupVersion !== "2") {
+      return yield* Effect.fail(
+        new DockerError({
+          operation: "verify",
+          message: `Docker must use cgroup v2; found ${cgroupVersion || "unknown"}`,
+        }),
+      );
+    }
+    return { version, os, architecture, cgroupVersion };
+  });
 
 const portArgument = ({ hostAddress = "127.0.0.1", hostPort, containerPort }: DockerPort) =>
   `${hostAddress}:${hostPort}:${containerPort}`;
@@ -203,13 +212,8 @@ export const makeDockerEngine = (
 
   return {
     verify: Effect.gen(function*() {
-      const version = yield* run([
-        "version",
-        "--format",
-        "{{.Server.Version}}\t{{.Server.Os}}\t{{.Server.Arch}}",
-      ], 30_000);
-      const cgroup = yield* run(["info", "--format", "{{.CgroupVersion}}"], 30_000);
-      return yield* parseDockerMetadata(version.stdout, cgroup.stdout);
+      const info = yield* run(["info", "--format", "{{json .}}"], 30_000);
+      return yield* parseDockerMetadata(info.stdout);
     }),
     inspectImage: (image) =>
       run(["pull", image], 300_000).pipe(

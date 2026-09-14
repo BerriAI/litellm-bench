@@ -49,42 +49,24 @@ jobs:
     name: Blocked version campaign
     runs-on: ubuntu-24.04
     timeout-minutes: 360
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    env:
+      BENCHMARK_RUN_NOTE: ${{ inputs.run_note }}
+      PYTHONUNBUFFERED: "1"
+      CAMPAIGN_PLAN: ${{ needs.plan.outputs.matrix }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - uses: astral-sh/setup-uv@v6
-        with:
-          version: "0.8.17"
       - uses: ./.github/actions/setup-node-workspace
-      - uses: ./.github/actions/setup-k6
-        if: contains(needs.plan.outputs.matrix, '"needs_proxy":true')
-      - name: Verify proxy load generator
-        if: contains(needs.plan.outputs.matrix, '"needs_proxy":true')
-        run: k6 version
-      - name: Run every version sequentially on this VM
-        shell: bash
+      - uses: ./.github/actions/setup-benchmark-runtime
+      - id: campaign
+        name: Run every version sequentially on this VM
         env:
-          PYTHONUNBUFFERED: "1"
           LITELLM_BENCH_HOST: ${{ runner.environment }}
-          CAMPAIGN_PLAN: ${{ needs.plan.outputs.matrix }}
-        run: |
-          status=0
-          mkdir -p data/runs/benchmark-output
-          while IFS= read -r version_plan; do
-            version="$(jq -r '.version' <<<"$version_plan")"
-            position="$(jq -r '.comparison_order.position' <<<"$version_plan")"
-            if ! pnpm bench run-version \
-              --version "$version" \
-              --plan-json "$version_plan" \
-              --output "data/runs/benchmark-output/$position"; then
-              status=1
-            fi
-          done < <(jq -c '.include[]' <<<"$CAMPAIGN_PLAN")
-          exit "$status"
-      - name: Upload result and diagnostics
-        if: always()
+        run: node .github/scripts/run-campaign.mjs
+      - id: upload
+        name: Upload result and diagnostics
+        if: ${{ !cancelled() && (steps.campaign.outcome == 'success' || steps.campaign.outcome == 'failure') }}
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-campaign-${{ github.run_id }}-${{ github.run_attempt }}
@@ -99,7 +81,7 @@ jobs:
       group: litellm-bench-results-${{ matrix.version }}
       cancel-in-progress: false
     needs: [plan, benchmark]
-    if: always() && needs.plan.outputs.has_jobs == 'true'
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.benchmark.outputs.artifact_id != '' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
@@ -108,8 +90,6 @@ jobs:
       actions: read
       contents: write
       pull-requests: write
-    env:
-      BENCHMARK_RUN_NOTE: ${{ inputs.run_note }}
     steps:
       - uses: actions/checkout@v6
         with:

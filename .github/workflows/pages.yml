@@ -1,3 +1,5 @@
+name: Publish benchmark site
+
 on:
   workflow_dispatch:
   push:
@@ -8,6 +10,8 @@ on:
       "pnpm-lock.yaml",
       "pnpm-workspace.yaml",
       ".github/workflows/pages.yml",
+      ".github/actions/setup-node-workspace/**",
+      "package.json",
     ]
 
 permissions:
@@ -28,15 +32,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-node-workspace
         with:
-          version: 12.4.1
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          build-cli: "false"
       - run: pnpm --dir web run build
         env:
           BENCHMARK_SITE_DIR: ../site

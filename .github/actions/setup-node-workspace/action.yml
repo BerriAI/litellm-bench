@@ -1,12 +1,17 @@
 name: Set up Node workspace
-description: Install pnpm and Node.js dependencies, then build the benchmark CLI
+description: Install the Node workspace and optionally build the benchmark CLI
+
+inputs:
+  build-cli:
+    description: Build the benchmark CLI and its workspace dependencies
+    required: false
+    default: "true"
 
 runs:
   using: composite
   steps:
     - uses: pnpm/action-setup@v4
       with:
-        version: 12.4.1
         run_install: false
     - uses: actions/setup-node@v6
       with:
@@ -15,4 +20,5 @@ runs:
     - shell: bash
       run: pnpm install --frozen-lockfile
     - shell: bash
+      if: inputs.build-cli == 'true'
       run: pnpm --filter @litellm-bench/cli... build

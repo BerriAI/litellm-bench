@@ -30,6 +30,12 @@ const writeFile = (location: string, contents: string) =>
   Effect.runPromise(platform.fs.writeFileString(location, contents));
 
 const directories = new Set<string>();
+const daemonInfo = {
+  ServerVersion: "29.4.0",
+  OSType: "linux",
+  Architecture: "x86_64",
+  CgroupVersion: "2",
+};
 
 afterEach(async () => {
   await Promise.all([...directories].map((path) => rm(path, { recursive: true, force: true })));
@@ -83,19 +89,78 @@ describe("DockerEngine", () => {
     })).toEqual(expect.arrayContaining(["--cpus", "1", "--cpuset-cpus", "2"]));
   });
 
-  it("validates daemon metadata and cgroup v2", async () => {
-    await expect(Effect.runPromise(parseDockerMetadata("27.1\tlinux\tamd64\n", "2\n")))
+  it.each([
+    ["amd64", "x86_64"],
+    ["x86_64", "x86_64"],
+    ["arm64", "arm64"],
+    ["aarch64", "arm64"],
+  ])("validates JSON daemon metadata for %s", async (architecture, expected) => {
+    const output = JSON.stringify({ ...daemonInfo, Architecture: architecture, Containers: 0 });
+    await expect(Effect.runPromise(parseDockerMetadata(`${output}\n`)))
       .resolves.toEqual({
-        version: "27.1",
+        version: "29.4.0",
         os: "linux",
-        architecture: "x86_64",
+        architecture: expected,
         cgroupVersion: "2",
       });
+  });
+
+  it.each([
+    [{ OSType: "windows" }, "Linux daemon"],
+    [{ Architecture: "riscv64" }, "unsupported Docker architecture"],
+    [{ CgroupVersion: "1" }, "cgroup v2"],
+  ])("rejects unsupported daemon metadata %j", async (fields, message) => {
     const error = await Effect.runPromise(
-      parseDockerMetadata("27.1\tlinux\tamd64\n", "1\n").pipe(Effect.flip),
+      parseDockerMetadata(JSON.stringify({ ...daemonInfo, ...fields })).pipe(Effect.flip),
     );
     expect(error).toBeInstanceOf(DockerError);
-    expect(error.message).toContain("cgroup v2");
+    expect(error.message).toContain(message);
+  });
+
+  it.each([
+    "",
+    "29.4.0              linux               amd64\n",
+    "{",
+    "null",
+    "[]",
+    "{}",
+    JSON.stringify({ ...daemonInfo, ServerVersion: "" }),
+    JSON.stringify({ ...daemonInfo, OSType: null }),
+    JSON.stringify({ ...daemonInfo, Architecture: 123 }),
+    JSON.stringify({ ...daemonInfo, CgroupVersion: 2 }),
+  ])("reports malformed daemon metadata as DockerError: %s", async (output) => {
+    const error = await Effect.runPromise(parseDockerMetadata(output).pipe(Effect.flip));
+    expect(error).toBeInstanceOf(DockerError);
+    expect(error.operation).toBe("verify");
+    expect(error.message).toContain("invalid daemon metadata");
+  });
+
+  it("requests one JSON daemon snapshot without depending on table formatting", async () => {
+    const commands: Command[] = [];
+    const docker = makeDockerEngine(
+      {
+        execute: (command) => {
+          commands.push(command);
+          return Effect.succeed({ exitCode: 0, stdout: JSON.stringify(daemonInfo), stderr: "" });
+        },
+      },
+      "/workspace",
+      () => Effect.void,
+    );
+
+    expect(commands).toEqual([]);
+    await expect(Effect.runPromise(docker.verify)).resolves.toEqual({
+      version: "29.4.0",
+      os: "linux",
+      architecture: "x86_64",
+      cgroupVersion: "2",
+    });
+    expect(commands).toEqual([{
+      executable: "docker",
+      args: ["info", "--format", "{{json .}}"],
+      cwd: "/workspace",
+      timeoutMs: 30_000,
+    }]);
   });
 
   it("releases containers and networks and retains logs on failure", async () => {
