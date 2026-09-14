@@ -1,3 +1,18 @@
 {
-  "annotations": []
+  "annotations": [
+    {
+      "id": "test-import-change",
+      "benchmark_id": "sdk-import-time",
+      "introduced_in": "1.98.0",
+      "metric_id": "import.median",
+      "title": "Fixture import change",
+      "explanation": "A known change for browser regression coverage.",
+      "sources": [
+        {
+          "label": "Evidence",
+          "url": "https://example.com/change"
+        }
+      ]
+    }
+  ]
 }

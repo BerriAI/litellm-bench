@@ -16,7 +16,11 @@ import { makeRunCommand } from "./runs.js";
 import { sourceMetadata } from "./source-metadata.js";
 import { makePlanCommand, makeRunVersionCommand } from "./suite.js";
 
-const WriteMode = Schema.Literals(["append", "replace-case-version"]);
+const WriteMode = Schema.Literals([
+  "append",
+  "replace-case-version",
+  "replace-benchmark-version",
+]);
 const decodeWriteMode = Schema.decodeUnknownEffect(WriteMode);
 
 const benchmarkNotFound = (benchmarkId: string): CliResponse =>

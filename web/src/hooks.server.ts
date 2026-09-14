@@ -1,7 +1,11 @@
 import { dev } from "$app/environment";
 import { base } from "$app/paths";
+import {
+  dataDirectory as resolveDataDirectory,
+  readAnnotations,
+  readIndex,
+} from "$lib/server/benchmarks";
 import { NodeServices } from "@effect/platform-node";
-import { deriveIndex } from "@litellm-bench/result-store";
 import type { Handle } from "@sveltejs/kit";
 import { Effect, FileSystem, Path } from "effect";
 
@@ -14,12 +18,17 @@ export const handle: Handle = async ({ event, resolve: resolveRequest }) => {
     Effect.gen(function*() {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const dataDirectory = path.resolve(process.env.BENCHMARK_DATA_DIR ?? "../data");
+      const dataDirectory = resolveDataDirectory();
       const relativePath = decodeURIComponent(event.url.pathname.slice(dataPath.length));
       if (relativePath === "index.json") {
         return `${
-          JSON.stringify(yield* Effect.promise(() => deriveIndex(dataDirectory)), null, 2)
+          JSON.stringify(yield* Effect.promise(() => readIndex(dataDirectory)), null, 2)
         }\n`;
+      }
+      if (relativePath === "annotations.json") {
+        return JSON.stringify({
+          annotations: yield* Effect.promise(() => readAnnotations(dataDirectory)),
+        });
       }
       const filePath = path.resolve(dataDirectory, relativePath);
       if (!filePath.startsWith(`${dataDirectory}${path.sep}`)) return undefined;

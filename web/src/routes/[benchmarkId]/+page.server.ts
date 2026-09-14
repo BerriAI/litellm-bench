@@ -1,14 +1,12 @@
+import { benchmarkData, staticBenchmarks } from "$lib/server/benchmarks";
 import { error } from "@sveltejs/kit";
-import { staticBenchmarks } from "../../lib/staticData";
 import type { EntryGenerator, PageServerLoad } from "./$types";
 
-export const entries: EntryGenerator = () =>
-  staticBenchmarks().then((benchmarks) =>
-    benchmarks.map((benchmark) => ({ benchmarkId: benchmark.id }))
-  );
+export const entries: EntryGenerator = async () =>
+  (await staticBenchmarks()).map(({ id }) => ({ benchmarkId: id }));
 
 export const load: PageServerLoad = async ({ params }) => {
-  const benchmark = (await staticBenchmarks()).find(({ id }) => id === params.benchmarkId);
-  if (!benchmark) error(404, "Benchmark not found");
-  return { benchmark };
+  const data = await benchmarkData(params.benchmarkId);
+  if (!data) error(404, "Benchmark not found");
+  return data;
 };

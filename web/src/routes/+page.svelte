@@ -1,5 +1,9 @@
 <script lang="ts">
-import OverviewDashboard from "../components/OverviewDashboard.svelte";
+import { resolve } from "$app/paths";
+import PageHeader from "$lib/components/PageHeader.svelte";
+import type { PageProps } from "./$types";
+
+let { data }: PageProps = $props();
 </script>
 
 <svelte:head>
@@ -7,17 +11,23 @@ import OverviewDashboard from "../components/OverviewDashboard.svelte";
   <meta name="description" content="Reproducible LiteLLM SDK and proxy benchmark history" />
 </svelte:head>
 
-<main
-  id="main-content"
-  tabindex="-1"
-  class="shell dashboard"
-  data-variant="chart-only"
-  aria-label="LiteLLM benchmark measurements"
->
-  <header class="overview-header">
-    <h1>LiteLLM Benchmark</h1>
-    <a href="https://github.com/BerriAI/litellm-bench">GitHub <span aria-hidden="true"
-      >↗</span></a>
-  </header>
-  <OverviewDashboard />
-</main>
+<PageHeader
+  eyebrow="Performance history"
+  title="LiteLLM Benchmarks"
+  description="Reproducible LiteLLM SDK and proxy benchmark history."
+/>
+<section aria-labelledby="benchmarks-title">
+  <h2 id="benchmarks-title">Available benchmarks</h2>
+  <div class="directory">
+    {#each data.benchmarks as benchmark (benchmark.id)}
+      <a
+        class="panel benchmark-card"
+        href={`${resolve("/[benchmarkId]", { benchmarkId: benchmark.id })}/`}
+      >
+        <span class="benchmark-title">{benchmark.label}</span>
+        <span class="benchmark-metric">{benchmark.kind} benchmark</span>
+        <span class="benchmark-count">View history <span aria-hidden="true">→</span></span>
+      </a>
+    {/each}
+  </div>
+</section>

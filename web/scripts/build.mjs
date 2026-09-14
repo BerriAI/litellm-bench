@@ -1,11 +1,10 @@
 import { NodePath } from "@effect/platform-node";
 import { Effect, Path } from "effect";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { deriveIndex } from "@litellm-bench/result-store";
-import { parseAnnotations } from "../src/lib/annotationContract.ts";
+import { readAnnotations, readIndex } from "../src/lib/server/benchmarks.ts";
 
 const path = Effect.runSync(Path.Path.pipe(Effect.provide(NodePath.layer)));
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -19,9 +18,7 @@ if (output === source || output === data || output === path.parse(output).root) 
 if (outputWithinData && !outputWithinData.startsWith("..")) {
   throw new Error("BENCHMARK_SITE_DIR cannot be inside BENCHMARK_DATA_DIR");
 }
-if (existsSync(path.join(data, "annotations.json"))) {
-  parseAnnotations(JSON.parse(readFileSync(path.join(data, "annotations.json"), "utf8")));
-}
+await readAnnotations(data);
 
 rmSync(output, { recursive: true, force: true });
 const svelteKit = spawnSync(
@@ -43,7 +40,7 @@ cpSync(data, path.join(output, "data"), {
 });
 writeFileSync(
   path.join(output, "data", "index.json"),
-  `${JSON.stringify(await deriveIndex(data), null, 2)}\n`,
+  `${JSON.stringify(await readIndex(data), null, 2)}\n`,
 );
 writeFileSync(path.join(output, ".nojekyll"), "");
 console.log(output);

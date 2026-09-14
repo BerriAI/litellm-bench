@@ -28,7 +28,7 @@ const fileSystem = platform.fileSystem;
 const path = platform.path;
 const run = Effect.runPromise;
 
-export type WriteMode = "append" | "replace-case-version";
+export type WriteMode = "append" | "replace-case-version" | "replace-benchmark-version";
 
 export interface StoreOptions {
   readonly now?: () => string;
@@ -275,7 +275,9 @@ export async function ingest(
   mode: WriteMode = "append",
   options: StoreOptions = {},
 ): Promise<number> {
-  if (mode !== "append" && mode !== "replace-case-version") {
+  if (
+    mode !== "append" && mode !== "replace-case-version" && mode !== "replace-benchmark-version"
+  ) {
     throw new Error(`unsupported write mode: ${mode}`);
   }
   const resultPaths = (await walkJson(inputDirectory)).filter((path) =>
@@ -284,16 +286,24 @@ export async function ingest(
   const incoming = await Promise.all(resultPaths.map((path) => validatePair(path, source)));
   return lock(directory, async () => {
     const existing = await readRecords(directory);
-    const replacements = new Set(
+    const caseReplacements = new Set(
       incoming.map((record) => `${record.case_id}\0${record.result.version}`),
     );
-    const obsolete = mode === "replace-case-version"
-      ? existing.filter(([, record]) =>
-        replacements.has(`${record.case_id}\0${record.result.version}`)
-      )
-      : [];
+    const benchmarkReplacements = new Set(
+      incoming.map((record) => `${record.result.benchmark.id}\0${record.result.version}`),
+    );
+    const obsolete = existing.filter(([, record]) =>
+      mode === "replace-case-version"
+        ? caseReplacements.has(`${record.case_id}\0${record.result.version}`)
+        : mode === "replace-benchmark-version"
+        ? benchmarkReplacements.has(`${record.result.benchmark.id}\0${record.result.version}`)
+        : false
+    );
     const obsoletePaths = new Set(obsolete.map(([path]) => path));
-    const writes = incoming.flatMap((record) => {
+    const writable = mode === "replace-benchmark-version"
+      ? incoming.filter((record) => record.result.status === "ok")
+      : incoming;
+    const writes = writable.flatMap((record) => {
       const destination = path.join(directory, recordRelativePath(record));
       const current = existing.find(([path]) => path === destination);
       if (current !== undefined && !obsoletePaths.has(destination)) {

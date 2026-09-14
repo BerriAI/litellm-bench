@@ -633,15 +633,9 @@ importers:
       effect:
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115
-      fast-deep-equal:
-        specifier: 3.1.3
-        version: 3.1.3
       svelte:
         specifier: ^5.57.0
         version: 5.57.0
-      svelte-vega:
-        specifier: 4.0.1
-        version: 4.0.1(svelte@5.57.0)(vega-embed@7.2.0(vega-lite@6.4.3(vega@6.4.0))(vega@6.4.0))(vega-lite@6.4.3(vega@6.4.0))(vega@6.4.0)
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -655,6 +649,9 @@ importers:
         specifier: 6.4.3
         version: 6.4.3(vega@6.4.0)
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
       '@sveltejs/adapter-static':
         specifier: 3.0.10
         version: 3.0.10(@sveltejs/kit@2.70.3(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)))(svelte@5.57.0)(typescript@6.0.3)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)))
@@ -876,6 +873,11 @@ packages:
 
   '@oxc-project/types@0.149.0':
     resolution: {integrity: sha512-Efcc+iF0j3Bf67YjEqIqWXbX5XddXoK/Mw4K1/JuXwRCZ8N16VR7iT23nlCc9XrveFVh/E5Rqs2StT0V8v9LdA==}
+
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -1383,9 +1385,6 @@ packages:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
 
-  fast-deep-equal@3.1.3:
-    resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
-
   fast-json-patch@3.1.1:
     resolution: {integrity: sha512-vf6IHUX2SBcA+5/+4883dsIjpBTqmfBjmYiWK1savxQmFk4JfBMLa7ynTYOs1Rolp/T1betJxHiGD3g1Mn8lUQ==}
 
@@ -1626,6 +1625,16 @@ packages:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   postcss@8.5.28:
     resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
@@ -1696,14 +1705,6 @@ packages:
     peerDependencies:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: ^5.0.0 || ^6.0.0
-
-  svelte-vega@4.0.1:
-    resolution: {integrity: sha512-kioks+mJ3Gqv9GoFH3Pb9KTd2COTAQxVgZTf3qZJvcgwp0qDg2EIPDHeYEIjPA6+bdpPDPIBqBRHfKU4CRCafw==}
-    peerDependencies:
-      svelte: ^5.0.0
-      vega: ^6.0.0
-      vega-embed: ^7.0.0
-      vega-lite: ^6.0.0
 
   svelte-widgets@1.8.0:
     resolution: {integrity: sha512-Ks7mZKA3Nn1m3Mgn2JINFxtxoH3ElRmz3Vz+bGdPhYeZulKuQHXEk7oVNI3QDBklUuEHuiXJn/VDGCNuZWccMA==}
@@ -2142,6 +2143,10 @@ snapshots:
 
   '@oxc-project/types@0.149.0': {}
 
+  '@playwright/test@1.63.0':
+    dependencies:
+      playwright: 1.63.0
+
   '@polka/url@1.0.0-next.29': {}
 
   '@redis/bloom@6.2.1(@redis/client@6.2.1)':
@@ -2529,8 +2534,6 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  fast-deep-equal@3.1.3: {}
-
   fast-json-patch@3.1.1: {}
 
   fdir@6.5.0(picomatch@4.0.7):
@@ -2688,6 +2691,12 @@ snapshots:
 
   picomatch@4.0.7: {}
 
+  playwright-core@1.63.0: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
+
   postcss@8.5.28:
     dependencies:
       nanoid: 3.3.19
@@ -2778,13 +2787,6 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - picomatch
-
-  svelte-vega@4.0.1(svelte@5.57.0)(vega-embed@7.2.0(vega-lite@6.4.3(vega@6.4.0))(vega@6.4.0))(vega-lite@6.4.3(vega@6.4.0))(vega@6.4.0):
-    dependencies:
-      svelte: 5.57.0
-      vega: 6.4.0
-      vega-embed: 7.2.0(vega-lite@6.4.3(vega@6.4.0))(vega@6.4.0)
-      vega-lite: 6.4.3(vega@6.4.0)
 
   svelte-widgets@1.8.0(svelte@5.57.0)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)):
     dependencies:

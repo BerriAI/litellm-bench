@@ -4,7 +4,7 @@ import { parse, View } from "vega";
 import { compile, type TopLevelSpec } from "vega-lite";
 import { parseAnnotations } from "./annotationContract.ts";
 import { annotationLayers, type BenchmarkAnnotation, resolveAnnotations } from "./annotations.ts";
-import { detailSpec, overviewSpec } from "./charts.ts";
+import { detailSpec } from "./charts.ts";
 import type { BenchmarkRecord } from "./data";
 import { normalizedVersion, uniqueVersions } from "./versions.ts";
 
@@ -195,35 +195,29 @@ test("renders RC markers halfway between stable ticks without adding a release o
   }
 });
 
-test("overview and detail charts receive annotations and retain semantic version order", async () => {
+test("detail charts receive annotations and retain semantic version order", async () => {
   const values = [...records, record("1.200.0rc10", 60), record("1.200.0rc2", 80)];
-  const specs = [
-    overviewSpec(values, theme, [note]),
-    detailSpec(
-      note.benchmark_id,
-      values,
-      { title: "Import", description: "Import", unit: "ms", metricIds: [metric.id] },
-      theme,
-      [note],
-    ),
-  ];
-  for (const spec of specs) {
-    assert.ok(spec);
-    const view = new View(parse(compile(spec).spec), { renderer: "none" });
-    try {
-      const svg = await view.toSVG();
-      assert.match(svg, /\[1\]/);
-      assert.doesNotMatch(svg, /NaN|undefined/);
-      const xScale = "vconcat" in spec ? "concat_0_x" : "x";
-      assert.deepEqual(view.scale(xScale).domain(), [
-        "1.199.0",
-        "1.200.0rc2",
-        "1.200.0rc10",
-        "1.200.0",
-      ]);
-    } finally {
-      view.finalize();
-    }
+  const spec = detailSpec(
+    note.benchmark_id,
+    values,
+    { title: "Import", description: "Import", unit: "ms", metricIds: [metric.id] },
+    theme,
+    [note],
+  );
+  assert.ok(spec);
+  const view = new View(parse(compile(spec).spec), { renderer: "none" });
+  try {
+    const svg = await view.toSVG();
+    assert.match(svg, /\[1\]/);
+    assert.doesNotMatch(svg, /NaN|undefined/);
+    assert.deepEqual(view.scale("x").domain(), [
+      "1.199.0",
+      "1.200.0rc2",
+      "1.200.0rc10",
+      "1.200.0",
+    ]);
+  } finally {
+    view.finalize();
   }
 });
 

@@ -4,7 +4,7 @@
     margin-inline: auto;
   }
   .page-header {
-    padding-block: var(--space-8);
+    padding-top: var(--space-8);
   }
   .page-header h1 {
     margin-top: var(--space-2);
@@ -15,29 +15,13 @@
     color: var(--color-muted);
     font-size: var(--text-lead);
   }
-  .dashboard {
+  .dashboard,
+  .benchmark-dashboard {
     display: grid;
     gap: var(--space-10);
+  }
+  .dashboard {
     padding-bottom: var(--space-16);
-  }
-  .dashboard[data-variant="chart-only"] {
-    gap: var(--space-4);
-    padding-block: var(--space-6);
-  }
-  .overview-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-  .overview-header h1 {
-    font-size: var(--text-lead);
-    letter-spacing: -0.015em;
-  }
-  .overview-header a {
-    color: var(--color-muted);
-    font-size: var(--text-caption);
-    font-weight: var(--font-weight-medium);
   }
   .dashboard-section {
     min-width: 0;
@@ -50,6 +34,7 @@
   .directory {
     display: grid;
     gap: var(--space-4);
+    margin-top: var(--space-4);
   }
   .page-footer {
     padding-block: var(--space-6);
@@ -67,7 +52,7 @@
       width: min(var(--content-width), calc(100% - var(--space-12)));
     }
     .page-header {
-      padding-block: var(--space-10);
+      padding-top: var(--space-10);
     }
     .directory {
       grid-template-columns: repeat(2, minmax(0, 1fr));

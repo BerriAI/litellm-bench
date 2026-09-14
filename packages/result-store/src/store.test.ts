@@ -48,6 +48,7 @@ const writeFile = (location: string, contents: string, _encoding?: "utf8") =>
 const fixture = (
   runId: string,
   value = 10,
+  jobId = "base",
 ): readonly [typeof RunSpec.Type, typeof BenchmarkResult.Type] => {
   const zero = "0".repeat(64);
   const benchmark = {
@@ -72,7 +73,7 @@ const fixture = (
     case_id: zero,
     comparison_id: zero,
     benchmark,
-    job: { id: "base", canonical: true, runner: "ubuntu", config: { samples: 1 } },
+    job: { id: jobId, canonical: true, runner: "ubuntu", config: { samples: 1 } },
     version: { version: "1.0.0", artifacts: { sdk: { requirement: "litellm==1.0.0" } } },
     artifact: { requirement: "litellm==1.0.0" },
   });
@@ -101,6 +102,25 @@ const fixture = (
 
 const writePair = async (root: string, name: string, runId: string, value = 10): Promise<void> => {
   const [spec, result] = fixture(runId, value);
+  const directory = join(root, name);
+  await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, "benchmark-spec.json"), JSON.stringify(spec), "utf8");
+  await writeFile(join(directory, "benchmark-result.json"), JSON.stringify(result), "utf8");
+};
+
+const writeFailedPair = async (
+  root: string,
+  name: string,
+  runId: string,
+  jobId = "base",
+): Promise<void> => {
+  const [spec, successful] = fixture(runId, 10, jobId);
+  const result = decodeStrict(BenchmarkResult)({
+    ...successful,
+    status: "failed",
+    metrics: [],
+    error: { code: "process_failed", message: "benchmark failed" },
+  });
   const directory = join(root, name);
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, "benchmark-spec.json"), JSON.stringify(spec), "utf8");
@@ -162,6 +182,20 @@ test("replacement removes every matching case and version including prior runs",
   const index = await deriveIndex(data, { now: () => "2026-09-13T03:00:00Z" });
   assert.equal(index.record_count, 1);
   assert.equal(index.records[0]?.canonical, true);
+});
+
+test("benchmark replacement removes prior data and does not store a failed result", async () => {
+  const root = await temporary();
+  const data = join(root, "data");
+  const first = join(root, "first");
+  const failed = join(root, "failed");
+  await writePair(first, "success", "run-success");
+  await ingest(first, data, source, "replace-benchmark-version");
+  await writeFailedPair(failed, "failure", "run-failure", "alternate");
+
+  assert.equal(await ingest(failed, data, source, "replace-benchmark-version"), 0);
+  assert.deepEqual(await readdir(join(data, "results", "1.0.0", "demo")), []);
+  assert.equal((await deriveIndex(data)).record_count, 0);
 });
 
 test("recovery decodes journals and rejects malformed or excess-property documents", async () => {

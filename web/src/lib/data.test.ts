@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { type Fetcher, loadAnnotations, loadIndex } from "./data.ts";
+import { parseIndex } from "./indexContract.ts";
 
 const validIndex = {
   generated_at: "2026-09-13T20:45:07Z",
@@ -33,31 +33,8 @@ const validIndex = {
   }],
 };
 
-function response(status: number, value: unknown): Fetcher {
-  return async () => ({ status, ok: status >= 200 && status < 300, json: async () => value });
-}
-
-test("loads a strictly decoded benchmark index", async () => {
-  const index = await loadIndex("/bench/", response(200, validIndex));
-  assert.equal(index.records[0]?.metrics[0]?.value, 42);
-});
-
-test("rejects malformed, inconsistent, and excess index fields", async () => {
-  await assert.rejects(loadIndex("", response(200, { ...validIndex, unexpected: true })), {
-    message: /Invalid benchmark index/,
-  });
-  await assert.rejects(loadIndex("", response(200, { ...validIndex, record_count: 2 })), {
-    message: /record_count/,
-  });
-  await assert.rejects(loadIndex("", response(503, validIndex)), {
-    message: /Unable to load result index: 503/,
-  });
-});
-
-test("treats missing optional annotations as empty and rejects malformed documents", async () => {
-  assert.deepEqual(await loadAnnotations("", response(404, null)), []);
-  assert.deepEqual(await loadAnnotations("", response(200, { annotations: [] })), []);
-  await assert.rejects(loadAnnotations("", response(200, [])), {
-    message: /Invalid benchmark annotations/,
-  });
+test("strictly decodes benchmark indexes", () => {
+  assert.equal(parseIndex(validIndex).records[0]?.metrics[0]?.value, 42);
+  assert.throws(() => parseIndex({ ...validIndex, unexpected: true }), /Invalid benchmark index/);
+  assert.throws(() => parseIndex({ ...validIndex, record_count: 2 }), /record_count/);
 });

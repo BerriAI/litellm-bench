@@ -98,10 +98,13 @@ Ingest validated results:
 pnpm bench data ingest \
   --input data/runs/version-1.102.0rc1 \
   --data data \
-  --mode replace-case-version
+  --mode replace-benchmark-version
 ```
 
-`data/runs/` is ignored working output. A version output directory must be empty before execution so stale result pairs cannot be ingested
+This mode keeps only the latest successful result for each version+benchmark pair. A failed
+result removes the previous snapshot for that pair and is not stored. `data/runs/` is ignored
+working output. A version output directory must be empty before execution so stale result pairs
+cannot be ingested
 
 ## SDK apparatus
 
