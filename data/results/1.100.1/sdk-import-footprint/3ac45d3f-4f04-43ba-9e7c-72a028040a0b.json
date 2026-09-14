@@ -1,5 +1,5 @@
 {
-  "record_id": "dbf4a9fa29c628d26c6dc179995abd263ae00175c3e7612418ec37aed6a72347",
+  "record_id": "683676ab18457b70482fd814e8587274c757364267128833672a26fe20f259bd",
   "case_id": "7ab5dcbe2c6aec0a6f542795aa18a5e71e59a558ce26ade1c77cf3ec22621d03",
   "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
   "identity": {
@@ -108,9 +108,9 @@
   "source": {
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
-    "workflow": "Record LiteLLM benchmarks",
-    "workflow_run_id": "34809793476",
-    "commit": "a4cf0e6eaad7c7f77a738a1220a07e697b740e44",
+    "workflow": ".github/workflows/benchmark.yml",
+    "workflow_run_id": "34877399985",
+    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
     "ref": "refs/heads/main"
   },
   "spec": {
@@ -240,8 +240,8 @@
     }
   },
   "result": {
-    "run_id": "0e40320a-ea8c-4816-9362-ca4a0af2d6f2",
-    "created_at": "2026-09-14T05:55:43.238Z",
+    "run_id": "3ac45d3f-4f04-43ba-9e7c-72a028040a0b",
+    "created_at": "2026-09-14T21:28:45.431Z",
     "case_id": "7ab5dcbe2c6aec0a6f542795aa18a5e71e59a558ce26ade1c77cf3ec22621d03",
     "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
     "benchmark": {
@@ -367,13 +367,13 @@
         "python_implementation": "CPython"
       },
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-gZ36Hg/resolver/lib/python3.12/site-packages/pip (python 3.12)"
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-T5sJEi/resolver/lib/python3.12/site-packages/pip (python 3.12)"
     },
     "metrics": [
       {
         "id": "import.peak_rss",
         "label": "Process-lifetime peak RSS during import",
-        "value": 212.73046875,
+        "value": 212.54296875,
         "unit": "MiB",
         "better": "lower"
       },
@@ -401,18 +401,18 @@
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-gZ36Hg/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-T5sJEi/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
       "diagnostics": {
-        "import_only_seconds": 2.0489017019999665,
+        "import_only_seconds": 2.6650666929999716,
         "new_module_count": 2289,
-        "peak_rss_bytes": 223064064
+        "peak_rss_bytes": 222867456
       },
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61737544,
+        "download_bytes": 61740868,
         "package_artifact_bytes": 24063121,
         "artifacts": [
           {
@@ -446,14 +446,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.93-py3-none-any.whl",
-            "bytes": 140022,
-            "sha256": "3c948fe231490d446bf90bf3322d1452632107329d3683b37d88b7399bf481a0"
+            "filename": "boto3-1.43.94-py3-none-any.whl",
+            "bytes": 140023,
+            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
           },
           {
-            "filename": "botocore-1.43.93-py3-none-any.whl",
-            "bytes": 15794156,
-            "sha256": "3ca57bb5d26d88b554a74de708a5c991f45306436c91aacca931252d1d4d54ff"
+            "filename": "botocore-1.43.94-py3-none-any.whl",
+            "bytes": 15797479,
+            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -694,10 +694,10 @@
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 166520945
+          "logical_bytes": 166524692
         },
         "installed_after_first_run": {
-          "logical_bytes": 185293364
+          "logical_bytes": 185297111
         },
         "first_run_logical_delta_bytes": 18772419
       }

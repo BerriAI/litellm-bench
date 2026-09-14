@@ -1,91 +1,88 @@
 {
-  "record_id": "aaa59d5a6b376f42f3bf0ea539e297cfb19e93fec033160ed7805010e15fd887",
-  "case_id": "1c8f2a8f257abbbd52be17e0c7f26c4591ffd7cd47cfd1cbfc18cf6845e4f9a0",
-  "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+  "record_id": "a767fd1a4eaaa0a510cd73a23e6dd2fe4dad01ce9e92e05935e71f778c5f5be9",
+  "case_id": "4de73dd68b41e613112d261d0d4df3e8293c4b73935bc4b7929cd79d9c43ae86",
+  "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
   "identity": {
     "domain": "case",
-    "benchmark_id": "sdk-import-time",
+    "benchmark_id": "sdk-package-size",
     "output_metrics": [
       {
-        "id": "import.median",
-        "unit": "ms",
+        "id": "package.wheel",
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.p95",
-        "unit": "ms",
+        "id": "package.download",
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.minimum",
-        "unit": "ms",
+        "id": "package.installed",
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.maximum",
-        "unit": "ms",
-        "better": "lower"
-      },
-      {
-        "id": "import.first",
-        "unit": "ms",
+        "id": "package.artifacts",
+        "unit": "artifacts",
         "better": "lower"
       }
     ],
     "protocol": {
-      "experimental_unit": "One fresh isolated Python process executing import litellm",
+      "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
       "scenarios": [
         {
-          "id": "root-import",
+          "id": "base-install",
           "dimensions": {
-            "statement": "import litellm",
-            "isolated_python": true
+            "binary_only": true,
+            "extras": []
           }
         }
       ],
-      "attempts": {
-        "count": 20,
-        "count_from": "measurements.samples",
-        "retention": "Retain every sample in execution order",
-        "unit": "fresh-process sample",
-        "warmups": 3
-      },
       "measurements": [
         {
-          "id": "import_duration_ms",
-          "unit": "ms",
+          "id": "package.wheel",
+          "unit": "MiB",
           "role": "primary",
           "better": "lower"
         },
         {
-          "id": "first_import_duration_ms",
-          "unit": "ms",
+          "id": "package.download",
+          "unit": "MiB",
           "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "package.installed",
+          "unit": "MiB",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "package.artifacts",
+          "unit": "artifacts",
+          "role": "diagnostic",
           "better": "lower"
         }
       ],
       "analyses": [
         {
-          "id": "fresh_import_distribution",
-          "measurement": "import_duration_ms",
-          "group_by": [
-            "scenario"
+          "id": "clean_install_sizes",
+          "measurement": "package.wheel",
+          "additional_measurements": [
+            "package.download",
+            "package.installed",
+            "package.artifacts"
           ],
-          "aggregation": "median and nearest-rank p95",
-          "report": [
-            "all_samples",
-            "minimum",
-            "median",
-            "p95",
-            "maximum",
-            "attempt_count"
-          ]
+          "scenarios": [
+            "base-install"
+          ],
+          "aggregation": "exact byte counts converted to MiB for display"
         }
       ],
       "validity": {
-        "trial": "The isolated process must exit successfully",
-        "outliers": "Do not remove samples",
-        "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+        "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
+        "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
+        "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
       }
     },
     "job": {
@@ -97,17 +94,22 @@
           "statement": "import litellm"
         },
         "measurements": {
-          "warmups": 3,
-          "samples": 20,
-          "timing": true,
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
           "diagnostics": false,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "resolver": {
+          "extra_index_urls": [],
+          "find_links": [],
+          "binary_only": true
         }
       },
       "requirements": {
-        "python": "3.12",
+        "python": "3.12.10",
         "tools": [
           "uv"
         ]
@@ -124,105 +126,104 @@
   "source": {
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
-    "workflow": "Record LiteLLM benchmarks",
-    "workflow_run_id": "34809793476",
-    "commit": "a4cf0e6eaad7c7f77a738a1220a07e697b740e44",
+    "workflow": ".github/workflows/benchmark.yml",
+    "workflow_run_id": "34877399985",
+    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
     "ref": "refs/heads/main"
   },
   "spec": {
-    "case_id": "1c8f2a8f257abbbd52be17e0c7f26c4591ffd7cd47cfd1cbfc18cf6845e4f9a0",
-    "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+    "case_id": "4de73dd68b41e613112d261d0d4df3e8293c4b73935bc4b7929cd79d9c43ae86",
+    "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
     "benchmark": {
-      "id": "sdk-import-time",
-      "label": "Fresh-process LiteLLM import time",
+      "id": "sdk-package-size",
+      "label": "Clean LiteLLM package size",
       "kind": "sdk",
       "output_metrics": [
         {
-          "id": "import.median",
-          "unit": "ms",
+          "id": "package.wheel",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.p95",
-          "unit": "ms",
+          "id": "package.download",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.minimum",
-          "unit": "ms",
+          "id": "package.installed",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.maximum",
-          "unit": "ms",
-          "better": "lower"
-        },
-        {
-          "id": "import.first",
-          "unit": "ms",
+          "id": "package.artifacts",
+          "unit": "artifacts",
           "better": "lower"
         }
       ],
       "protocol": {
-        "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
-        "experimental_unit": "One fresh isolated Python process executing import litellm",
+        "question": "How large are the LiteLLM wheel, resolved wheel-only dependency closure, and files installed from that closure?",
+        "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Installed logical size covers every regular file and symlink named by installed wheel RECORDs, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
+        "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
         "scenarios": [
           {
-            "id": "root-import",
-            "label": "import litellm",
+            "id": "base-install",
+            "label": "Base LiteLLM installation",
             "dimensions": {
-              "statement": "import litellm",
-              "isolated_python": true
+              "binary_only": true,
+              "extras": []
             }
           }
         ],
-        "attempts": {
-          "count": 20,
-          "count_from": "measurements.samples",
-          "retention": "Retain every sample in execution order",
-          "unit": "fresh-process sample",
-          "warmups": 3
-        },
         "measurements": [
           {
-            "id": "import_duration_ms",
-            "label": "Fresh-process wall time",
-            "unit": "ms",
+            "id": "package.wheel",
+            "label": "LiteLLM wheel",
+            "unit": "MiB",
             "role": "primary",
             "better": "lower"
           },
           {
-            "id": "first_import_duration_ms",
-            "label": "First process in the prepared environment",
-            "unit": "ms",
+            "id": "package.download",
+            "label": "Dependency download closure",
+            "unit": "MiB",
             "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "package.installed",
+            "label": "Installed RECORD footprint before import",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "package.artifacts",
+            "label": "Downloaded artifact count",
+            "unit": "artifacts",
+            "role": "diagnostic",
             "better": "lower"
           }
         ],
         "analyses": [
           {
-            "id": "fresh_import_distribution",
-            "label": "Fresh-process import distribution",
-            "measurement": "import_duration_ms",
-            "group_by": [
-              "scenario"
+            "id": "clean_install_sizes",
+            "label": "Clean resolution and installation sizes",
+            "measurement": "package.wheel",
+            "additional_measurements": [
+              "package.download",
+              "package.installed",
+              "package.artifacts"
             ],
-            "aggregation": "median and nearest-rank p95",
-            "report": [
-              "all_samples",
-              "minimum",
-              "median",
-              "p95",
-              "maximum",
-              "attempt_count"
-            ]
+            "scenarios": [
+              "base-install"
+            ],
+            "aggregation": "exact byte counts converted to MiB for display"
           }
         ],
         "validity": {
-          "trial": "The isolated process must exit successfully",
-          "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
+          "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
+          "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
         }
       }
     },
@@ -237,17 +238,22 @@
           "statement": "import litellm"
         },
         "measurements": {
-          "warmups": 3,
-          "samples": 20,
-          "timing": true,
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
           "diagnostics": false,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "resolver": {
+          "extra_index_urls": [],
+          "find_links": [],
+          "binary_only": true
         }
       },
       "requirements": {
-        "python": "3.12",
+        "python": "3.12.10",
         "tools": [
           "uv"
         ]
@@ -271,101 +277,100 @@
     }
   },
   "result": {
-    "run_id": "5591b743-4efa-495e-9656-7eb12f9a81d8",
-    "created_at": "2026-09-14T05:56:15.507Z",
-    "case_id": "1c8f2a8f257abbbd52be17e0c7f26c4591ffd7cd47cfd1cbfc18cf6845e4f9a0",
-    "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+    "run_id": "3670bc0b-bb3c-4f94-9cbe-35b3027c8628",
+    "created_at": "2026-09-14T21:30:55.142Z",
+    "case_id": "4de73dd68b41e613112d261d0d4df3e8293c4b73935bc4b7929cd79d9c43ae86",
+    "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
     "benchmark": {
-      "id": "sdk-import-time",
-      "label": "Fresh-process LiteLLM import time",
+      "id": "sdk-package-size",
+      "label": "Clean LiteLLM package size",
       "kind": "sdk",
       "output_metrics": [
         {
-          "id": "import.median",
-          "unit": "ms",
+          "id": "package.wheel",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.p95",
-          "unit": "ms",
+          "id": "package.download",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.minimum",
-          "unit": "ms",
+          "id": "package.installed",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.maximum",
-          "unit": "ms",
-          "better": "lower"
-        },
-        {
-          "id": "import.first",
-          "unit": "ms",
+          "id": "package.artifacts",
+          "unit": "artifacts",
           "better": "lower"
         }
       ],
       "protocol": {
-        "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
-        "experimental_unit": "One fresh isolated Python process executing import litellm",
+        "question": "How large are the LiteLLM wheel, resolved wheel-only dependency closure, and files installed from that closure?",
+        "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Installed logical size covers every regular file and symlink named by installed wheel RECORDs, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
+        "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
         "scenarios": [
           {
-            "id": "root-import",
-            "label": "import litellm",
+            "id": "base-install",
+            "label": "Base LiteLLM installation",
             "dimensions": {
-              "statement": "import litellm",
-              "isolated_python": true
+              "binary_only": true,
+              "extras": []
             }
           }
         ],
-        "attempts": {
-          "count": 20,
-          "count_from": "measurements.samples",
-          "retention": "Retain every sample in execution order",
-          "unit": "fresh-process sample",
-          "warmups": 3
-        },
         "measurements": [
           {
-            "id": "import_duration_ms",
-            "label": "Fresh-process wall time",
-            "unit": "ms",
+            "id": "package.wheel",
+            "label": "LiteLLM wheel",
+            "unit": "MiB",
             "role": "primary",
             "better": "lower"
           },
           {
-            "id": "first_import_duration_ms",
-            "label": "First process in the prepared environment",
-            "unit": "ms",
+            "id": "package.download",
+            "label": "Dependency download closure",
+            "unit": "MiB",
             "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "package.installed",
+            "label": "Installed RECORD footprint before import",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "package.artifacts",
+            "label": "Downloaded artifact count",
+            "unit": "artifacts",
+            "role": "diagnostic",
             "better": "lower"
           }
         ],
         "analyses": [
           {
-            "id": "fresh_import_distribution",
-            "label": "Fresh-process import distribution",
-            "measurement": "import_duration_ms",
-            "group_by": [
-              "scenario"
+            "id": "clean_install_sizes",
+            "label": "Clean resolution and installation sizes",
+            "measurement": "package.wheel",
+            "additional_measurements": [
+              "package.download",
+              "package.installed",
+              "package.artifacts"
             ],
-            "aggregation": "median and nearest-rank p95",
-            "report": [
-              "all_samples",
-              "minimum",
-              "median",
-              "p95",
-              "maximum",
-              "attempt_count"
-            ]
+            "scenarios": [
+              "base-install"
+            ],
+            "aggregation": "exact byte counts converted to MiB for display"
           }
         ],
         "validity": {
-          "trial": "The isolated process must exit successfully",
-          "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
+          "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
+          "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
         }
       }
     },
@@ -380,17 +385,22 @@
           "statement": "import litellm"
         },
         "measurements": {
-          "warmups": 3,
-          "samples": 20,
-          "timing": true,
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
           "diagnostics": false,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "resolver": {
+          "extra_index_urls": [],
+          "find_links": [],
+          "binary_only": true
         }
       },
       "requirements": {
-        "python": "3.12",
+        "python": "3.12.10",
         "tools": [
           "uv"
         ]
@@ -402,7 +412,7 @@
       "distribution": "litellm"
     },
     "apparatus": {
-      "runner": "@litellm-bench/benchmark-sdk-import-time",
+      "runner": "@litellm-bench/benchmark-sdk-package-size",
       "host": {
         "platform": "linux",
         "architecture": "x86_64",
@@ -412,301 +422,56 @@
         "python_version": "3.12.10",
         "python_implementation": "CPython"
       },
-      "python_version": "3.12.10",
-      "python_implementation": "CPython",
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-MxYR02/resolver/lib/python3.12/site-packages/pip (python 3.12)",
-      "timer": "python-time-perf-counter-subprocess-run"
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-7G9muY/resolver/lib/python3.12/site-packages/pip (python 3.12)"
     },
     "metrics": [
       {
-        "id": "import.median",
-        "label": "Median fresh import",
-        "value": 2227.49930949999,
-        "unit": "ms",
+        "id": "package.wheel",
+        "label": "LiteLLM wheel",
+        "value": 22.94838047027588,
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.p95",
-        "label": "p95 fresh import",
-        "value": 2277.130054999816,
-        "unit": "ms",
+        "id": "package.download",
+        "label": "Dependency download closure",
+        "value": 58.880680084228516,
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.minimum",
-        "label": "Minimum fresh import",
-        "value": 2187.9688619999342,
-        "unit": "ms",
+        "id": "package.installed",
+        "label": "Installed RECORD footprint before import",
+        "value": 158.80800342559814,
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.maximum",
-        "label": "Maximum fresh import",
-        "value": 2289.7907120000127,
-        "unit": "ms",
-        "better": "lower"
-      },
-      {
-        "id": "import.first",
-        "label": "First import in prepared environment",
-        "value": 4534.478540999999,
-        "unit": "ms",
+        "id": "package.artifacts",
+        "label": "Downloaded artifact count",
+        "value": 55,
+        "unit": "artifacts",
         "better": "lower"
       }
     ],
-    "trials": [
-      {
-        "id": "fresh-import-1",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2289.7907120000127
-        },
-        "attempt": 1
-      },
-      {
-        "id": "fresh-import-2",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2277.130054999816
-        },
-        "attempt": 2
-      },
-      {
-        "id": "fresh-import-3",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2275.544118000198
-        },
-        "attempt": 3
-      },
-      {
-        "id": "fresh-import-4",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2245.985563999966
-        },
-        "attempt": 4
-      },
-      {
-        "id": "fresh-import-5",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2247.453041999961
-        },
-        "attempt": 5
-      },
-      {
-        "id": "fresh-import-6",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2237.8661410000404
-        },
-        "attempt": 6
-      },
-      {
-        "id": "fresh-import-7",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2275.86397999994
-        },
-        "attempt": 7
-      },
-      {
-        "id": "fresh-import-8",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2243.164590999868
-        },
-        "attempt": 8
-      },
-      {
-        "id": "fresh-import-9",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2211.7256480000833
-        },
-        "attempt": 9
-      },
-      {
-        "id": "fresh-import-10",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2207.140637000066
-        },
-        "attempt": 10
-      },
-      {
-        "id": "fresh-import-11",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2225.2845860000434
-        },
-        "attempt": 11
-      },
-      {
-        "id": "fresh-import-12",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2187.9688619999342
-        },
-        "attempt": 12
-      },
-      {
-        "id": "fresh-import-13",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2207.1801409999807
-        },
-        "attempt": 13
-      },
-      {
-        "id": "fresh-import-14",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2223.229224000079
-        },
-        "attempt": 14
-      },
-      {
-        "id": "fresh-import-15",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2216.1626549998346
-        },
-        "attempt": 15
-      },
-      {
-        "id": "fresh-import-16",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2229.7140329999365
-        },
-        "attempt": 16
-      },
-      {
-        "id": "fresh-import-17",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2251.1835499999506
-        },
-        "attempt": 17
-      },
-      {
-        "id": "fresh-import-18",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2204.9196399998436
-        },
-        "attempt": 18
-      },
-      {
-        "id": "fresh-import-19",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2203.768837000098
-        },
-        "attempt": 19
-      },
-      {
-        "id": "fresh-import-20",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 2209.3569319999915
-        },
-        "attempt": 20
-      }
-    ],
-    "analyses": [
-      {
-        "id": "root-import.fresh_import_distribution",
-        "measurement": "import_duration_ms",
-        "aggregation": "median and nearest-rank p95",
-        "payload": {
-          "definition": "fresh_import_distribution",
-          "scenario": "root-import",
-          "summary": {
-            "attempt_count": 20,
-            "minimum": 2187.9688619999342,
-            "median": 2227.49930949999,
-            "p95": 2277.130054999816,
-            "maximum": 2289.7907120000127
-          }
-        }
-      }
-    ],
+    "trials": [],
+    "analyses": [],
     "details": {
       "runtime": {
-        "requested_python": "3.12",
         "resolved_package_version": "1.100.1",
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-MxYR02/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-7G9muY/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
-      },
-      "timing": {
-        "first_ever_process_seconds": 4.534478540999999,
-        "warmup_samples_seconds": [
-          2.311441936999927,
-          2.3090670530000352,
-          2.3244912290001594
-        ],
-        "fresh_process": {
-          "count": 20,
-          "samples_seconds": [
-            2.2897907120000127,
-            2.277130054999816,
-            2.275544118000198,
-            2.245985563999966,
-            2.247453041999961,
-            2.2378661410000404,
-            2.27586397999994,
-            2.243164590999868,
-            2.2117256480000833,
-            2.207140637000066,
-            2.2252845860000434,
-            2.1879688619999342,
-            2.2071801409999807,
-            2.223229224000079,
-            2.2161626549998346,
-            2.2297140329999365,
-            2.2511835499999506,
-            2.2049196399998436,
-            2.203768837000098,
-            2.2093569319999915
-          ],
-          "minimum_seconds": 2.1879688619999342,
-          "median_seconds": 2.22749930949999,
-          "p95_seconds": 2.277130054999816,
-          "maximum_seconds": 2.2897907120000127
-        }
       },
       "diagnostics": {},
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61737544,
+        "download_bytes": 61740868,
+        "package_artifact_bytes": 24063121,
         "artifacts": [
           {
             "filename": "aiohappyeyeballs-2.7.1-py3-none-any.whl",
@@ -739,14 +504,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.93-py3-none-any.whl",
-            "bytes": 140022,
-            "sha256": "3c948fe231490d446bf90bf3322d1452632107329d3683b37d88b7399bf481a0"
+            "filename": "boto3-1.43.94-py3-none-any.whl",
+            "bytes": 140023,
+            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
           },
           {
-            "filename": "botocore-1.43.93-py3-none-any.whl",
-            "bytes": 15794156,
-            "sha256": "3ca57bb5d26d88b554a74de708a5c991f45306436c91aacca931252d1d4d54ff"
+            "filename": "botocore-1.43.94-py3-none-any.whl",
+            "bytes": 15797479,
+            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -983,16 +748,24 @@
             "bytes": 10238,
             "sha256": "25ad4e16390cd314347dd8f1de67a2ac538ae658ed4ab9db16029c07c188e97f"
           }
-        ]
+        ],
+        "policy": "same-campaign-wheel-closure-v1",
+        "inputs": {
+          "python": "3.12.10",
+          "requirement": "litellm==1.100.1",
+          "distribution": "litellm",
+          "expected_version": "1.100.1",
+          "resolver": {
+            "extra_index_urls": [],
+            "find_links": [],
+            "binary_only": true
+          }
+        }
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 166520945
-        },
-        "installed_after_first_run": {
-          "logical_bytes": 185293364
-        },
-        "first_run_logical_delta_bytes": 18772419
+          "logical_bytes": 166522261
+        }
       }
     },
     "status": "ok"
