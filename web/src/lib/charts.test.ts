@@ -48,9 +48,9 @@ test("overview exposes every namespaced metric and filters noncanonical or faile
     [a, b, { ...a, status: "failed" }, { ...a, canonical: false }],
     theme,
   );
-  assert.ok(spec && "vconcat" in spec);
-  assert.equal(spec.vconcat.length, 2);
+  assert.ok(spec && "layer" in spec);
   const svg = await render(spec);
+  assert.match(svg, /Change from first visible version/);
   assert.match(svg, /sdk-import-time.shared/);
   assert.match(svg, /sdk-package-size.shared/);
   assert.match(svg, /href="\/sdk-import-time\/"/);
@@ -87,7 +87,7 @@ test("all OCR metrics are charted once and uncovered metrics get isolated fallba
   assert.equal(detailSpec("proxy-ocr", [record()], definitions[0], theme), null);
 });
 
-test("trend aggregation keeps configurations separate while combining repeated runs", async () => {
+test("overview trend combines configurations and repeated runs by metric", async () => {
   const values = [
     record("sdk-import-time", "1", 10),
     record("sdk-import-time", "1", 30),
@@ -105,7 +105,7 @@ test("trend aggregation keeps configurations separate while combining repeated r
     const svg = await view.toSVG();
     assert.match(svg, /20/);
     assert.match(svg, /999/);
-    assert.equal((svg.match(/aria-roledescription="line mark"/g) ?? []).length, 2);
+    assert.equal((svg.match(/aria-roledescription="line mark"/g) ?? []).length, 1);
   } finally {
     view.finalize();
   }

@@ -70,7 +70,27 @@ const executeValidatedRun = (
       artifactsDirectory,
       host: captureHostEnvironment(),
     };
-    const outcome = yield* runRegisteredBenchmark(context).pipe(Effect.result);
+    const benchmarkAnnotations = {
+      benchmark_id: spec.benchmark.id,
+      benchmark_job: spec.job.id,
+      version: spec.version.version,
+      run_id: metadata.runId,
+    };
+    const outcome = yield* Effect.logInfo("benchmark started").pipe(
+      Effect.andThen(Effect.scoped(Effect.gen(function*() {
+        yield* Effect.sleep("1 minute").pipe(
+          Effect.andThen(Effect.logInfo("benchmark still running")),
+          Effect.forever,
+          Effect.forkScoped,
+        );
+        return yield* runRegisteredBenchmark(context);
+      }))),
+      Effect.tap(() => Effect.logInfo("benchmark completed")),
+      Effect.tapError((error) => Effect.logError(`benchmark failed: ${error.message}`)),
+      Effect.annotateLogs(benchmarkAnnotations),
+      Effect.withLogSpan("benchmark"),
+      Effect.result,
+    );
     if (outcome._tag === "Failure") {
       if (outcome.failure._tag === "RunnerNotFound") {
         return errorResponse(

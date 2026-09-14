@@ -1,6 +1,8 @@
 <script lang="ts">
 import { base } from "$app/paths";
 import { onMount } from "svelte";
+import MultiSelect from "svelte-widgets/MultiSelect.svelte";
+import RangeSlider from "svelte-widgets/RangeSlider.svelte";
 import { type BenchmarkAnnotation, resolveAnnotations } from "../lib/annotations";
 import { overviewSpec } from "../lib/charts";
 import {
@@ -9,7 +11,6 @@ import {
   loadAnnotations,
   loadIndex,
   unique,
-  withBase,
 } from "../lib/data";
 import { isCanonical, observations } from "../lib/observations";
 import { uniqueVersions } from "../lib/versions";
@@ -20,29 +21,51 @@ let annotations = $state.raw<BenchmarkAnnotation[]>([]);
 let index = $state.raw<BenchmarkIndex>();
 let records = $state.raw<BenchmarkRecord[]>([]);
 let versions = $state.raw<string[]>([]);
-let start = $state("");
-let end = $state("");
+let versionRange = $state<[number, number]>([0, 0]);
+let selectedMetrics = $state<MetricOption[]>([]);
 let chartBusy = $state(true);
 let chartMessage = $state("Loading measurements…");
 let chartState = $state<"loading" | "empty" | "error">("loading");
 
-const selectedRecords = $derived.by(() => {
-  const selected = new Set(versions.slice(versions.indexOf(start), versions.indexOf(end) + 1));
-  return records.filter((record) => record.version && selected.has(record.version));
+interface MetricOption {
+  group: string;
+  label: string;
+  value: string;
+}
+
+const metricOptions = $derived.by(() => {
+  const values = observations(records);
+  return unique(values.map((item) => item.name)).map((name) => {
+    const metric = values.find((item) => item.name === name)!;
+    return {
+      group: metric.benchmarkId,
+      label: `${metric.metricId} — ${metric.label} (${metric.unit})`,
+      value: name,
+    };
+  });
 });
-function changeStart(): void {
-  if (versions.indexOf(start) > versions.indexOf(end)) end = start;
-}
 
-function changeEnd(): void {
-  if (versions.indexOf(end) < versions.indexOf(start)) start = end;
-}
-
-const metricLinks = $derived.by(() => {
-  const values = observations(selectedRecords);
-  return unique(values.map((item) => item.name)).map((name) =>
-    values.find((item) => item.name === name)!
-  );
+const versionRecords = $derived.by(() => {
+  const selectedVersions = new Set(versions.slice(versionRange[0], versionRange[1] + 1));
+  return records.filter((record) => record.version && selectedVersions.has(record.version));
+});
+const unavailableProxyBenchmarks = $derived.by(() =>
+  unique(
+    versionRecords.filter((record) => record.kind === "proxy").map((record) => record.benchmark_id),
+  ).filter((benchmarkId) =>
+    !versionRecords.some((record) =>
+      record.benchmark_id === benchmarkId && record.status === "ok" && record.metrics.length
+    )
+  )
+);
+const selectedRecords = $derived.by(() => {
+  const selectedNames = new Set(selectedMetrics.map((metric) => metric.value));
+  return versionRecords.map((record) => ({
+    ...record,
+    metrics: record.metrics.filter((metric) =>
+      selectedNames.has(`${record.benchmark_id}.${metric.id}`)
+    ),
+  }));
 });
 
 const spec = $derived(index ? overviewSpec(selectedRecords, undefined, annotations, base) : null);
@@ -53,7 +76,9 @@ $effect(() => {
   chartState = spec ? "loading" : "empty";
   chartMessage = spec
     ? "Loading measurements…"
-    : "No measurements are available in this version range";
+    : selectedMetrics.length
+    ? "No measurements are available in this version range"
+    : "Select at least one metric to draw the chart";
 });
 
 onMount(async () => {
@@ -66,8 +91,8 @@ onMount(async () => {
     index = loadedIndex;
     records = (index.records ?? []).filter(isCanonical);
     versions = [...uniqueVersions(records.map((record) => record.version))];
-    start = versions[0] ?? "";
-    end = versions.at(-1) ?? start;
+    versionRange = [0, Math.max(0, versions.length - 1)];
+    selectedMetrics = metricOptions;
   } catch {
     chartBusy = false;
     chartState = "error";
@@ -77,42 +102,43 @@ onMount(async () => {
 </script>
 
 <div class="panel" data-slot="panel">
-  <fieldset class="version-range" data-slot="version-range">
-    <legend>LiteLLM version range</legend>
-    <label class="version-field"><span class="field-label">From version</span>
-      <select
-        aria-label="First LiteLLM version"
-        class="select"
-        bind:value={start}
-        onchange={changeStart}
-        disabled={versions.length <= 1}
-      >
-        {#each versions as version}<option value={version}>{version}</option>{/each}
-      </select>
-    </label>
-    <label class="version-field"><span class="field-label">To version</span>
-      <select
-        aria-label="Last LiteLLM version"
-        class="select"
-        bind:value={end}
-        onchange={changeEnd}
-        disabled={versions.length <= 1}
-      >
-        {#each versions as version}<option value={version}>{version}</option>{/each}
-      </select>
-    </label>
-  </fieldset>
-  <p class="chart-description">
-    Select a metric point to explore its benchmark. Each chart has its own scale. Trends use
-    matching host configurations.
-  </p>
-  <nav class="metric-links" aria-label="Metrics">
-    {#each metricLinks as metric (metric.name)}
-      <a href={withBase(`${metric.benchmarkId}/`, base)}>{metric.name} <span>· {metric.label} · {
-            metric.unit
-          }</span></a>
-    {/each}
-  </nav>
+  <div class="overview-controls">
+    <div class="version-slider">
+      {#if versions.length > 1}
+        <RangeSlider
+          class="version-range-slider"
+          min={0}
+          max={versions.length - 1}
+          step={1}
+          bind:value={versionRange}
+          label="LiteLLM version range"
+          lower_label="First LiteLLM version"
+          upper_label="Last LiteLLM version"
+          format_value={(value) => versions[Math.round(value)] ?? "—"}
+          show_inputs={false}
+          tick_count={2}
+        />
+      {:else}
+        <p class="control-placeholder">Loading version range…</p>
+      {/if}
+    </div>
+  </div>
+  <div class="metric-picker">
+    <label class="field-label" for="overview-metrics">Metrics</label>
+    <MultiSelect
+      class="metric-multiselect"
+      id="overview-metrics"
+      options={metricOptions}
+      bind:value={selectedMetrics}
+      placeholder="Select metrics"
+      max_visible_chips={0}
+      keep_selected_in_dropdown="checkboxes"
+      select_all_option="Select all metrics"
+      virtual_list
+      allow_empty
+      disabled={!index}
+    />
+  </div>
   <div
     id="overview-chart"
     role="region"
@@ -135,6 +161,12 @@ onMount(async () => {
       />
     {/if}
   </div>
+  {#if unavailableProxyBenchmarks.length}
+    <p class="data-note" role="status">
+      Proxy metrics unavailable for {unavailableProxyBenchmarks.join(", ")}: every selected run
+      failed before producing measurements.
+    </p>
+  {/if}
   {#if chartMessage}<p
       id="overview-empty"
       class="status"

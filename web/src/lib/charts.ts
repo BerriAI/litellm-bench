@@ -4,7 +4,7 @@ import { chartPresentation, readChartTheme } from "../styles/charts.ts";
 import { annotationLayers, type BenchmarkAnnotation, resolveAnnotations } from "./annotations.ts";
 import type { BenchmarkRecord } from "./data.ts";
 import { unique, withBase } from "./data.ts";
-import { observations } from "./observations.ts";
+import { median, observations } from "./observations.ts";
 import { uniqueVersions } from "./versions.ts";
 
 export interface DetailChartDefinition {
@@ -160,93 +160,122 @@ export function overviewSpec(
 ): TopLevelSpec | null {
   const values = observations(records);
   if (!values.length) return null;
-  const names = unique(values.map((item) => item.name));
+  const versions = uniqueVersions(values.map((item) => item.version));
+  const indexedValues = values.flatMap((item) => {
+    const series = values.filter((candidate) => candidate.name === item.name);
+    const firstVersion = versions.find((version) =>
+      series.some((candidate) => candidate.version === version)
+    );
+    const baseline = median(
+      series.filter((candidate) => candidate.version === firstVersion).map((candidate) =>
+        candidate.value
+      ),
+    );
+    if (baseline === undefined || baseline === 0) return [];
+    return [{
+      ...item,
+      change: (item.value / baseline - 1) * 100,
+      path: withBase(`${item.benchmarkId}/`, base),
+    }];
+  });
+  if (!indexedValues.length) return null;
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     background: theme.colors.surface,
     config: theme.config,
-    spacing: chartPresentation.spacing,
-    vconcat: names.map((name) => {
-      const metrics = values.filter((item) => item.name === name);
-      const metric = metrics[0];
-      return {
-        width: "container",
-        height: chartPresentation.overviewHeight,
-        title: {
-          text: name,
-          subtitle: `${metric.label} · ${unique(metrics.map((item) => item.unit)).join(" / ")}`,
+    width: "container",
+    height: chartPresentation.overviewHeight,
+    data: { values: indexedValues },
+    layer: [
+      {
+        data: { values: [{ change: 0 }] },
+        mark: { type: "rule", stroke: theme.colors.border, strokeWidth: 1 },
+        encoding: {
+          y: { field: "change", type: "quantitative" },
         },
-        data: {
-          values: metrics.map((item) => ({
-            ...item,
-            path: withBase(`${item.benchmarkId}/`, base),
-          })),
+      },
+      {
+        mark: { type: "line", strokeWidth: chartPresentation.lineWidth },
+        encoding: {
+          x: {
+            field: "version",
+            type: "ordinal",
+            sort: [...versions],
+            scale: { type: "band", paddingInner: 0, paddingOuter: 0.5 },
+            title: "LiteLLM version",
+            axis: { labelOverlap: "greedy", labelSeparation: 12 },
+          },
+          y: {
+            aggregate: "median",
+            field: "change",
+            type: "quantitative",
+            title: "Change from first visible version (%)",
+            scale: { zero: true, nice: true },
+            axis: { format: "+.1f" },
+          },
+          detail: { field: "name", type: "nominal" },
+          color: {
+            field: "name",
+            type: "nominal",
+            title: "Metric",
+            scale: { range: theme.series },
+            legend: {
+              orient: "bottom",
+              direction: "vertical",
+              columns: 2,
+              symbolType: "stroke",
+            },
+          },
+        },
+      },
+      {
+        mark: {
+          type: "point",
+          cursor: "pointer",
+          filled: true,
+          size: chartPresentation.pointSize,
         },
         encoding: {
           x: {
             field: "version",
             type: "ordinal",
-            sort: [...uniqueVersions(values.map((item) => item.version))],
+            sort: [...versions],
             scale: { type: "band", paddingInner: 0, paddingOuter: 0.5 },
             title: "LiteLLM version",
+            axis: { labelOverlap: "greedy", labelSeparation: 12 },
           },
-          detail: { field: "key", type: "nominal" },
+          y: {
+            field: "change",
+            type: "quantitative",
+            title: "Change from first visible version (%)",
+            scale: { zero: true, nice: true },
+            axis: { format: "+.1f" },
+          },
+          detail: { field: "name", type: "nominal" },
           color: {
-            field: "environment",
+            field: "name",
             type: "nominal",
-            title: "Configuration",
             scale: { range: theme.series },
-            legend: null,
           },
+          href: { field: "path" },
+          tooltip: [
+            { field: "name", title: "Metric" },
+            { field: "label", title: "Measurement" },
+            { field: "version", title: "Version" },
+            { field: "change", type: "quantitative", title: "Change (%)", format: "+.2f" },
+            { field: "value", type: "quantitative", title: "Raw value", format: ".3~r" },
+            { field: "unit", title: "Unit" },
+          ],
         },
-        layer: [
-          {
-            mark: { type: "line", strokeWidth: chartPresentation.lineWidth },
-            encoding: {
-              y: {
-                aggregate: "median",
-                field: "value",
-                type: "quantitative",
-                title: metric.unit,
-                scale: { zero: false, nice: true },
-              },
-            },
-          },
-          {
-            mark: {
-              type: "point",
-              cursor: "pointer",
-              filled: true,
-              size: chartPresentation.pointSize,
-            },
-            encoding: {
-              y: {
-                field: "value",
-                type: "quantitative",
-                title: metric.unit,
-                scale: { zero: false, nice: true },
-              },
-              href: { field: "path" },
-              tooltip: [
-                { field: "name", title: "Metric" },
-                { field: "version", title: "Version" },
-                { field: "value", type: "quantitative", title: "Value", format: ".3~r" },
-                { field: "unit", title: "Unit" },
-                { field: "environment", title: "Configuration" },
-              ],
-            },
-          },
-          ...annotationLayers(
-            resolveAnnotations(
-              records.filter((record) => record.benchmark_id === metric.benchmarkId),
-              [metric.metricId],
-              annotations,
-            ),
-            theme.colors.foreground,
-          ),
-        ],
-      };
-    }),
+      },
+      ...annotationLayers(
+        resolveAnnotations(records, undefined, annotations).map((annotation) => ({
+          ...annotation,
+          value: null,
+        })),
+        theme.colors.foreground,
+      ),
+    ],
   };
 }
 

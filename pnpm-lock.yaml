@@ -667,6 +667,9 @@ importers:
       svelte-check:
         specifier: 4.7.6
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.0)(typescript@6.0.3)
+      svelte-widgets:
+        specifier: ^1.8.0
+        version: 1.8.0(svelte@5.57.0)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0))
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1194,6 +1197,9 @@ packages:
     resolution: {integrity: sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==}
     engines: {node: '>=12'}
 
+  argparse@2.0.1:
+    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+
   aria-query@5.3.1:
     resolution: {integrity: sha512-Z/ZeOgVl7bcSYZ/u/rh0fOpvEpq//LZmdbkXyc7syVzjPAhfOa9ebsdTSjEBDU4vs5nC98Kfduj1uFo0qyET3g==}
     engines: {node: '>= 0.4'}
@@ -1423,6 +1429,10 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
+  js-yaml@5.4.2:
+    resolution: {integrity: sha512-m+aqu+LwO1O6sIopafj8HUVl5aawITwZQe/yHpMCKjaWBaA/d07B/QdMb3529REftiU+RMMHL3Vlsw3hON7vWg==}
+    hasBin: true
+
   json-stringify-pretty-compact@4.0.0:
     resolution: {integrity: sha512-3CNZ2DnrpByG9Nqj6Xo8vqbjT4F6N+tb4Gb28ESAZjYZ5yqvmc56J+/kuIwkaAMOyblTQhUW7PxMkUb8Q36N3Q==}
 
@@ -1587,6 +1597,11 @@ packages:
   magic-string@1.3.1:
     resolution: {integrity: sha512-rm91zr2Ou+XueDTohjQQjdQEcYM6zVi8KVUCG8Ec3vHwUEKrhSdCNyfuIywkA6hcCAteIn0ZOtAHA6eGpiX+Pg==}
 
+  marked@18.0.13:
+    resolution: {integrity: sha512-xTxVzZsBFwunP6HDmtBkabUQEYArnP7/rMDGmPj9SlrKlQ4i8MdYVow+nJL0eOqwpUqhzBoTBRADGN6uYwPyOw==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
@@ -1689,6 +1704,21 @@ packages:
       vega: ^6.0.0
       vega-embed: ^7.0.0
       vega-lite: ^6.0.0
+
+  svelte-widgets@1.8.0:
+    resolution: {integrity: sha512-Ks7mZKA3Nn1m3Mgn2JINFxtxoH3ElRmz3Vz+bGdPhYeZulKuQHXEk7oVNI3QDBklUuEHuiXJn/VDGCNuZWccMA==}
+    peerDependencies:
+      '@wooorm/starry-night': ^3.0.0
+      katex: ^0.16.0 || ^0.17.0 || ^0.18.0
+      svelte: ^5.48.0
+      vite: ^8.0.0
+    peerDependenciesMeta:
+      '@wooorm/starry-night':
+        optional: true
+      katex:
+        optional: true
+      vite:
+        optional: true
 
   svelte@5.57.0:
     resolution: {integrity: sha512-NdbDn7fl4be1ViUG0oq/lvG6OZy3oENolV2ONjiqqsfVoeAfzaQAKUcEX3MrQod/Bebv1PgwET9rfXhgn9s4Kg==}
@@ -2328,6 +2358,8 @@ snapshots:
 
   ansi-styles@6.2.3: {}
 
+  argparse@2.0.1: {}
+
   aria-query@5.3.1: {}
 
   assertion-error@2.0.1: {}
@@ -2526,6 +2558,10 @@ snapshots:
 
   jiti@2.7.0: {}
 
+  js-yaml@5.4.2:
+    dependencies:
+      argparse: 2.0.1
+
   json-stringify-pretty-compact@4.0.0: {}
 
   kleur@4.1.5: {}
@@ -2638,6 +2674,8 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
+  marked@18.0.13: {}
+
   mri@1.2.0: {}
 
   mrmime@2.0.1: {}
@@ -2747,6 +2785,14 @@ snapshots:
       vega: 6.4.0
       vega-embed: 7.2.0(vega-lite@6.4.3(vega@6.4.0))(vega@6.4.0)
       vega-lite: 6.4.3(vega@6.4.0)
+
+  svelte-widgets@1.8.0(svelte@5.57.0)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)):
+    dependencies:
+      js-yaml: 5.4.2
+      marked: 18.0.13
+      svelte: 5.57.0
+    optionalDependencies:
+      vite: 8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)
 
   svelte@5.57.0:
     dependencies:

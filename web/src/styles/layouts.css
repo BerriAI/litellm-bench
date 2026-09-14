@@ -21,7 +21,23 @@
     padding-bottom: var(--space-16);
   }
   .dashboard[data-variant="chart-only"] {
+    gap: var(--space-4);
     padding-block: var(--space-6);
+  }
+  .overview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .overview-header h1 {
+    font-size: var(--text-lead);
+    letter-spacing: -0.015em;
+  }
+  .overview-header a {
+    color: var(--color-muted);
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-medium);
   }
   .dashboard-section {
     min-width: 0;

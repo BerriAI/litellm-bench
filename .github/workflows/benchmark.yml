@@ -36,7 +36,10 @@ jobs:
           backfill_months: ${{ inputs.backfill_months }}
           default_branch: ${{ github.event.repository.default_branch }}
           order_seed: ${{ github.run_id }}
-      # Save k6 before the matrix starts so cold-cache jobs do not all download it.
+      # Save tools before the matrix starts so cold-cache jobs do not all download them.
+      - name: Warm the uv cache
+        if: steps.plan.outputs.has_jobs == 'true'
+        uses: ./.github/actions/setup-uv
       - name: Warm the k6 cache
         if: steps.plan.outputs.has_jobs == 'true'
         uses: ./.github/actions/setup-k6

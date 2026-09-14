@@ -4,7 +4,7 @@ import {
   RunMetadataGenerator,
   runnerRegistryLayer,
 } from "@litellm-bench/harness";
-import { Effect, FileSystem, Layer, Path } from "effect";
+import { Effect, FileSystem, Layer, Logger, Path } from "effect";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
@@ -67,17 +67,24 @@ const benchmarks: ReadonlyArray<CatalogBenchmark> = [
 const invokeWithRunners = (
   args: ReadonlyArray<string>,
   runners: ReadonlyArray<BenchmarkRunner>,
-) =>
-  Effect.runPromise(
-    runCli(args).pipe(Effect.provide(Layer.mergeAll(
-      NodeServices.layer,
-      catalogLayer(benchmarks),
-      runnerRegistryLayer(Effect.succeed(runners)),
-      Layer.succeed(RunMetadataGenerator, {
-        make: Effect.succeed({ runId: "test-run", createdAt: "2026-09-13T12:00:00Z" }),
-      }),
-    ))),
+  logMessages?: Array<string>,
+) => {
+  const program = runCli(args).pipe(Effect.provide(Layer.mergeAll(
+    NodeServices.layer,
+    catalogLayer(benchmarks),
+    runnerRegistryLayer(Effect.succeed(runners)),
+    Layer.succeed(RunMetadataGenerator, {
+      make: Effect.succeed({ runId: "test-run", createdAt: "2026-09-13T12:00:00Z" }),
+    }),
+  )));
+  return Effect.runPromise(
+    logMessages === undefined
+      ? program
+      : program.pipe(Effect.provide(Logger.layer([
+        Logger.make(({ message }) => logMessages.push(String(message))),
+      ]))),
   );
+};
 
 const invoke = (args: ReadonlyArray<string>) => invokeWithRunners(args, []);
 
@@ -343,17 +350,22 @@ describe("runCli", () => {
         seed_sha256: "25bf8e1a2393f1108d37029b3df5593236c755742ec93465bbafa9b290bddcf6",
       },
     };
+    const logMessages: Array<string> = [];
 
     try {
-      const response = await invokeWithRunners([
-        "run-version",
-        "--version",
-        "1.0.0",
-        "--plan-json",
-        JSON.stringify(plan),
-        "--output",
-        output,
-      ], [runner]);
+      const response = await invokeWithRunners(
+        [
+          "run-version",
+          "--version",
+          "1.0.0",
+          "--plan-json",
+          JSON.stringify(plan),
+          "--output",
+          output,
+        ],
+        [runner],
+        logMessages,
+      );
       const summary = JSON.parse(
         await readFile(join(output, "version-summary.json"), "utf8"),
       );
@@ -365,6 +377,14 @@ describe("runCli", () => {
       );
 
       expect(response).toMatchObject({ exitCode: ExitCode.Success, stdout: "completed=1\n" });
+      expect(logMessages).toEqual([
+        "version run started",
+        "version job started",
+        "benchmark started",
+        "benchmark completed",
+        "version job completed",
+        "version run completed",
+      ]);
       expect(summary).toEqual([{ job_id: plan.jobs[0].job_id, exit_code: 0 }]);
       expect(spec.case_id).toMatch(/^[a-f0-9]{64}$/);
       expect(spec.comparison_id).toMatch(/^[a-f0-9]{64}$/);

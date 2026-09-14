@@ -60,39 +60,41 @@ const makeProcessExecutor = Effect.gen(function*() {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
   const execute = (command: Command): Effect.Effect<CommandOutput, ProcessError> => {
-    const execution = Effect.scoped(
-      Effect.gen(function*() {
-        const child = ChildProcess.make(command.executable, command.args ?? [], {
-          cwd: command.cwd,
-          env: command.env,
-          extendEnv: command.extendEnv ?? command.env !== undefined,
-          stdin: "ignore",
-          forceKillAfter: "1 second",
-        });
-        const handle = yield* spawner.spawn(child).pipe(
-          Effect.mapError((cause) => new ProcessStartError({ command, cause })),
-        );
-        const [stdout, stderr, exitCode] = yield* Effect.all(
-          [
-            handle.stdout.pipe(Stream.decodeText(), Stream.mkString),
-            handle.stderr.pipe(Stream.decodeText(), Stream.mkString),
-            handle.exitCode,
-          ],
-          { concurrency: "unbounded" },
-        ).pipe(Effect.mapError((cause) => new ProcessStartError({ command, cause })));
-        const output: CommandOutput = {
-          exitCode: Number(exitCode),
-          stdout,
-          stderr,
-        };
-        return yield* output.exitCode === 0
-          ? Effect.succeed(output)
-          : Effect.fail(new ProcessFailure({ command, output }));
-      }),
+    const execution = Effect.logDebug("process started").pipe(
+      Effect.andThen(Effect.scoped(
+        Effect.gen(function*() {
+          const child = ChildProcess.make(command.executable, command.args ?? [], {
+            cwd: command.cwd,
+            env: command.env,
+            extendEnv: command.extendEnv ?? command.env !== undefined,
+            stdin: "ignore",
+            forceKillAfter: "1 second",
+          });
+          const handle = yield* spawner.spawn(child).pipe(
+            Effect.mapError((cause) => new ProcessStartError({ command, cause })),
+          );
+          const [stdout, stderr, exitCode] = yield* Effect.all(
+            [
+              handle.stdout.pipe(Stream.decodeText(), Stream.mkString),
+              handle.stderr.pipe(Stream.decodeText(), Stream.mkString),
+              handle.exitCode,
+            ],
+            { concurrency: "unbounded" },
+          ).pipe(Effect.mapError((cause) => new ProcessStartError({ command, cause })));
+          const output: CommandOutput = {
+            exitCode: Number(exitCode),
+            stdout,
+            stderr,
+          };
+          return yield* output.exitCode === 0
+            ? Effect.succeed(output)
+            : Effect.fail(new ProcessFailure({ command, output }));
+        }),
+      )),
     );
 
     const timeoutMs = command.timeoutMs;
-    return timeoutMs === undefined
+    const timed = timeoutMs === undefined
       ? execution
       : execution.pipe(
         Effect.timeoutOrElse({
@@ -100,6 +102,15 @@ const makeProcessExecutor = Effect.gen(function*() {
           orElse: () => Effect.fail(new DeadlineExceeded({ command, timeoutMs })),
         }),
       );
+    return timed.pipe(
+      Effect.tap(() => Effect.logDebug("process completed")),
+      Effect.tapError((error) => Effect.logError(`process failed: ${error.message}`)),
+      Effect.annotateLogs({
+        executable: command.executable,
+        cwd: command.cwd,
+      }),
+      Effect.withLogSpan("process"),
+    );
   };
 
   return ProcessExecutor.of({ execute });

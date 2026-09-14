@@ -14,5 +14,10 @@ import OverviewDashboard from "../components/OverviewDashboard.svelte";
   data-variant="chart-only"
   aria-label="LiteLLM benchmark measurements"
 >
+  <header class="overview-header">
+    <h1>LiteLLM Benchmark</h1>
+    <a href="https://github.com/BerriAI/litellm-bench">GitHub <span aria-hidden="true"
+      >↗</span></a>
+  </header>
   <OverviewDashboard />
 </main>

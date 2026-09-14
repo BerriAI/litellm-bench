@@ -1,0 +1,45 @@
+name: Set up uv
+description: Restore or install the pinned uv executable used by the benchmarks
+
+inputs:
+  uv-version:
+    description: Exact uv version to install
+    required: false
+    default: "0.8.17"
+
+runs:
+  using: composite
+  steps:
+    - id: cache
+      name: Restore uv
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}
+        key: litellm-bench-uv-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.uv-version }}
+
+    - name: Install uv
+      if: steps.cache.outputs.cache-hit != 'true'
+      # v6; pin third-party executable code to the release commit.
+      uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+      with:
+        version: ${{ inputs.uv-version }}
+        # Benchmarks intentionally create fresh environments and dependency closures.
+        enable-cache: false
+
+    - name: Populate uv cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        UV_CACHE_BIN_DIR: ${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}
+      run: |
+        mkdir -p "$UV_CACHE_BIN_DIR"
+        install -m 0755 "$(command -v uv)" "$UV_CACHE_BIN_DIR/uv"
+
+    - name: Add cached uv to PATH
+      shell: bash
+      env:
+        UV_CACHE_BIN_DIR: ${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}
+      run: |
+        test -x "$UV_CACHE_BIN_DIR/uv"
+        echo "$UV_CACHE_BIN_DIR" >> "$GITHUB_PATH"
+        "$UV_CACHE_BIN_DIR/uv" --version

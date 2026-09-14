@@ -1,7 +1,7 @@
 import type { Config } from "vega-lite";
 
 export const chartPresentation = {
-  overviewHeight: 130,
+  overviewHeight: 360,
   detailHeight: 300,
   spacing: 28,
   titleOffset: 14,
@@ -23,7 +23,10 @@ export function readChartTheme() {
     accent: token("--color-accent"),
     surface: token("--color-surface"),
   };
-  const series = [colors.accent, ...[2, 3, 4, 5].map((index) => token(`--color-series-${index}`))];
+  const series = [
+    colors.accent,
+    ...[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((index) => token(`--color-series-${index}`)),
+  ];
   const config: Config = {
     background: colors.surface,
     font: token("--font-sans"),

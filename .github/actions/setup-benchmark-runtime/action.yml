@@ -8,9 +8,7 @@ runs:
       with:
         # Satisfies both the exact 3.12.10 jobs and the 3.12 import-time job.
         python-version: "3.12.10"
-    - uses: astral-sh/setup-uv@v6
-      with:
-        version: "0.8.17"
+    - uses: ./.github/actions/setup-uv
     - name: Verify Python discovery
       shell: bash
       run: |

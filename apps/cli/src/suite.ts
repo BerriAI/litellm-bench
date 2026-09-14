@@ -133,22 +133,49 @@ export const runVersion = (
     }
     yield* ensureEmptyOutput(output);
     yield* writeJson(path.join(output, "version-plan.json"), plan);
-    const outcomes = yield* Effect.forEach(plan.jobs, (entry) => {
+    yield* Effect.logInfo("version run started").pipe(Effect.annotateLogs({
+      version,
+      jobs: plan.jobs.length,
+    }));
+    const outcomes = yield* Effect.forEach(plan.jobs, (entry, index) => {
       const benchmark = benchmarks.find(({ id }) => id === entry.benchmark_id);
       if (benchmark === undefined) {
-        return Effect.succeed({
-          job_id: entry.job_id,
-          exit_code: ExitCode.NotFound,
-          error: `unknown benchmark: ${entry.benchmark_id}`,
-        });
+        return Effect.logError(`unknown benchmark: ${entry.benchmark_id}`).pipe(
+          Effect.as({
+            job_id: entry.job_id,
+            exit_code: ExitCode.NotFound,
+            error: `unknown benchmark: ${entry.benchmark_id}`,
+          }),
+          Effect.annotateLogs({
+            version,
+            job_id: entry.job_id,
+            job: index + 1,
+            jobs: plan.jobs.length,
+          }),
+        );
       }
-      return makeRunSpec(benchmark, entry.benchmark_job, resolved.release).pipe(
+      const annotations = {
+        version,
+        job_id: entry.job_id,
+        benchmark_id: entry.benchmark_id,
+        benchmark_job: entry.benchmark_job,
+        job: index + 1,
+        jobs: plan.jobs.length,
+      };
+      return Effect.logInfo("version job started").pipe(
+        Effect.andThen(makeRunSpec(benchmark, entry.benchmark_job, resolved.release)),
         Effect.flatMap((spec) => executeRunSpec(spec, path.join(output, entry.job_id))),
+        Effect.tap((response) =>
+          response.exitCode === ExitCode.Success
+            ? Effect.logInfo("version job completed")
+            : Effect.logError(`version job failed with exit code ${response.exitCode}`)
+        ),
         Effect.map((response) => ({
           job_id: entry.job_id,
           exit_code: response.exitCode,
           ...(response.stderr.length === 0 ? {} : { error: response.stderr.trim() }),
         })),
+        Effect.tapError((error) => Effect.logError(`version job failed: ${error.message}`)),
         Effect.catch((error) =>
           Effect.succeed({
             job_id: entry.job_id,
@@ -156,10 +183,17 @@ export const runVersion = (
             error: error.message,
           })
         ),
+        Effect.annotateLogs(annotations),
+        Effect.withLogSpan("version_job"),
       );
     }, { concurrency: 1 });
     yield* writeJson(path.join(output, "version-summary.json"), outcomes);
     const failed = outcomes.filter(({ exit_code }) => exit_code !== ExitCode.Success);
+    yield* Effect.logInfo("version run completed").pipe(Effect.annotateLogs({
+      version,
+      completed: outcomes.length - failed.length,
+      failed: failed.length,
+    }));
     return failed.length === 0
       ? successResponse(`completed=${outcomes.length}\n`)
       : new CliResponse({

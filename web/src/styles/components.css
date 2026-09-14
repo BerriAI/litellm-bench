@@ -162,6 +162,55 @@
     background: var(--color-background);
     cursor: not-allowed;
   }
+  .overview-controls {
+    display: grid;
+    gap: var(--space-5);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+  .metric-picker {
+    display: grid;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    min-width: 0;
+  }
+  .metric-multiselect {
+    --sms-active-color: var(--color-accent);
+    --sms-bg: var(--color-surface);
+    --sms-border: var(--border-width) solid var(--color-border-strong);
+    --sms-border-radius: var(--radius-control);
+    --sms-focus-border: var(--focus-width) solid var(--color-focus);
+    --sms-min-height: var(--control-height);
+    --sms-options-bg: var(--color-surface);
+    --sms-options-border: var(--border-width) solid var(--color-border-strong);
+    --sms-options-shadow: 0 0.75rem 2rem rgb(25 43 50 / 16%);
+    --sms-options-max-height: min(24rem, 55vh);
+    --sms-placeholder-color: var(--color-muted);
+    --sms-selected-bg: var(--color-accent-subtle);
+    --sms-text-color: var(--color-foreground);
+    --sms-width: 100%;
+  }
+  .version-slider {
+    min-width: 0;
+  }
+  .version-range-slider {
+    --range-slider-color: var(--color-accent);
+    --range-slider-track: var(--color-border-strong);
+  }
+  .control-placeholder {
+    min-height: var(--control-height);
+    color: var(--color-muted);
+    font-size: var(--text-caption);
+  }
+  .data-note {
+    margin-block: var(--space-4);
+    border-left: 3px solid var(--color-error);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-error-subtle);
+    color: var(--color-foreground);
+    font-size: var(--text-caption);
+  }
   .chart {
     min-width: 0;
     width: 100%;
