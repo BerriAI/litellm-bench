@@ -1,15 +1,43 @@
 name: Set up k6
-description: Install the checksum-verified k6 2.2.0 Linux x64 release
+description: Restore or install the pinned k6 release used by the benchmarks
+
+inputs:
+  k6-version:
+    description: Exact k6 version to install
+    required: false
+    default: "2.2.0"
+
 runs:
   using: composite
   steps:
-    - shell: bash
+    - id: cache
+      name: Restore k6
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}
+        key: litellm-bench-k6-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.k6-version }}
+
+    - name: Install k6
+      if: steps.cache.outputs.cache-hit != 'true'
+      # v1.2.1; pin third-party executable code to the release commit.
+      uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065
+      with:
+        k6-version: ${{ inputs.k6-version }}
+
+    - name: Populate k6 cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        K6_CACHE_DIR: ${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}
       run: |
-        curl -fsSL https://github.com/grafana/k6/releases/download/v2.2.0/k6-v2.2.0-linux-amd64.tar.gz -o "$RUNNER_TEMP/k6-v2.2.0-linux-amd64.tar.gz"
-        curl -fsSL https://github.com/grafana/k6/releases/download/v2.2.0/k6-v2.2.0-checksums.txt -o "$RUNNER_TEMP/k6-checksums.txt"
-        cd "$RUNNER_TEMP"
-        awk '$2 == "k6-v2.2.0-linux-amd64.tar.gz"' k6-checksums.txt > k6-selected-checksum.txt
-        test -s k6-selected-checksum.txt
-        sha256sum --check k6-selected-checksum.txt
-        tar -xzf k6-v2.2.0-linux-amd64.tar.gz
-        echo "$RUNNER_TEMP/k6-v2.2.0-linux-amd64" >> "$GITHUB_PATH"
+        mkdir -p "$K6_CACHE_DIR"
+        install -m 0755 "$(command -v k6)" "$K6_CACHE_DIR/k6"
+
+    - name: Add cached k6 to PATH
+      shell: bash
+      env:
+        K6_CACHE_DIR: ${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}
+      run: |
+        test -x "$K6_CACHE_DIR/k6"
+        echo "$K6_CACHE_DIR" >> "$GITHUB_PATH"
+        "$K6_CACHE_DIR/k6" version
