@@ -1,5 +1,5 @@
 {
-  "record_id": "93d8435389086f89e810100883d56c5f9e25b9b0283ffa920864ca1e168bc4ea",
+  "record_id": "4cbfa0e43cc5a5d0a8ecb6f138bf171c30211b6618af278b312fe83409dc8866",
   "case_id": "6e1cbb398685e2e47f97b87b7c52062cbe24da420d819bd479fd68f3feb2bfe2",
   "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
   "identity": {
@@ -124,9 +124,9 @@
   "source": {
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
-    "workflow": "Record LiteLLM benchmarks",
-    "workflow_run_id": "34809328520",
-    "commit": "a4cf0e6eaad7c7f77a738a1220a07e697b740e44",
+    "workflow": ".github/workflows/benchmark.yml",
+    "workflow_run_id": "34877399985",
+    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
     "ref": "refs/heads/main"
   },
   "spec": {
@@ -271,8 +271,8 @@
     }
   },
   "result": {
-    "run_id": "db0cb9e2-c3a1-4a7b-9cf5-82b20f8c5837",
-    "created_at": "2026-09-14T05:47:38.104Z",
+    "run_id": "39e54963-79ae-4831-a9f9-9325feed269e",
+    "created_at": "2026-09-14T21:25:34.513Z",
     "case_id": "6e1cbb398685e2e47f97b87b7c52062cbe24da420d819bd479fd68f3feb2bfe2",
     "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
     "benchmark": {
@@ -415,42 +415,42 @@
       "python_version": "3.12.10",
       "python_implementation": "CPython",
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-q2pbBk/resolver/lib/python3.12/site-packages/pip (python 3.12)",
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-3QHz1Z/resolver/lib/python3.12/site-packages/pip (python 3.12)",
       "timer": "python-time-perf-counter-subprocess-run"
     },
     "metrics": [
       {
         "id": "import.median",
         "label": "Median fresh import",
-        "value": 2751.301759999933,
+        "value": 3049.6725160001006,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.p95",
         "label": "p95 fresh import",
-        "value": 2822.0227209999393,
+        "value": 3136.442568000348,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.minimum",
         "label": "Minimum fresh import",
-        "value": 2618.1811820001712,
+        "value": 3005.70536899977,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.maximum",
         "label": "Maximum fresh import",
-        "value": 2829.7759649999534,
+        "value": 3141.193305998968,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.first",
         "label": "First import in prepared environment",
-        "value": 5023.494508999875,
+        "value": 5711.547426000834,
         "unit": "ms",
         "better": "lower"
       }
@@ -461,7 +461,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2755.7034530000237
+          "import_duration_ms": 3043.0154829991807
         },
         "attempt": 1
       },
@@ -470,7 +470,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2700.1244949999545
+          "import_duration_ms": 3025.0206210002943
         },
         "attempt": 2
       },
@@ -479,7 +479,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2713.7205449998874
+          "import_duration_ms": 3005.70536899977
         },
         "attempt": 3
       },
@@ -488,7 +488,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2753.7334129999635
+          "import_duration_ms": 3050.383342000714
         },
         "attempt": 4
       },
@@ -497,7 +497,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2678.558766999913
+          "import_duration_ms": 3075.140201999602
         },
         "attempt": 5
       },
@@ -506,7 +506,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2780.9670890001144
+          "import_duration_ms": 3047.8891559996555
         },
         "attempt": 6
       },
@@ -515,7 +515,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2747.118974999921
+          "import_duration_ms": 3024.96055300071
         },
         "attempt": 7
       },
@@ -524,7 +524,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2692.0829200000753
+          "import_duration_ms": 3096.119264999288
         },
         "attempt": 8
       },
@@ -533,7 +533,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2763.304582000046
+          "import_duration_ms": 3072.7059860000736
         },
         "attempt": 9
       },
@@ -542,7 +542,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2748.5125539999444
+          "import_duration_ms": 3052.8916040002514
         },
         "attempt": 10
       },
@@ -551,7 +551,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2822.0227209999393
+          "import_duration_ms": 3042.2036240015586
         },
         "attempt": 11
       },
@@ -560,7 +560,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2735.067951999781
+          "import_duration_ms": 3053.3618279987422
         },
         "attempt": 12
       },
@@ -569,7 +569,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2618.1811820001712
+          "import_duration_ms": 3013.1628889994317
         },
         "attempt": 13
       },
@@ -578,7 +578,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2748.8701069999024
+          "import_duration_ms": 3048.961689999487
         },
         "attempt": 14
       },
@@ -587,7 +587,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2763.1462409999585
+          "import_duration_ms": 3020.2633230001084
         },
         "attempt": 15
       },
@@ -596,7 +596,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2733.0350299998827
+          "import_duration_ms": 3044.312853999145
         },
         "attempt": 16
       },
@@ -605,7 +605,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2829.7759649999534
+          "import_duration_ms": 3077.154321999842
         },
         "attempt": 17
       },
@@ -614,7 +614,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2791.9541270000536
+          "import_duration_ms": 3141.193305998968
         },
         "attempt": 18
       },
@@ -623,7 +623,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2776.0270830001446
+          "import_duration_ms": 3136.442568000348
         },
         "attempt": 19
       },
@@ -632,7 +632,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 2809.6824519998336
+          "import_duration_ms": 3053.7653650007996
         },
         "attempt": 20
       }
@@ -647,10 +647,10 @@
           "scenario": "root-import",
           "summary": {
             "attempt_count": 20,
-            "minimum": 2618.1811820001712,
-            "median": 2751.301759999933,
-            "p95": 2822.0227209999393,
-            "maximum": 2829.7759649999534
+            "minimum": 3005.70536899977,
+            "median": 3049.6725160001006,
+            "p95": 3136.442568000348,
+            "maximum": 3141.193305998968
           }
         }
       }
@@ -662,51 +662,51 @@
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-q2pbBk/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-3QHz1Z/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
       "timing": {
-        "first_ever_process_seconds": 5.023494508999875,
+        "first_ever_process_seconds": 5.711547426000834,
         "warmup_samples_seconds": [
-          2.8035805760000585,
-          2.6423402590000933,
-          2.7439220710000427
+          3.046904077000363,
+          3.0402485489994433,
+          3.1143746660000033
         ],
         "fresh_process": {
           "count": 20,
           "samples_seconds": [
-            2.7557034530000237,
-            2.7001244949999545,
-            2.7137205449998874,
-            2.7537334129999635,
-            2.678558766999913,
-            2.7809670890001144,
-            2.747118974999921,
-            2.6920829200000753,
-            2.763304582000046,
-            2.7485125539999444,
-            2.8220227209999393,
-            2.735067951999781,
-            2.6181811820001712,
-            2.7488701069999024,
-            2.7631462409999585,
-            2.7330350299998827,
-            2.8297759649999534,
-            2.7919541270000536,
-            2.7760270830001446,
-            2.8096824519998336
+            3.0430154829991807,
+            3.0250206210002943,
+            3.00570536899977,
+            3.050383342000714,
+            3.075140201999602,
+            3.0478891559996555,
+            3.02496055300071,
+            3.096119264999288,
+            3.0727059860000736,
+            3.0528916040002514,
+            3.0422036240015586,
+            3.0533618279987422,
+            3.0131628889994317,
+            3.048961689999487,
+            3.0202633230001084,
+            3.044312853999145,
+            3.077154321999842,
+            3.141193305998968,
+            3.136442568000348,
+            3.0537653650007996
           ],
-          "minimum_seconds": 2.6181811820001712,
-          "median_seconds": 2.751301759999933,
-          "p95_seconds": 2.8220227209999393,
-          "maximum_seconds": 2.8297759649999534
+          "minimum_seconds": 3.00570536899977,
+          "median_seconds": 3.0496725160001006,
+          "p95_seconds": 3.136442568000348,
+          "maximum_seconds": 3.141193305998968
         }
       },
       "diagnostics": {},
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61193077,
+        "download_bytes": 61196401,
         "artifacts": [
           {
             "filename": "aiohappyeyeballs-2.7.1-py3-none-any.whl",
@@ -739,14 +739,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.93-py3-none-any.whl",
-            "bytes": 140022,
-            "sha256": "3c948fe231490d446bf90bf3322d1452632107329d3683b37d88b7399bf481a0"
+            "filename": "boto3-1.43.94-py3-none-any.whl",
+            "bytes": 140023,
+            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
           },
           {
-            "filename": "botocore-1.43.93-py3-none-any.whl",
-            "bytes": 15794156,
-            "sha256": "3ca57bb5d26d88b554a74de708a5c991f45306436c91aacca931252d1d4d54ff"
+            "filename": "botocore-1.43.94-py3-none-any.whl",
+            "bytes": 15797479,
+            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -987,10 +987,10 @@
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 164590431
+          "logical_bytes": 164594178
         },
         "installed_after_first_run": {
-          "logical_bytes": 182756841
+          "logical_bytes": 182760588
         },
         "first_run_logical_delta_bytes": 18166410
       }
