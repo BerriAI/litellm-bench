@@ -7,6 +7,8 @@ on:
     paths: [
       "data/**",
       "web/**",
+      "packages/**",
+      "tsconfig.base.json",
       "pnpm-lock.yaml",
       "pnpm-workspace.yaml",
       ".github/workflows/pages.yml",
@@ -35,7 +37,7 @@ jobs:
       - uses: ./.github/actions/setup-node-workspace
         with:
           build-cli: "false"
-      - run: pnpm --dir web run build
+      - run: pnpm --filter '@litellm-bench/web...' build
         env:
           BENCHMARK_SITE_DIR: ../site
       - uses: actions/upload-pages-artifact@v4
