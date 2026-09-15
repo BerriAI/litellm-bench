@@ -10,11 +10,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - id: paths
+      shell: bash
+      run: echo "bin_dir=${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}" >> "$GITHUB_OUTPUT"
+
     - id: cache
       name: Restore uv
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
-        path: ${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}
+        path: ${{ steps.paths.outputs.bin_dir }}
         key: litellm-bench-uv-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.uv-version }}
 
     - name: Install uv
@@ -30,7 +34,7 @@ runs:
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       env:
-        UV_CACHE_BIN_DIR: ${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}
+        UV_CACHE_BIN_DIR: ${{ steps.paths.outputs.bin_dir }}
       run: |
         mkdir -p "$UV_CACHE_BIN_DIR"
         install -m 0755 "$(command -v uv)" "$UV_CACHE_BIN_DIR/uv"
@@ -38,7 +42,7 @@ runs:
     - name: Add cached uv to PATH
       shell: bash
       env:
-        UV_CACHE_BIN_DIR: ${{ runner.tool_cache }}/litellm-bench/uv/${{ inputs.uv-version }}/${{ runner.os }}-${{ runner.arch }}
+        UV_CACHE_BIN_DIR: ${{ steps.paths.outputs.bin_dir }}
       run: |
         test -x "$UV_CACHE_BIN_DIR/uv"
         echo "$UV_CACHE_BIN_DIR" >> "$GITHUB_PATH"

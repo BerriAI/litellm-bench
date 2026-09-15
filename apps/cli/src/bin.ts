@@ -14,7 +14,7 @@ import {
 } from "@litellm-bench/harness";
 import { DockerEngineLive, K6Live, ProxyEnvironmentLive } from "@litellm-bench/proxy";
 import { PythonEnvironmentLive } from "@litellm-bench/python-environment";
-import { Data, Effect, Layer, Runtime, Stdio, Stream } from "effect";
+import { Data, Effect, Layer, Logger, Runtime, Stdio, Stream } from "effect";
 import { type CatalogBenchmark, catalogLayer, ExitCode, runCli } from "./main.js";
 
 class CliExit extends Data.TaggedError("CliExit")<{
@@ -69,6 +69,7 @@ const program = Effect.gen(function*() {
     runners,
     RunMetadataGeneratorLive,
     proxyEnvironment,
+    Logger.layer([Logger.consoleLogFmt]),
   )),
 );
 

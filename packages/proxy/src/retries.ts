@@ -55,6 +55,12 @@ export const runWithRoundRetries = Effect.fn("Proxy.runWithRoundRetries")(
       const plans = experiment.trials
         .filter(({ round }) => pending.has(round))
         .map((trial) => attempt === 1 ? trial : { ...trial, id: `${trial.id}_retry${attempt}` });
+      yield* Effect.logInfo("proxy round attempt started").pipe(Effect.annotateLogs({
+        attempt,
+        maximum_attempts: maximumAttempts,
+        rounds: [...pending].join(","),
+        trials: plans.length,
+      }));
       const raw = yield* run({
         ...experiment,
         artifactsDirectory: path.join(experiment.artifactsDirectory, `attempt-${attempt}`),
@@ -85,6 +91,16 @@ export const runWithRoundRetries = Effect.fn("Proxy.runWithRoundRetries")(
         }
       }
       attempts.push({ attempt, rounds: [...pending], failed_rounds: [...failed], reasons });
+      if (failed.size > 0) {
+        yield* Effect.logWarning("proxy rounds lacked measurement integrity").pipe(
+          Effect.annotateLogs({
+            attempt,
+            failed_rounds: [...failed].join(","),
+            reasons: reasons.join("; "),
+            ...(attempt < maximumAttempts ? {} : { exhausted: true }),
+          }),
+        );
+      }
       pending = failed;
     }
     const trials = experiment.trials.flatMap((trial) => {
