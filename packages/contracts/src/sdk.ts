@@ -134,7 +134,12 @@ export const TimingProbeResponse = Schema.Union([
   }),
   Schema.Struct({
     status: Schema.Literal("failed"),
-    error: Schema.Struct({ type: NonEmptyString, message: Schema.String }),
+    error: Schema.Struct({
+      type: NonEmptyString,
+      message: Schema.String,
+      sample_index: Schema.optionalKey(PositiveInteger),
+    }),
+    completed_samples_seconds: Schema.optionalKey(Schema.Array(FiniteNumber)),
   }),
 ], { mode: "oneOf" }).annotate({ identifier: "TimingProbeResponse" });
 

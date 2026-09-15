@@ -121,8 +121,18 @@ export const ImportTimeProbeLive = Layer.effect(
         ),
       );
       if (response.status === "failed") {
+        const failedIndex = response.error.sample_index;
+        const completed = response.completed_samples_seconds;
         return yield* new RunnerExecutionError({
           message: `${phase}: ${response.error.type}: ${response.error.message}`,
+          ...(failedIndex === undefined && completed === undefined ? {} : {
+            details: {
+              phase,
+              requested_samples: samples,
+              ...(failedIndex === undefined ? {} : { failed_sample_index: failedIndex }),
+              ...(completed === undefined ? {} : { completed_samples_seconds: completed }),
+            },
+          }),
         });
       }
       if (output.exitCode !== 0) {

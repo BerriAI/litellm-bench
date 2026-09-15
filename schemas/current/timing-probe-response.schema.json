@@ -54,6 +54,16 @@
                 },
                 "message": {
                   "type": "string"
+                },
+                "sample_index": {
+                  "type": "integer",
+                  "description": "an integer",
+                  "allOf": [
+                    {
+                      "minimum": 1,
+                      "description": "a value greater than or equal to 1"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -61,6 +71,13 @@
                 "message"
               ],
               "additionalProperties": false
+            },
+            "completed_samples_seconds": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "description": "a finite number"
+              }
             }
           },
           "required": [

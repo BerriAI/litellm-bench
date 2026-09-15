@@ -26,6 +26,7 @@ export class InvalidObservation extends Data.TaggedError("InvalidObservation")<{
 export class RunnerExecutionError extends Data.TaggedError("RunnerExecutionError")<{
   readonly message: string;
   readonly cause?: unknown;
+  readonly details?: JsonRecord;
 }> {}
 
 export class EnvironmentRequirementUnmet extends Data.TaggedError("EnvironmentRequirementUnmet")<{
@@ -145,7 +146,11 @@ const resultFailure = (error: RunnerError): ResultFailure => {
     case "InvalidObservation":
       return { code: "invalid_observation", message: error.message };
     case "RunnerExecutionError":
-      return { code: "process_failed", message: error.message };
+      return {
+        code: "process_failed",
+        message: error.message,
+        ...(error.details === undefined ? {} : { details: error.details }),
+      };
   }
 };
 

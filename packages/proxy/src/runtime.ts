@@ -31,6 +31,7 @@ import {
   type ProxyExperiment,
   ProxyExperimentSchema,
   type ProxyTrialPlan,
+  type TelemetryWindow,
 } from "./models.js";
 
 const mockAlias = "bench-upstream";
@@ -304,13 +305,16 @@ const cgroupSnapshot = (
     cpuSet: dockerText(container, "cpuset.cpus.effective"),
   }, { concurrency: "unbounded" });
 
+const isolatedWindow: TelemetryWindow =
+  "post-warmup measurement process and drain; memory.peak spans the container lifetime because Docker mounts the container cgroup read-only";
+
 const containerTelemetry = (
   container: DockerContainer,
   imageId: string,
   before: CgroupSnapshot,
   after: CgroupSnapshot,
   wallSeconds: number,
-  window = "k6 process: warmup, fixed measurement window, and drain",
+  window: TelemetryWindow = "k6 process: warmup, fixed measurement window, and drain",
 ) =>
   Effect.gen(function*() {
     return {
@@ -350,12 +354,6 @@ const mockStats = (container: DockerContainer) =>
         catch: (cause) => runtimeError("parse mock stats", cause),
       })
     ),
-  );
-
-const resetPeakMemory = (container: DockerContainer) =>
-  container.exec(["sh", "-c", "echo 0 > /sys/fs/cgroup/memory.peak"], { timeoutMs: 5_000 }).pipe(
-    Effect.mapError((cause) => runtimeError("reset cgroup memory.peak", cause)),
-    Effect.asVoid,
   );
 
 const startMock = (
@@ -687,14 +685,6 @@ const measureTrial = (
         message: warmup.error ?? `k6 exited ${warmup.exitCode}`,
       });
     }
-    if (isolated) {
-      yield* Effect.all(
-        proxy === undefined
-          ? [resetPeakMemory(mock)]
-          : [resetPeakMemory(mock), resetPeakMemory(proxy)],
-        { concurrency: "unbounded", discard: true },
-      );
-    }
     const mockBefore = yield* cgroupSnapshot(mock);
     const proxyBefore = proxy === undefined ? undefined : yield* cgroupSnapshot(proxy);
     const started = yield* Clock.currentTimeNanos;
@@ -713,7 +703,7 @@ const measureTrial = (
       mockBefore,
       mockAfter,
       wallSeconds,
-      isolated ? "post-warmup measurement process and drain" : undefined,
+      isolated ? isolatedWindow : undefined,
     );
     const proxyTelemetry =
       proxy === undefined || proxyBefore === undefined || proxyAfter === undefined
@@ -724,7 +714,7 @@ const measureTrial = (
           proxyBefore,
           proxyAfter,
           wallSeconds,
-          isolated ? "post-warmup measurement process and drain" : undefined,
+          isolated ? isolatedWindow : undefined,
         );
     const result = client.result === undefined
       ? undefined

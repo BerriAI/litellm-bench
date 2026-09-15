@@ -23,7 +23,7 @@
   ],
   "protocol": {
     "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
-    "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+    "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
     "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
     "scenarios": [
       {
@@ -75,7 +75,7 @@
     ],
     "validity": {
       "trial": "The instrumented import must exit successfully",
-      "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+      "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
     }
   },
   "jobs": [
@@ -92,6 +92,9 @@
         "workload": {
           "name": "root-import",
           "statement": "import litellm"
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         },
         "measurements": {
           "warmups": 0,

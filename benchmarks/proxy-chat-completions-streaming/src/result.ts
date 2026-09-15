@@ -3,7 +3,11 @@ import { InvalidObservation, type RunContext } from "@litellm-bench/harness";
 import { proxyTrialIntegrityIssue } from "@litellm-bench/proxy";
 import { Effect, Schema } from "effect";
 import type { StreamingChatConfig } from "./config.js";
-import { projectStreamingChatCompletions, streamingTrialMeetsSlo } from "./projection.js";
+import {
+  calibrationHeadroomIssue,
+  projectStreamingChatCompletions,
+  streamingTrialMeetsSlo,
+} from "./projection.js";
 
 const cpuPercent = (
   telemetry: NonNullable<ProxyRawObservation["trials"][number]["mock_telemetry"]>,
@@ -61,8 +65,9 @@ const observation = (
       ? {}
       : {
         mock_cpu_percent: cpuPercent(trial.mock_telemetry),
-        mock_throttled_usec: trial.mock_telemetry.cpu_throttled_usec_after
-          - trial.mock_telemetry.cpu_throttled_usec_before,
+        mock_throttled_fraction: (trial.mock_telemetry.cpu_throttled_usec_after
+          - trial.mock_telemetry.cpu_throttled_usec_before)
+          / 1_000_000 / trial.mock_telemetry.wall_seconds,
       }),
     ...(trial.load_generator_telemetry === undefined
       ? {}
@@ -101,6 +106,20 @@ const observation = (
     ...(issue === undefined ? {} : { invalid_reason: issue }),
   };
   return { projected, normalized };
+};
+
+/**
+ * Why a trial must be re-run as part of a fresh round: lost measurement integrity, or a bypass
+ * calibration that failed to demonstrate apparatus headroom. SLO misses at swept rates are data,
+ * not retry reasons.
+ */
+export const trialRetryIssue = (
+  trial: ProxyRawObservation["trials"][number],
+  config: typeof StreamingChatConfig.Type,
+): string | undefined => {
+  const { projected, normalized } = observation(trial, config);
+  if (!normalized.valid) return normalized.invalid_reason;
+  return projected.calibration ? calibrationHeadroomIssue(projected, config) : undefined;
 };
 
 export const buildStreamingChatResult = Effect.fn("ProxyStreamingChat.buildResult")(

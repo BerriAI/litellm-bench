@@ -120,7 +120,8 @@ export const benchmarkCatalog = {
           "warmup": "The same fixed-arrival executor and request path run for 30 seconds before measurement; the final three five-second successful-completion windows must have coefficient of variation <= 5%",
           "window": "Only completions timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
           "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, non-stream semantics (stream omitted or false), or the exact allowlisted JSON body",
-          "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
+          "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock CFS throttling must stay below 0.1% of wall time; k6 pre-allocates ceil(rate x SLO x 4) VUs (bounded to 16..512) so the open-model executor never starves for VUs below the SLO",
+          "retries": "Every round (one trial per swept rate plus its calibration) is an independent unit; if any trial in a round loses measurement integrity or its calibration fails headroom, that whole round is re-run up to 3 attempts with fresh containers, every attempt's artifacts are retained, and trials from different attempts are never mixed",
           "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; the retained upstream fixture is the sole timing source and explicitly declares zero response delay; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
           "fail_closed": "Missing/invalid telemetry, unstable calibration, unbracketed saturation, request-count mismatch, response-semantic mismatch, or any upstream translation failure invalidates the result"
         }
@@ -154,12 +155,16 @@ export const benchmarkCatalog = {
               "minimum_achievement_ratio": 0.98,
               "required_pass_fraction": 0.8571428571428571
             },
-            "preallocated_vus": 128,
+            "retry_attempts": 3,
+            "vu_allocation": {
+              "slo_multiple": 4,
+              "minimum_vus": 16
+            },
             "max_vus": 512,
             "calibration_rate_multiplier": 1.5,
             "calibration_headroom": {
               "maximum_cpu_percent": 85,
-              "maximum_throttled_usec": 0
+              "maximum_throttled_fraction": 0.001
             },
             "mock_image": "node:24.8.0-slim@sha256:cadbfafeb6baf87eaaffa40b3640209c4b7fd38cebde65059d15bc39cd636b85",
             "resources": {
@@ -231,13 +236,13 @@ export const benchmarkCatalog = {
             "label": "Streaming fixed-arrival-rate saturation sweep",
             "dimensions": {
               "arrival_rates": [
-                25,
+                10,
+                20,
+                30,
+                40,
                 50,
-                100,
-                150,
-                200,
-                300,
-                450
+                60,
+                80
               ],
               "stream": true
             }
@@ -332,7 +337,8 @@ export const benchmarkCatalog = {
           "window": "Only complete streams timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
           "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=true and stream_options.include_usage=true, or the exact allowlisted JSON body; the client validates content-type, all 31 SSE events, every varied content chunk, usage, finish reason, and terminal [DONE]",
           "timing": "The mock waits 10 ms before its first SSE event and 1 ms between subsequent events; TTFB is measured by k6 at the first response byte and complete-stream duration ends after the terminal event",
-          "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
+          "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock CFS throttling must stay below 0.1% of wall time; k6 pre-allocates ceil(rate x SLO x 4) VUs (bounded to 16..512) so the open-model executor never starves for VUs below the SLO",
+          "retries": "Every round (one trial per swept rate plus its calibration) is an independent unit; if any trial in a round loses measurement integrity or its calibration fails headroom, that whole round is re-run up to 3 attempts with fresh containers, every attempt's artifacts are retained, and trials from different attempts are never mixed",
           "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
           "fail_closed": "Missing/invalid telemetry, missing stream timing/statistics, malformed or semantically incorrect SSE, unstable calibration, unbracketed saturation, request-count mismatch, or any upstream translation failure invalidates the result"
         }
@@ -345,13 +351,13 @@ export const benchmarkCatalog = {
           "config": {
             "rounds": 7,
             "arrival_rates": [
-              25,
+              10,
+              20,
+              30,
+              40,
               50,
-              100,
-              150,
-              200,
-              300,
-              450
+              60,
+              80
             ],
             "duration_seconds": 30,
             "warmup_seconds": 30,
@@ -367,12 +373,16 @@ export const benchmarkCatalog = {
               "minimum_achievement_ratio": 0.98,
               "required_pass_fraction": 0.8571428571428571
             },
-            "preallocated_vus": 128,
+            "retry_attempts": 3,
+            "vu_allocation": {
+              "slo_multiple": 4,
+              "minimum_vus": 16
+            },
             "max_vus": 512,
             "calibration_rate_multiplier": 1.5,
             "calibration_headroom": {
               "maximum_cpu_percent": 85,
-              "maximum_throttled_usec": 0
+              "maximum_throttled_fraction": 0.001
             },
             "mock_image": "node:24.8.0-slim@sha256:cadbfafeb6baf87eaaffa40b3640209c4b7fd38cebde65059d15bc39cd636b85",
             "resources": {
@@ -1000,7 +1010,7 @@ export const benchmarkCatalog = {
       ],
       "protocol": {
         "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
-        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
         "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
@@ -1052,7 +1062,7 @@ export const benchmarkCatalog = {
         ],
         "validity": {
           "trial": "The instrumented import must exit successfully",
-          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       },
       "jobs": [
@@ -1065,6 +1075,9 @@ export const benchmarkCatalog = {
             "workload": {
               "name": "root-import",
               "statement": "import litellm"
+            },
+            "environment": {
+              "LITELLM_LOCAL_MODEL_COST_MAP": "True"
             },
             "measurements": {
               "warmups": 0,
@@ -1149,7 +1162,7 @@ export const benchmarkCatalog = {
       ],
       "protocol": {
         "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
+        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True, so it excludes the time a live model-cost-map fetch would add.",
         "experimental_unit": "One fresh isolated Python process executing import litellm",
         "scenarios": [
           {
@@ -1206,7 +1219,7 @@ export const benchmarkCatalog = {
         "validity": {
           "trial": "The isolated process must exit successfully",
           "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation. Every timed process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the import reads the bundled model cost map instead of fetching the live one over the network inside the timed region."
         }
       },
       "jobs": [
@@ -1228,6 +1241,9 @@ export const benchmarkCatalog = {
               "importtime": false,
               "network": false,
               "timeout_seconds": 120
+            },
+            "environment": {
+              "LITELLM_LOCAL_MODEL_COST_MAP": "True"
             }
           },
           "requirements": {

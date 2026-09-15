@@ -573,6 +573,40 @@ describe("python environments", () => {
     }
   });
 
+  it("retains completed samples when a later timing sample fails", async () => {
+    const root = await mkdtemp(join(tmpdir(), "litellm-bench-timing-asset-"));
+    const request = join(root, "request.json");
+    const output = join(root, "output.json");
+    const marker = join(root, "first-sample-done");
+    await writeFile(
+      request,
+      JSON.stringify({
+        python: process.env.PYTHON ?? "python3",
+        statement: `import os, sys
+if os.path.exists(${JSON.stringify(marker)}):
+    sys.exit(7)
+open(${JSON.stringify(marker)}, "w").close()`,
+        timeout_seconds: 10,
+        samples: 3,
+        output_path: output,
+      }),
+    );
+    try {
+      await expect(
+        executeFile(process.env.PYTHON ?? "python3", [fileURLToPath(timingSupervisorUrl), request]),
+      ).rejects.toMatchObject({ code: 1 });
+      const response = JSON.parse(await readFile(output, "utf8"));
+      expect(response.status).toBe("failed");
+      expect(response.error.type).toBe("RuntimeError");
+      expect(response.error.message).toContain("process exited 7");
+      expect(response.error.sample_index).toBe(2);
+      expect(response.completed_samples_seconds).toHaveLength(1);
+      expect(response.completed_samples_seconds[0]).toBeGreaterThan(0);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it("executes the diagnostic asset inside CPython", async () => {
     const root = await mkdtemp(join(tmpdir(), "litellm-bench-probe-asset-"));
     const request = join(root, "request.json");

@@ -174,10 +174,12 @@ export interface ContainerTelemetry {
   readonly cpuMax: string;
   readonly cpuSet: string;
   readonly wallSeconds: number;
-  readonly window:
-    | "k6 process: initialization, warmup, measurement, and drain"
-    | "post-warmup measurement process and drain";
+  readonly window: TelemetryWindow;
 }
+
+export type TelemetryWindow =
+  | "k6 process: warmup, fixed measurement window, and drain"
+  | "post-warmup measurement process and drain; memory.peak spans the container lifetime because Docker mounts the container cgroup read-only";
 
 export interface TelemetryMeasurements {
   readonly cpuAveragePercent: number;

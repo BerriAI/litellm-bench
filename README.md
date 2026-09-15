@@ -114,8 +114,10 @@ pnpm bench data ingest \
   --mode replace-benchmark-version
 ```
 
-This mode keeps only the latest successful result for each version+benchmark pair. A failed
-result removes the previous snapshot for that pair and is not stored. `data/runs/` is ignored
+This mode keeps only the latest result for each version+benchmark pair. A failed result replaces
+the previous snapshot for that pair and is stored with `status: failed`, no metrics, and the
+structured error, so the dashboard can show why a version has no measurement. Failed records never
+enter published metric series. `data/runs/` is ignored
 working output. A version output directory must be empty before execution so stale result pairs
 cannot be ingested
 

@@ -9,6 +9,16 @@ fresh processes, but reuse that installation and its filesystem caches. The firs
 warmups are excluded from the reported distribution. Every measured sample is retained in execution
 order; p95 uses nearest rank. Optional `-X importtime` runs in a separate process after timing.
 
+Every timed process runs with `LITELLM_LOCAL_MODEL_COST_MAP=True`. Without it, `import litellm`
+resolves DNS and fetches the live model cost map over HTTPS inside the timed region, so the sample
+would include network latency and could change when the remote file changes. The protocol's
+`network: false` therefore describes the measured process, not just the instrumentation. Twenty
+fresh-process samples per version keep the run-to-run coefficient of variation of `import.median`
+near 2%; `import.first` is a single sample by construction and should be read as indicative.
+The runner records kernel release, CPU model and count, total memory, and one-minute load average in
+`apparatus.host` so cross-run drift can be attributed. A sample that fails keeps the completed
+samples and the failing index in the failure `details`, and the run stays `status: failed`.
+
 ## Implementation pattern
 
 - `config.ts`: decode the submitted job with Schema, reject unknown or unsupported options, and

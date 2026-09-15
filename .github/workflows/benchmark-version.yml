@@ -61,7 +61,7 @@ jobs:
   publish:
     name: Publish LiteLLM ${{ inputs.version }} data
     needs: run
-    # The artifact also carries the summary used to report failures without publishing them.
+    # The artifact also carries the summary used to count failures in the results PR body.
     if: ${{ !cancelled() && needs.run.outputs.artifact-id != '' }}
     runs-on: ubuntu-24.04
     concurrency:
@@ -163,4 +163,5 @@ jobs:
             Each LiteLLM version runs on its own Ubuntu VM. Benchmarks within that
             version run sequentially. Reruns update this version's branch and PR,
             replacing the latest result for each benchmark. Failed benchmarks are
-            reported above and leave no result data for that version.
+            reported above and stored as `status: failed` records without metrics, so
+            the dashboard shows the failure instead of a silently missing version.

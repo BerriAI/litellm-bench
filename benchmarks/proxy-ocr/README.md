@@ -5,11 +5,13 @@ order and adjacent Python/Rust treatment order are reproducibly randomized. A fa
 the whole paired round, and paired log-ratios include a deterministic bootstrap 95% confidence
 interval. The mock validates the decoded PNG's complete structure, exact byte length, and SHA-256.
 
-Warmup runs separately. CPU counters and `memory.peak` are bracketed/reset after warmup and before
-the measured load-generator process starts; the retained telemetry labels that window explicitly.
-The result reports proxy CPU milliseconds per successful request in addition to throughput. Memory
-is reported both as absolute footprint and as growth above the post-warm-up baseline, so footprint
-and load-attributable growth are not conflated.
+Warmup runs separately. CPU counters and `memory.current` are bracketed after warmup and before the
+measured load-generator process starts; the retained telemetry labels that window explicitly.
+`memory.peak` is read, never written: Docker mounts the container cgroup read-only, so the peak
+spans the fresh container's whole lifetime (warmup plus measurement of the same workload) and is
+therefore an upper bound. The result reports proxy CPU milliseconds per successful request in
+addition to throughput. Memory is reported both as absolute footprint and as growth above the
+post-warm-up baseline, so footprint and load-attributable growth are not conflated.
 
 The comparison fails closed unless the single-CPU proxy is saturated (at least 90% average CPU),
 the one-CPU mock remains below 80%, and the two-CPU load generator remains below 160%. These gates

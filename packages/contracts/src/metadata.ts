@@ -2,9 +2,11 @@ import { Schema } from "effect";
 
 import {
   Better,
+  FiniteNumber,
   JsonObject,
   type JsonRecord,
   NonEmptyString,
+  NonNegativeInteger,
   PositiveInteger,
   type ValidationIssue,
 } from "./common.js";
@@ -32,6 +34,11 @@ export const HostEnvironmentSnapshot = Schema.Struct({
   python_version: Schema.optionalKey(NonEmptyString),
   python_implementation: Schema.optionalKey(NonEmptyString),
   ci: Schema.Boolean,
+  kernel_release: Schema.optionalKey(NonEmptyString),
+  cpu_model: Schema.optionalKey(NonEmptyString),
+  cpu_count: Schema.optionalKey(PositiveInteger),
+  memory_total_bytes: Schema.optionalKey(NonNegativeInteger),
+  load_average_1m: Schema.optionalKey(FiniteNumber),
 }).annotate({ identifier: "HostEnvironmentSnapshot" });
 
 export const OutputMetricDefinition = Schema.Struct({

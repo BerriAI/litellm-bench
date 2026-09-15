@@ -2,6 +2,7 @@
 import { type BenchmarkAnnotation, resolveAnnotations } from "../annotations";
 import { detailDefinitions } from "../charts";
 import { compareRange } from "../comparisons";
+import { benchmarkCoverage } from "../coverage";
 import type { MetricOption } from "../dashboard";
 import { type BenchmarkRecord, unique } from "../data";
 import { isCanonical, observations } from "../observations";
@@ -10,12 +11,15 @@ import ChartPanel from "./ChartPanel.svelte";
 import DashboardControls from "./DashboardControls.svelte";
 import RangeComparison from "./RangeComparison.svelte";
 
-let { benchmarkId, records, annotations }: {
+let { benchmarkId, records, annotations, knownVersions = [] }: {
   benchmarkId: string;
   records: BenchmarkRecord[];
   annotations: BenchmarkAnnotation[];
+  knownVersions?: string[];
 } = $props();
-const versions = $derived([...uniqueVersions(records.map((record) => record.version))]);
+const coverage = $derived(benchmarkCoverage(records, knownVersions));
+const successful = $derived(records.filter((record) => record.status === "ok"));
+const versions = $derived([...uniqueVersions(successful.map((record) => record.version))]);
 let range = $state<[number, number]>();
 let metrics = $state<MetricOption[]>();
 let versionRange: [number, number] = $derived(range ?? [0, Math.max(0, versions.length - 1)]);
@@ -36,7 +40,7 @@ const start = $derived(versions[versionRange[0]] ?? "");
 const end = $derived(versions[versionRange[1]] ?? start);
 const selectedRecords = $derived.by(() => {
   const selected = new Set(versions.slice(versionRange[0], versionRange[1] + 1));
-  return records.filter((record) => record.version && selected.has(record.version));
+  return successful.filter((record) => record.version && selected.has(record.version));
 });
 const canonicalRecords = $derived.by(() => {
   const selectedMetricIds = new Set(selectedMetrics.map((metric) => metric.value));
@@ -65,6 +69,58 @@ const metricCount = $derived(
   unique(observations(canonicalRecords).map((metric) => metric.name)).length,
 );
 </script>
+
+<section class="dashboard-section" aria-labelledby="coverage-title">
+  <div class="section-intro">
+    <div>
+      <p class="eyebrow">Evidence status</p>
+      <h2 id="coverage-title">Version coverage</h2>
+    </div>
+    <div class="section-description">
+      <p>
+        Every LiteLLM version with published evidence in this data set, and whether this benchmark's
+        canonical run succeeded, failed, or left no record. Only successful runs feed the charts
+        below.
+      </p>
+    </div>
+  </div>
+  <p
+    id="detail-coverage-summary"
+    class="coverage-summary"
+    data-published={coverage.published}
+    data-failed={coverage.failed}
+    data-missing={coverage.missing}
+  >
+    <strong>{coverage.published}</strong> of <strong>{coverage.versions.length}</strong>
+    {coverage.versions.length === 1 ? "version" : "versions"} published
+    {#if coverage.failed}· <strong>{coverage.failed}</strong> failed{/if}
+    {#if coverage.missing}· <strong>{coverage.missing}</strong> missing{/if}
+  </p>
+  {#if coverage.versions.length}
+    <table id="detail-coverage" class="coverage-table">
+      <thead>
+        <tr>
+          <th scope="col">Version</th>
+          <th scope="col">Status</th>
+          <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each coverage.versions as item (item.version)}
+          <tr data-state={item.state}>
+            <th scope="row">{item.version}</th>
+            <td><span class="coverage-state" data-state={item.state}>{item.state}</span></td>
+            <td>{item.detail}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {:else}
+    <p class="status" data-slot="status" data-state="empty" role="status">
+      No benchmark evidence has been published yet.
+    </p>
+  {/if}
+</section>
 
 <section class="summary" data-slot="summary" data-variant="three" aria-label="Benchmark summary">
   {#each [

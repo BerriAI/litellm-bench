@@ -4,7 +4,7 @@ import {
   ProxyEnvironment,
   type ProxyEnvironmentShape,
   type ProxyExperiment,
-  toRunnerExecutionError,
+  runWithRoundRetries,
 } from "@litellm-bench/proxy";
 import { Effect, Path } from "effect";
 import { OcrArtifacts, OcrArtifactsLive } from "./artifacts.js";
@@ -47,91 +47,22 @@ export const makeOcrRunner: Effect.Effect<
   };
 });
 
-const trialKey = (trial: ProxyRawObservation["trials"][number]) =>
-  `${trial.round}:${trial.scenario}:${trial.variant}`;
-
 const retryIssue = (trial: ProxyRawObservation["trials"][number]): string | undefined => {
   const classified = classifyOcrTrial(trial);
   return classified.ok ? undefined : classified.issue;
 };
 
-export const runWithBlockRetries = Effect.fn("ProxyOcr.runWithBlockRetries")(
-  function*(
-    run: ProxyEnvironmentShape["run"],
-    experiment: ProxyExperiment,
-    maximumAttempts: number,
-  ) {
-    const path = yield* Path.Path;
-    const latest = new Map<string, ProxyRawObservation["trials"][number]>();
-    const expectedByRound = new Map<number, readonly string[]>();
-    for (const trial of experiment.trials) {
-      expectedByRound.set(trial.round, [
-        ...(expectedByRound.get(trial.round) ?? []),
-        trialKey(trial as ProxyRawObservation["trials"][number]),
-      ]);
-    }
-    let pending = new Set(expectedByRound.keys());
-    let metadata: ProxyRawObservation["metadata"] = {};
-    const attempts: Array<{
-      attempt: number;
-      rounds: number[];
-      failed_rounds: number[];
-      reasons: string[];
-    }> = [];
-    for (let attempt = 1; attempt <= maximumAttempts && pending.size > 0; attempt += 1) {
-      const plans = experiment.trials
-        .filter(({ round }) => pending.has(round))
-        .map((trial) => attempt === 1 ? trial : { ...trial, id: `${trial.id}_retry${attempt}` });
-      const raw = yield* run({
-        ...experiment,
-        artifactsDirectory: path.join(experiment.artifactsDirectory, `attempt-${attempt}`),
-        trials: plans,
-      }).pipe(
-        Effect.mapError(toRunnerExecutionError),
-      );
-      metadata = raw.metadata;
-      for (const trial of raw.trials) latest.set(trialKey(trial), trial);
-      const failed = new Set<number>();
-      const reasons: string[] = [];
-      for (const round of pending) {
-        const expected = expectedByRound.get(round) ?? [];
-        const rows = raw.trials.filter((trial) => trial.round === round);
-        const actual = rows.map(trialKey);
-        const issues = rows.flatMap((trial) => {
-          const issue = retryIssue(trial);
-          return issue === undefined ? [] : [`${trial.id}: ${issue}`];
-        });
-        if (
-          actual.length !== expected.length
-          || !expected.every((key) => actual.includes(key))
-          || issues.length > 0
-        ) {
-          failed.add(round);
-          reasons.push(
-            ...issues,
-            ...(actual.length === expected.length ? [] : [`round ${round}: incomplete block`]),
-          );
-        }
-      }
-      attempts.push({ attempt, rounds: [...pending], failed_rounds: [...failed], reasons });
-      pending = failed;
-    }
-    const trials = experiment.trials.flatMap((trial) => {
-      const found = latest.get(trialKey(trial as ProxyRawObservation["trials"][number]));
-      return found === undefined ? [] : [found];
-    });
-    return {
-      trials,
-      metadata: {
-        ...metadata,
-        ocr_block_retries: {
-          maximum_attempts: maximumAttempts,
-          attempts,
-          exhausted_rounds: [...pending],
-        },
-      },
-    } satisfies ProxyRawObservation;
-  },
-);
+export const runWithBlockRetries = (
+  run: ProxyEnvironmentShape["run"],
+  experiment: ProxyExperiment,
+  maximumAttempts: number,
+) =>
+  runWithRoundRetries({
+    run,
+    experiment,
+    maximumAttempts,
+    issue: retryIssue,
+    metadataKey: "ocr_block_retries",
+  });
 
 export const runner = makeOcrRunner.pipe(Effect.provide(OcrArtifactsLive));

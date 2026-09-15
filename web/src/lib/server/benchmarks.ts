@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseAnnotations } from "../annotationContract.ts";
 import type { BenchmarkIndex } from "../data.ts";
+import { uniqueVersions } from "../versions.ts";
 
 export function dataDirectory(): string {
   return resolve(process.env.BENCHMARK_DATA_DIR ?? "../data");
@@ -48,5 +49,6 @@ export async function benchmarkData(id: string, directory = dataDirectory()) {
     benchmark,
     records: index.records.filter((record) => record.benchmark_id === id),
     annotations: annotations.filter((annotation) => annotation.benchmark_id === id),
+    knownVersions: [...uniqueVersions(index.records.map((record) => record.version))],
   };
 }

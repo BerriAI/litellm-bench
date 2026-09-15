@@ -33,7 +33,7 @@
   ],
   "protocol": {
     "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-    "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
+    "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True, so it excludes the time a live model-cost-map fetch would add.",
     "experimental_unit": "One fresh isolated Python process executing import litellm",
     "scenarios": [
       {
@@ -90,7 +90,7 @@
     "validity": {
       "trial": "The isolated process must exit successfully",
       "outliers": "Do not remove samples",
-      "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+      "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation. Every timed process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the import reads the bundled model cost map instead of fetching the live one over the network inside the timed region."
     }
   },
   "jobs": [
@@ -116,6 +116,9 @@
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         }
       }
     }

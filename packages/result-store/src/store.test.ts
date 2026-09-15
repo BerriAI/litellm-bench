@@ -184,7 +184,7 @@ test("replacement removes every matching case and version including prior runs",
   assert.equal(index.records[0]?.canonical, true);
 });
 
-test("benchmark replacement removes prior data and does not store a failed result", async () => {
+test("benchmark replacement removes prior data and stores the failed result as evidence", async () => {
   const root = await temporary();
   const data = join(root, "data");
   const first = join(root, "first");
@@ -193,9 +193,16 @@ test("benchmark replacement removes prior data and does not store a failed resul
   await ingest(first, data, source, "replace-benchmark-version");
   await writeFailedPair(failed, "failure", "run-failure", "alternate");
 
-  assert.equal(await ingest(failed, data, source, "replace-benchmark-version"), 0);
-  assert.deepEqual(await readdir(join(data, "results", "1.0.0", "demo")), []);
-  assert.equal((await deriveIndex(data)).record_count, 0);
+  assert.equal(await ingest(failed, data, source, "replace-benchmark-version"), 1);
+  assert.deepEqual(await readdir(join(data, "results", "1.0.0", "demo")), ["run-failure.json"]);
+  const index = await deriveIndex(data);
+  assert.equal(index.record_count, 1);
+  assert.equal(index.records[0]?.status, "failed");
+  assert.deepEqual(index.records[0]?.metrics, []);
+  assert.deepEqual(index.records[0]?.failure, {
+    code: "process_failed",
+    message: "benchmark failed",
+  });
 });
 
 test("recovery decodes journals and rejects malformed or excess-property documents", async () => {
