@@ -18,7 +18,8 @@ runs:
         path: |
           apps/*/dist
           packages/*/dist
-        key: litellm-bench-cli-dist-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'apps/**', 'packages/**', 'benchmarks/**', '!**/node_modules/**', '!**/dist/**') }}
+          benchmarks/*/dist
+        key: litellm-bench-cli-dist-v2-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'apps/**', 'packages/**', 'benchmarks/**', '!**/node_modules/**', '!**/dist/**') }}
     - uses: pnpm/action-setup@v6
       with:
         run_install: false
