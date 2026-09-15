@@ -297,9 +297,12 @@ export const prepareEnvironment = (
     const resolver = path.join(spec.workspace, "resolver");
     const target = path.join(spec.workspace, "target");
     const downloads = path.join(spec.workspace, "downloads");
+    const uvCache = path.join(spec.workspace, "uv-cache");
+    const uvArguments = ["--no-config", "--cache-dir", uvCache];
     const report = path.join(spec.artifacts_dir, "pip-report.json");
     yield* Effect.all([
       fs.makeDirectory(downloads, { recursive: true }),
+      fs.makeDirectory(uvCache, { recursive: true }),
       fs.makeDirectory(spec.artifacts_dir, { recursive: true }),
     ], { concurrency: "unbounded", discard: true }).pipe(
       Effect.mapError((error) =>
@@ -311,7 +314,14 @@ export const prepareEnvironment = (
     );
     const uvVersion = yield* run(uv, ["--no-config", "--version"]);
     const resolved = yield* run(uv, ["--no-config", "python", "find", spec.python]);
-    yield* run(uv, ["--no-config", "venv", "--seed", "--python", resolved.stdout.trim(), resolver]);
+    yield* run(uv, [
+      ...uvArguments,
+      "venv",
+      "--seed",
+      "--python",
+      resolved.stdout.trim(),
+      resolver,
+    ]);
     const resolverPython = pythonPath(path, resolver);
     const pipVersion = yield* run(resolverPython, ["-m", "pip", "--isolated", "--version"]);
     yield* run(resolverPython, [
@@ -326,7 +336,7 @@ export const prepareEnvironment = (
       ...resolverArguments(spec.resolver),
       spec.requirement,
     ]);
-    yield* run(uv, ["--no-config", "venv", "--python", resolved.stdout.trim(), target]);
+    yield* run(uv, [...uvArguments, "venv", "--python", resolved.stdout.trim(), target]);
     const targetPython = pythonPath(path, target);
     yield* run(resolverPython, [
       "-m",
@@ -345,7 +355,7 @@ export const prepareEnvironment = (
       spec.requirement,
     ]);
     yield* run(uv, [
-      "--no-config",
+      ...uvArguments,
       "pip",
       "install",
       "--python",

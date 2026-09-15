@@ -3,8 +3,10 @@ import type { ProxyLoadObservation, ProxyRawObservation } from "@litellm-bench/c
 import type { RunContext } from "@litellm-bench/harness";
 import { canonicalOpenAiStreamingEventCount } from "@litellm-bench/provider-openai-chat-completions";
 import { ProxyEnvironment, ProxyRuntimeError } from "@litellm-bench/proxy";
-import { Effect } from "effect";
-import { makeStreamingChatCompletionsRunner } from "../src/runner.js";
+import { Effect, Path } from "effect";
+import { makeStreamingChatCompletionsRunner as makeRunner } from "../src/runner.js";
+
+const makeStreamingChatCompletionsRunner = makeRunner.pipe(Effect.provide(Path.layer));
 
 const config = {
   rounds: 5,
@@ -19,10 +21,11 @@ const config = {
     minimum_achievement_ratio: 0.98,
     required_pass_fraction: 0.8,
   },
-  preallocated_vus: 16,
+  retry_attempts: 2,
+  vu_allocation: { slo_multiple: 4, minimum_vus: 16 },
   max_vus: 32,
   calibration_rate_multiplier: 1.5,
-  calibration_headroom: { maximum_cpu_percent: 85, maximum_throttled_usec: 0 },
+  calibration_headroom: { maximum_cpu_percent: 85, maximum_throttled_fraction: 0.001 },
   mock_image: `node:24@sha256:${"a".repeat(64)}`,
   resources: {
     cpus: 1,

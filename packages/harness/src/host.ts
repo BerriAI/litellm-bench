@@ -3,6 +3,7 @@ import type {
   EnvironmentRequirements,
   HostEnvironmentSnapshot,
 } from "@litellm-bench/contracts/metadata";
+import { cpus as hostCpus, loadavg, release, totalmem } from "node:os";
 
 export type HostPlatform = "linux" | "macos" | "windows" | "unknown";
 export type HostArchitecture = "x86_64" | "arm64" | "unknown";
@@ -23,6 +24,23 @@ export const normalizeArchitecture = (architecture: string): HostArchitecture =>
     ? "arm64"
     : "unknown";
 
+const captureHostResources = (): Pick<
+  HostEnvironmentSnapshot,
+  "kernel_release" | "cpu_model" | "cpu_count" | "memory_total_bytes" | "load_average_1m"
+> => {
+  const cpus = hostCpus();
+  const model = cpus[0]?.model.trim();
+  const kernel = release();
+  const load = loadavg()[0];
+  return {
+    ...(kernel === "" ? {} : { kernel_release: kernel }),
+    ...(model === undefined || model === "" ? {} : { cpu_model: model }),
+    ...(cpus.length === 0 ? {} : { cpu_count: cpus.length }),
+    memory_total_bytes: totalmem(),
+    ...(load === undefined || !Number.isFinite(load) ? {} : { load_average_1m: load }),
+  };
+};
+
 export const captureHostEnvironment = (
   environment: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
@@ -36,6 +54,7 @@ export const captureHostEnvironment = (
     : "existing",
   node_version: process.version,
   ci: environment.CI === "true" || environment.GITHUB_ACTIONS === "true",
+  ...captureHostResources(),
 });
 
 export const checkHostRequirements = (

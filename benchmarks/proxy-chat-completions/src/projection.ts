@@ -13,7 +13,7 @@ export interface ChatTrialObservation {
   readonly calibration: boolean;
   readonly valid: boolean;
   readonly mock_cpu_percent?: number;
-  readonly mock_throttled_usec?: number;
+  readonly mock_throttled_fraction?: number;
   readonly load_generator_cpu_percent?: number;
 }
 
@@ -50,6 +50,43 @@ export const trialMeetsSlo = (
   && trial.p95_latency_ms <= config.slo.p95_latency_ms
   && trial.completion_rps / trial.offered_rps >= config.slo.minimum_achievement_ratio;
 
+/**
+ * Why a bypass-calibration trial fails to prove that the mock and load generator have headroom,
+ * or `undefined` when the apparatus was healthy. Throttling is judged as a fraction of wall time
+ * because CFS bandwidth control routinely reports a few hundred microseconds of throttling for a
+ * pinned cgroup running far below its quota; genuine contention shows up as a material fraction.
+ */
+export const calibrationHeadroomIssue = (
+  trial: ChatTrialObservation,
+  config: typeof ChatConfig.Type,
+): string | undefined => {
+  const limit = config.calibration_headroom;
+  if (!trialMeetsSlo({ ...trial, p95_latency_ms: 0 }, config)) {
+    return "bypass calibration missed its offered rate, error budget, or dropped arrivals";
+  }
+  if (trial.load_generator_cpu_percent === undefined) {
+    return "missing load-generator CPU utilization";
+  }
+  if (trial.load_generator_cpu_percent >= limit.maximum_cpu_percent) {
+    return `load generator used ${
+      trial.load_generator_cpu_percent.toFixed(1)
+    }% CPU (limit ${limit.maximum_cpu_percent}%)`;
+  }
+  if (trial.mock_cpu_percent === undefined) return "missing mock CPU utilization";
+  if (trial.mock_cpu_percent >= limit.maximum_cpu_percent) {
+    return `mock used ${
+      trial.mock_cpu_percent.toFixed(1)
+    }% CPU (limit ${limit.maximum_cpu_percent}%)`;
+  }
+  if (trial.mock_throttled_fraction === undefined) return "missing mock CPU throttling telemetry";
+  if (trial.mock_throttled_fraction > limit.maximum_throttled_fraction) {
+    return `mock was CPU-throttled for ${
+      (trial.mock_throttled_fraction * 100).toFixed(3)
+    }% of the trial (limit ${limit.maximum_throttled_fraction * 100}%)`;
+  }
+  return undefined;
+};
+
 export const projectChatCompletions = (
   trials: readonly ChatTrialObservation[],
   config: typeof ChatConfig.Type,
@@ -63,13 +100,7 @@ export const projectChatCompletions = (
     throw new Error("one bypass calibration is required per round");
   }
   const calibrationFailures = calibrations.filter((trial) =>
-    !trialMeetsSlo({ ...trial, p95_latency_ms: 0 }, config)
-    || trial.load_generator_cpu_percent === undefined
-    || trial.load_generator_cpu_percent >= config.calibration_headroom.maximum_cpu_percent
-    || trial.mock_cpu_percent === undefined
-    || trial.mock_cpu_percent >= config.calibration_headroom.maximum_cpu_percent
-    || trial.mock_throttled_usec === undefined
-    || trial.mock_throttled_usec > config.calibration_headroom.maximum_throttled_usec
+    calibrationHeadroomIssue(trial, config) !== undefined
   );
   if (calibrationFailures.length > 0) {
     throw new Error(

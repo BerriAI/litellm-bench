@@ -5,7 +5,11 @@ import {
   canonicalOpenAiStreamingChatCompletionsFixturePath,
   canonicalOpenAiStreamingEventCount,
 } from "@litellm-bench/provider-openai-chat-completions";
-import type { ProxyExperiment, ProxyTrialPlan } from "@litellm-bench/proxy";
+import {
+  allocateVirtualUsers,
+  type ProxyExperiment,
+  type ProxyTrialPlan,
+} from "@litellm-bench/proxy";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 export interface StreamingChatExperimentConfig {
@@ -18,7 +22,8 @@ export interface StreamingChatExperimentConfig {
     readonly windows: number;
     readonly maximum_cv: number;
   };
-  readonly preallocated_vus: number;
+  readonly slo: { readonly p95_stream_duration_ms: number };
+  readonly vu_allocation: { readonly slo_multiple: number; readonly minimum_vus: number };
   readonly max_vus: number;
   readonly calibration_rate_multiplier: number;
   readonly mock_image: string;
@@ -93,8 +98,10 @@ export const makeStreamingChatExperiment = (
   const load = (rate: number) => ({
     mode: "fixed" as const,
     rate,
-    preallocated_vus: config.preallocated_vus,
-    max_vus: config.max_vus,
+    ...allocateVirtualUsers(rate, config.slo.p95_stream_duration_ms / 1_000, {
+      ...config.vu_allocation,
+      maximum_vus: config.max_vus,
+    }),
     duration_seconds: config.duration_seconds,
     warmup_seconds: config.warmup_seconds,
     ...(config.steady_state === undefined ? {} : { steady_state: config.steady_state }),

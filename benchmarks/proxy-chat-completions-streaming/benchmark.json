@@ -20,7 +20,7 @@
         "id": "stream-arrival-sweep",
         "label": "Streaming fixed-arrival-rate saturation sweep",
         "dimensions": {
-          "arrival_rates": [25, 50, 100, 150, 200, 300, 450],
+          "arrival_rates": [10, 20, 30, 40, 50, 60, 80],
           "stream": true
         }
       }
@@ -114,7 +114,8 @@
       "window": "Only complete streams timestamped no later than the fixed 30-second deadline enter throughput, errors, and latency; post-deadline completions and drain time are separate diagnostics",
       "translation": "The mock rejects any mismatch in method/path, authorization and content-type headers, required stream=true and stream_options.include_usage=true, or the exact allowlisted JSON body; the client validates content-type, all 31 SSE events, every varied content chunk, usage, finish reason, and terminal [DONE]",
       "timing": "The mock waits 10 ms before its first SSE event and 1 ms between subsequent events; TTFB is measured by k6 at the first response byte and complete-stream duration ends after the terminal event",
-      "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock throttling must be zero",
+      "headroom": "Each round bypasses the proxy at 1.5x the maximum sweep rate; achieved load and errors must meet the SLO, mock and load-generator CPU must remain below 85%, and mock CFS throttling must stay below 0.1% of wall time; k6 pre-allocates ceil(rate x SLO x 4) VUs (bounded to 16..512) so the open-model executor never starves for VUs below the SLO",
+      "retries": "Every round (one trial per swept rate plus its calibration) is an independent unit; if any trial in a round loses measurement integrity or its calibration fails headroom, that whole round is re-run up to 3 attempts with fresh containers, every attempt's artifacts are retained, and trials from different attempts are never mixed",
       "apparatus": "Proxy, mock, and load generator use disjoint CPU sets; cgroup quota/cpuset/throttling, utilization, host pressure, image IDs, kernel/topology/governor, runner image, repository identity, and input hashes are retained",
       "fail_closed": "Missing/invalid telemetry, missing stream timing/statistics, malformed or semantically incorrect SSE, unstable calibration, unbracketed saturation, request-count mismatch, or any upstream translation failure invalidates the result"
     }
@@ -137,7 +138,7 @@
       },
       "config": {
         "rounds": 7,
-        "arrival_rates": [25, 50, 100, 150, 200, 300, 450],
+        "arrival_rates": [10, 20, 30, 40, 50, 60, 80],
         "duration_seconds": 30,
         "warmup_seconds": 30,
         "steady_state": {
@@ -152,12 +153,16 @@
           "minimum_achievement_ratio": 0.98,
           "required_pass_fraction": 0.8571428571428571
         },
-        "preallocated_vus": 128,
+        "retry_attempts": 3,
+        "vu_allocation": {
+          "slo_multiple": 4,
+          "minimum_vus": 16
+        },
         "max_vus": 512,
         "calibration_rate_multiplier": 1.5,
         "calibration_headroom": {
           "maximum_cpu_percent": 85,
-          "maximum_throttled_usec": 0
+          "maximum_throttled_fraction": 0.001
         },
         "mock_image": "node:24.8.0-slim@sha256:cadbfafeb6baf87eaaffa40b3640209c4b7fd38cebde65059d15bc39cd636b85",
         "resources": {

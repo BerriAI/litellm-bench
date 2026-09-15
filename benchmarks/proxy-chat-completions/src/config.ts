@@ -30,7 +30,11 @@ export const ChatConfig = Schema.Struct({
       Schema.check(Schema.isBetween({ minimum: 0.5, maximum: 1 })),
     ),
   }),
-  preallocated_vus: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
+  retry_attempts: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 5 }))),
+  vu_allocation: Schema.Struct({
+    slo_multiple: Schema.Finite.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
+    minimum_vus: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
+  }),
   max_vus: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
   calibration_rate_multiplier: Schema.Finite.pipe(
     Schema.check(Schema.isGreaterThanOrEqualTo(1.5)),
@@ -39,7 +43,9 @@ export const ChatConfig = Schema.Struct({
     maximum_cpu_percent: Schema.Finite.pipe(
       Schema.check(Schema.isBetween({ minimum: 1, maximum: 95 })),
     ),
-    maximum_throttled_usec: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
+    maximum_throttled_fraction: Schema.Finite.pipe(
+      Schema.check(Schema.isBetween({ minimum: 0, maximum: 0.05 })),
+    ),
   }),
   mock_image: Schema.NonEmptyString.pipe(
     Schema.check(Schema.isPattern(/@sha256:[a-f0-9]{64}$/)),
@@ -92,8 +98,10 @@ export const decodeChatRun = Effect.fn("ProxyChat.decodeConfig")(function*(conte
   if (rates.some((rate, index) => index > 0 && rate <= rates[index - 1]!)) {
     return yield* new InvalidRunnerConfig({ message: "arrival_rates must be strictly increasing" });
   }
-  if (decoded.config.max_vus < decoded.config.preallocated_vus) {
-    return yield* new InvalidRunnerConfig({ message: "max_vus must be at least preallocated_vus" });
+  if (decoded.config.max_vus < decoded.config.vu_allocation.minimum_vus) {
+    return yield* new InvalidRunnerConfig({
+      message: "max_vus must be at least vu_allocation.minimum_vus",
+    });
   }
   const requiredWarmup = decoded.config.steady_state.window_seconds
     * decoded.config.steady_state.windows;

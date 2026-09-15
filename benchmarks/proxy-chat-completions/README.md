@@ -18,10 +18,21 @@ that window and divides by exactly 30 seconds; tail completions and drain durati
 
 Every round also sends 1.5× the maximum offered rate directly to a fresh validating mock. This
 calibration must achieve its offered rate without drops/errors while mock and pinned load-generator
-CPU stay below 85% and mock cgroup throttling stays zero. Proxy, mock, and load generator use
+CPU stay below 85% and mock CFS throttling stays below 0.1% of wall time (a pinned cgroup far below
+its quota still reports a few hundred microseconds of throttling per run; genuine contention shows
+up as a material fraction). k6 pre-allocates `ceil(rate × SLO × 4)` VUs (bounded to 16..512) so the
+`constant-arrival-rate` executor never drops arrivals for lack of VUs while the proxy is within its
+SLO. Proxy, mock, and load generator use
 disjoint CPU sets. Complete raw artifacts retain image references and effective IDs, cgroup
 quota/cpuset/throttling, utilization, host pressure, CPU/kernel/topology/governor, runner identity,
 and configuration/fixture/payload hashes.
+
+A round (one trial per rate plus its calibration) is an independent experimental unit. If any trial
+in a round loses measurement integrity (k6 failure, request-count mismatch, telemetry gap) or the
+calibration fails headroom, the whole round is re-run with fresh containers, up to three attempts.
+Every attempt's artifacts are retained under `attempt-N/`, the reasons are recorded in the raw
+observation's `round_retries` metadata, and trials from different attempts are never mixed. SLO
+misses at swept rates are data, not retry reasons.
 
 The mock requires `stream: false`, the exact allowlisted translated body, and normalized
 `content-type` plus exact upstream authorization. Responses are semantically checked on every

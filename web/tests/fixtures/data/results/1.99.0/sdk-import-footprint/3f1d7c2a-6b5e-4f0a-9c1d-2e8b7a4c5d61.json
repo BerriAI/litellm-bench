@@ -1,0 +1,381 @@
+{
+  "record_id": "2c79bf3d8145672846c3d9d2b32753e47acda7298e3725bc5bd5ad4c83dfd1a7",
+  "case_id": "95f04285a80791529426c7a0f1bb2ca472a155eef6d784c3281e8eade3ffa525",
+  "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+  "identity": {
+    "domain": "case",
+    "benchmark_id": "sdk-import-footprint",
+    "output_metrics": [
+      {
+        "id": "import.peak_rss",
+        "unit": "MiB",
+        "better": "lower"
+      },
+      {
+        "id": "import.loaded_modules",
+        "unit": "modules",
+        "better": "lower"
+      },
+      {
+        "id": "import.disk_growth",
+        "unit": "MiB",
+        "better": "lower"
+      }
+    ],
+    "protocol": {
+      "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
+      "scenarios": [
+        {
+          "id": "root-import",
+          "dimensions": {
+            "statement": "import litellm",
+            "isolated_python": true
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "id": "import.peak_rss",
+          "unit": "MiB",
+          "role": "primary",
+          "better": "lower"
+        },
+        {
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
+          "role": "secondary",
+          "better": "lower"
+        }
+      ],
+      "analyses": [
+        {
+          "id": "instrumented_import",
+          "measurement": "import.peak_rss",
+          "additional_measurements": [
+            "import.loaded_modules",
+            "import.disk_growth"
+          ],
+          "scenarios": [
+            "root-import"
+          ],
+          "aggregation": "single observation"
+        }
+      ],
+      "validity": {
+        "trial": "The instrumented import must exit successfully",
+        "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+      }
+    },
+    "job": {
+      "id": "base",
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      },
+      "requirements": {
+        "python": "3.12.10",
+        "tools": [
+          "uv"
+        ]
+      }
+    },
+    "target": {
+      "version": "1.99.0",
+      "artifact": {
+        "requirement": "litellm==1.99.0",
+        "distribution": "litellm"
+      }
+    }
+  },
+  "source": {
+    "provider": "github-actions",
+    "repository": "BerriAI/litellm-bench",
+    "workflow": "Record LiteLLM benchmarks",
+    "workflow_run_id": "34809328520",
+    "commit": "a4cf0e6eaad7c7f77a738a1220a07e697b740e44",
+    "ref": "refs/heads/main"
+  },
+  "spec": {
+    "case_id": "95f04285a80791529426c7a0f1bb2ca472a155eef6d784c3281e8eade3ffa525",
+    "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+    "benchmark": {
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
+      "kind": "sdk",
+      "output_metrics": [
+        {
+          "id": "import.peak_rss",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
+          "better": "lower"
+        }
+      ],
+      "protocol": {
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
+        "scenarios": [
+          {
+            "id": "root-import",
+            "label": "import litellm",
+            "dimensions": {
+              "statement": "import litellm",
+              "isolated_python": true
+            }
+          }
+        ],
+        "measurements": [
+          {
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
+            "unit": "MiB",
+            "role": "primary",
+            "better": "lower"
+          },
+          {
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          }
+        ],
+        "analyses": [
+          {
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
+            "additional_measurements": [
+              "import.loaded_modules",
+              "import.disk_growth"
+            ],
+            "scenarios": [
+              "root-import"
+            ],
+            "aggregation": "single observation"
+          }
+        ],
+        "validity": {
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+        }
+      }
+    },
+    "job": {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      },
+      "requirements": {
+        "python": "3.12.10",
+        "tools": [
+          "uv"
+        ]
+      }
+    },
+    "version": {
+      "version": "1.99.0",
+      "artifacts": {
+        "sdk": {
+          "requirement": "litellm==1.99.0",
+          "distribution": "litellm"
+        },
+        "proxy": {
+          "image": "ghcr.io/berriai/litellm:v1.99.0"
+        }
+      }
+    },
+    "artifact": {
+      "requirement": "litellm==1.99.0",
+      "distribution": "litellm"
+    }
+  },
+  "result": {
+    "run_id": "3f1d7c2a-6b5e-4f0a-9c1d-2e8b7a4c5d61",
+    "created_at": "2026-09-13T21:30:00Z",
+    "case_id": "95f04285a80791529426c7a0f1bb2ca472a155eef6d784c3281e8eade3ffa525",
+    "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+    "benchmark": {
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
+      "kind": "sdk",
+      "output_metrics": [
+        {
+          "id": "import.peak_rss",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
+          "better": "lower"
+        }
+      ],
+      "protocol": {
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
+        "scenarios": [
+          {
+            "id": "root-import",
+            "label": "import litellm",
+            "dimensions": {
+              "statement": "import litellm",
+              "isolated_python": true
+            }
+          }
+        ],
+        "measurements": [
+          {
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
+            "unit": "MiB",
+            "role": "primary",
+            "better": "lower"
+          },
+          {
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          }
+        ],
+        "analyses": [
+          {
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
+            "additional_measurements": [
+              "import.loaded_modules",
+              "import.disk_growth"
+            ],
+            "scenarios": [
+              "root-import"
+            ],
+            "aggregation": "single observation"
+          }
+        ],
+        "validity": {
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+        }
+      }
+    },
+    "job": {
+      "id": "base",
+      "canonical": true,
+      "runner": "ubuntu-24.04",
+      "config": {
+        "profile": "base",
+        "workload": {
+          "name": "root-import",
+          "statement": "import litellm"
+        },
+        "measurements": {
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
+          "importtime": false,
+          "network": false,
+          "timeout_seconds": 120
+        }
+      },
+      "requirements": {
+        "python": "3.12.10",
+        "tools": [
+          "uv"
+        ]
+      }
+    },
+    "version": "1.99.0",
+    "artifact": {
+      "requirement": "litellm==1.99.0",
+      "distribution": "litellm"
+    },
+    "apparatus": {
+      "runner": "@litellm-bench/benchmark-sdk-import-footprint",
+      "host": {
+        "platform": "linux",
+        "architecture": "x86_64",
+        "host": "github-hosted",
+        "node_version": "v24.20.0",
+        "ci": true,
+        "python_version": "3.12.10",
+        "python_implementation": "CPython"
+      },
+      "uv_version": "uv 0.8.17",
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-KFqDo3/resolver/lib/python3.12/site-packages/pip (python 3.12)"
+    },
+    "metrics": [],
+    "trials": [],
+    "analyses": [],
+    "status": "failed",
+    "error": {
+      "code": "process_failed",
+      "message": "fixture: isolated import process exited with code 1"
+    }
+  }
+}

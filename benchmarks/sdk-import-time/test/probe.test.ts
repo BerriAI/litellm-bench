@@ -118,6 +118,30 @@ it.effect("reads structured Python failures even after a nonzero exit", () =>
       });
   }));
 
+it.effect("retains completed samples and the failing index from a partial batch failure", () =>
+  Effect.gen(function*() {
+    const probe = yield* setup(
+      JSON.stringify({
+        status: "failed",
+        error: { type: "RuntimeError", message: "process exited 7: ", sample_index: 3 },
+        completed_samples_seconds: [0.31, 0.29],
+      }),
+      (command) =>
+        Effect.fail(new ProcessFailure({ command, output: { ...success, exitCode: 1 } })),
+    );
+    expect(yield* Effect.flip(probe.measureBatch(prepared, spec, "samples", 20)))
+      .toMatchObject({
+        _tag: "RunnerExecutionError",
+        message: "samples: RuntimeError: process exited 7: ",
+        details: {
+          phase: "samples",
+          requested_samples: 20,
+          failed_sample_index: 3,
+          completed_samples_seconds: [0.31, 0.29],
+        },
+      });
+  }));
+
 it.effect("never accepts a successful payload from a failed process", () =>
   Effect.gen(function*() {
     const probe = yield* setup("{\"status\":\"ok\",\"samples_seconds\":[0.1]}", (command) =>

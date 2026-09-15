@@ -80,7 +80,7 @@ describe("container telemetry projection", () => {
       cpuMax: "100000 100000",
       cpuSet: "0",
       wallSeconds: 3,
-      window: "k6 process: initialization, warmup, measurement, and drain",
+      window: "k6 process: warmup, fixed measurement window, and drain",
     })).toEqual({
       cpuAveragePercent: 50,
       baselineMemoryMib: 1,

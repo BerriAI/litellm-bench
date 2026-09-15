@@ -159,6 +159,34 @@
           "additionalProperties": {
             "description": "JSON value"
           }
+        },
+        "failure": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_config",
+                "artifact_unavailable",
+                "registry_request_failed",
+                "environment_requirement_unmet",
+                "process_failed",
+                "deadline_exceeded",
+                "invalid_observation",
+                "record_conflict",
+                "persistence_failed",
+                "cancelled"
+              ]
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

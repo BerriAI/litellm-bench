@@ -3,7 +3,12 @@ import { Effect, FileSystem, Path } from "effect";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { DockerContainer, DockerContainerSpec, DockerEngineShape } from "./docker.js";
+import {
+  type DockerContainer,
+  type DockerContainerSpec,
+  type DockerEngineShape,
+  DockerError,
+} from "./docker.js";
 import { K6Error, type K6Shape } from "./k6.js";
 import type { K6Measurement, ProxyExperiment } from "./models.js";
 import { parseCgroupValue, runProxyExperiment, validateExperiment } from "./runtime.js";
@@ -150,9 +155,13 @@ const fakeDocker = (
         const container: DockerContainer = {
           name: spec.name,
           exec: (args) => {
-            if (args[0] === "sh" && args[2]?.includes("memory.peak")) {
-              events.push(`reset peak ${spec.name}`);
-              return commandOutput();
+            if (args[0] === "sh") {
+              return Effect.fail(
+                new DockerError({
+                  operation: "exec",
+                  message: "cannot create /sys/fs/cgroup/memory.peak: Read-only file system",
+                }),
+              );
             }
             if (
               spec.name.endsWith("-mock") && args[0] === "node" && args[1] === "-e"
@@ -173,6 +182,9 @@ const fakeDocker = (
             }
             if (args[0] === "cat" && args[1]?.endsWith("cpuset.cpus.effective")) {
               return commandOutput("0\n");
+            }
+            if (args[0] === "cat" && args[1]?.endsWith("memory.peak")) {
+              return commandOutput("30\n");
             }
             if (args[0] === "cat") return commandOutput("20\n");
             return commandOutput();
@@ -520,9 +532,9 @@ describe("proxy runtime", () => {
       mockServerPath: "/mock/main.js",
     }));
     expect(runs).toBe(3);
-    expect(events.filter((event) => event.startsWith("reset peak"))).toHaveLength(2);
     expect(raw.trials[0]?.client?.result?.warmup_requests).toBe(1);
-    expect(raw.trials[0]?.telemetry?.window).toBe("post-warmup measurement process and drain");
+    expect(raw.trials[0]?.telemetry?.window).toMatch(/^post-warmup measurement process and drain/);
+    expect(raw.trials[0]?.telemetry?.peak_memory_bytes).toBe(30);
   });
 
   it("accepts version 2 fixtures through the shared preflight decoder", async () => {

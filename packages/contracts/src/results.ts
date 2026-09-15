@@ -158,6 +158,10 @@ export const IndexRecord = Schema.Struct({
   platform: Schema.optionalKey(NonEmptyString),
   architecture: Schema.optionalKey(NonEmptyString),
   source: JsonObject,
+  failure: Schema.optionalKey(Schema.Struct({
+    code: ResultFailure.fields.code,
+    message: Schema.String,
+  })),
 }).annotate({ identifier: "IndexRecord" });
 
 export const BenchmarkIndex = Schema.Struct({

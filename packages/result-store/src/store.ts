@@ -189,6 +189,9 @@ export function buildIndex(
           ? {}
           : { architecture: actualArchitecture }),
         source: record.source,
+        ...(record.result.status === "failed"
+          ? { failure: { code: record.result.error.code, message: record.result.error.message } }
+          : {}),
       };
     }),
   });
@@ -300,10 +303,7 @@ export async function ingest(
         : false
     );
     const obsoletePaths = new Set(obsolete.map(([path]) => path));
-    const writable = mode === "replace-benchmark-version"
-      ? incoming.filter((record) => record.result.status === "ok")
-      : incoming;
-    const writes = writable.flatMap((record) => {
+    const writes = incoming.flatMap((record) => {
       const destination = path.join(directory, recordRelativePath(record));
       const current = existing.find(([path]) => path === destination);
       if (current !== undefined && !obsoletePaths.has(destination)) {

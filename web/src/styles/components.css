@@ -218,6 +218,51 @@
     background: var(--color-error-subtle);
     border-radius: var(--radius-control);
   }
+  .coverage-summary {
+    color: var(--color-muted);
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+  }
+  .coverage-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+  }
+  .coverage-table th, .coverage-table td {
+    padding-block: var(--space-3);
+    padding-inline-end: var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .coverage-table thead th {
+    color: var(--color-muted);
+    font-weight: var(--font-weight-semibold);
+  }
+  .coverage-table tbody th {
+    font-family: var(--font-mono);
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+  }
+  .coverage-state {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-control);
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-strong);
+    text-transform: capitalize;
+  }
+  .coverage-state[data-state="failed"] {
+    background: var(--color-error-subtle);
+    color: var(--color-error);
+  }
+  .coverage-state[data-state="missing"] {
+    background: var(--color-background);
+    color: var(--color-muted);
+    border: var(--border-width) solid var(--color-border-strong);
+  }
   @variant tablet {
     .panel {
       padding: var(--space-6);

@@ -20,7 +20,11 @@ test("route data includes only the requested benchmark and annotations", async (
   assert.ok(data.records.every((record) => record.benchmark_id === "sdk-import-time"));
   assert.equal(data.annotations.length, 1);
   const footprint = await benchmarkData("sdk-import-footprint", fixtures);
-  assert.equal(footprint?.records.length, 1);
+  assert.deepEqual(
+    footprint?.records.map((record) => [record.version, record.status, record.failure?.code]),
+    [["1.98.0", "ok", undefined], ["1.99.0", "failed", "process_failed"]],
+  );
+  assert.deepEqual(footprint?.knownVersions, ["1.97.0", "1.98.0", "1.99.0"]);
   assert.deepEqual(footprint?.annotations, []);
   assert.equal(await benchmarkData("unknown", fixtures), undefined);
 });

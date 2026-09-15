@@ -32,6 +32,12 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#detail-run-count")).toHaveText("1");
     await expect(page.locator("#detail-version-count")).toHaveText("1");
     await expect(page.locator("#detail-charts svg")).toHaveCount(2);
+    await expect(page.locator("#detail-coverage-summary")).toHaveAttribute("data-failed", "1");
+    await expect(page.locator("#detail-coverage-summary")).toHaveAttribute("data-missing", "1");
+    await expect(page.locator("#detail-coverage tbody tr")).toHaveCount(3);
+    await expect(page.locator("#detail-coverage tr[data-state=\"failed\"]")).toContainText(
+      "process_failed",
+    );
     // Exercise parameter-only navigation without unmounting the route via the directory.
     await page.evaluate(() => {
       const link = document.createElement("a");
@@ -58,6 +64,8 @@ test("static HTML includes scoped data and empty benchmarks finish loading", asy
   await page.goto("proxy-ocr/");
   await expect(page.locator("#detail-run-count")).toHaveText("0");
   await expect(page.getByText("No versions available.")).toBeVisible();
+  await expect(page.locator("#detail-coverage-summary")).toHaveAttribute("data-missing", "3");
+  await expect(page.locator("#detail-coverage tr[data-state=\"missing\"]")).toHaveCount(3);
   await expect(page.locator("#detail-empty")).toContainText(
     "No successful canonical Linux measurements",
   );

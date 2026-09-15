@@ -305,7 +305,10 @@ export function validateProxyLoadObservation(result: typeof ProxyLoadObservation
       (result.stream_events === undefined && result.event_rps === undefined)
       || (
         result.stream_events !== undefined && result.event_rps !== undefined
-        && result.ttfb !== undefined
+        && (
+          result.ttfb !== undefined
+          || (result.window_successful === 0 && result.stream_events === 0)
+        )
         && result.event_rps === result.stream_events / result.measurement_seconds
       )
     )

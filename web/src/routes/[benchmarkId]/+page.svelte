@@ -25,6 +25,7 @@ let { data }: PageProps = $props();
       benchmarkId={data.benchmark.id}
       records={data.records}
       annotations={data.annotations}
+      knownVersions={data.knownVersions}
     />
   {/key}
 </div>

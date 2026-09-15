@@ -140,6 +140,38 @@ it("proxy count invariants use the fixed completion window and retain drain sepa
   expect(validateProxyLoadObservation(observation)).toBe(true);
 });
 
+it("streaming observations whose only completion drains past the window stay consistent", () => {
+  const observation = decodeStrict(ProxyLoadObservation)({
+    started: 1,
+    completed: 1,
+    successful: 1,
+    failed: 0,
+    dropped: 0,
+    interrupted: 0,
+    window_completed: 0,
+    window_successful: 0,
+    window_failed: 0,
+    tail_completed: 1,
+    tail_successful: 1,
+    tail_failed: 0,
+    warmup_requests: 0,
+    warmup_failed: 0,
+    measurement_seconds: 1,
+    drain_seconds: 0.162,
+    elapsed_seconds: 1.162,
+    completion_rps: 0,
+    error_rate: 0,
+    stream_events: 0,
+    event_rps: 0,
+    errors: {},
+  });
+  expect(observation.ttfb).toBeUndefined();
+  expect(validateProxyLoadObservation(observation)).toBe(true);
+  expect(validateProxyLoadObservation({ ...observation, stream_events: 3, event_rps: 3 })).toBe(
+    false,
+  );
+});
+
 it("successful results must match their spec and declared metric contract", () => {
   const outputMetric = { id: "import.median", unit: "ms", better: "lower" };
   const benchmark = {
