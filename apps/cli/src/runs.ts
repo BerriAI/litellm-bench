@@ -78,7 +78,7 @@ const executeValidatedRun = (
     };
     const outcome = yield* Effect.logInfo("benchmark started").pipe(
       Effect.andThen(Effect.scoped(Effect.gen(function*() {
-        yield* Effect.sleep("1 minute").pipe(
+        yield* Effect.sleep("5 minutes").pipe(
           Effect.andThen(Effect.logInfo("benchmark still running")),
           Effect.forever,
           Effect.forkScoped,

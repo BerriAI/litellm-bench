@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { Effect, FileSystem, Path } from "effect";
+import { Effect, FileSystem, Logger, Path } from "effect";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -419,6 +419,7 @@ describe("proxy runtime", () => {
   it("releases proxy, mock, and network when the load generator fails", async () => {
     const experiment = await temporaryExperiment();
     const events: string[] = [];
+    const logs: Array<{ message: string; annotations: Record<string, unknown> }> = [];
     let verifications = 0;
     let runs = 0;
     const k6: K6Shape = {
@@ -434,20 +435,40 @@ describe("proxy runtime", () => {
             : Effect.fail(new K6Error({ message: "load failed" }));
         }),
     };
-    const raw = await runLive(runProxyExperiment(
-      fakeDocker(events),
-      k6,
-      experiment,
-      {
-        networkName: () => "bench-network",
-        readinessRequest: async () => ({ ok: true, status: 200 }),
-        mockServerPath: "/mock/main.js",
-      },
-    ));
+    const raw = await runLive(
+      runProxyExperiment(
+        fakeDocker(events),
+        k6,
+        experiment,
+        {
+          networkName: () => "bench-network",
+          readinessRequest: async () => ({ ok: true, status: 200 }),
+          mockServerPath: "/mock/main.js",
+        },
+      ).pipe(Effect.provide(Logger.layer([
+        Logger.map(
+          Logger.formatStructured,
+          ({ annotations, message }) => logs.push({ message: String(message), annotations }),
+        ),
+      ]))),
+    );
 
     expect(verifications).toBe(1);
     expect(runs).toBe(2);
     expect(raw.trials[0]?.error).toContain("load failed");
+    expect(logs.map(({ message }) => message)).toEqual([
+      "proxy contract preflight started",
+      "proxy contract preflight completed",
+      "proxy trial started",
+      "proxy trial failed: load failed",
+    ]);
+    expect(logs[2]?.annotations).toMatchObject({
+      trial: 1,
+      trials: 1,
+      trial_id: experiment.trials[0]!.id,
+      round: experiment.trials[0]!.round,
+    });
+    expect(logs[3]?.annotations).toMatchObject({ remaining_trials: 0 });
     expect(events).toEqual([
       "start network bench-network",
       "start container bench-network-preflight-0-mock",

@@ -362,6 +362,8 @@ describe("runCli", () => {
           JSON.stringify(plan),
           "--output",
           output,
+          "--github-step-summary",
+          join(root, "step-summary.md"),
         ],
         [runner],
         logMessages,
@@ -369,6 +371,8 @@ describe("runCli", () => {
       const summary = JSON.parse(
         await readFile(join(output, "version-summary.json"), "utf8"),
       );
+      const report = await readFile(join(output, "version-summary.md"), "utf8");
+      const stepSummary = await readFile(join(root, "step-summary.md"), "utf8");
       const spec = JSON.parse(
         await readFile(
           join(output, plan.jobs[0].job_id, "benchmark-spec.json"),
@@ -386,6 +390,10 @@ describe("runCli", () => {
         "version run completed",
       ]);
       expect(summary).toEqual([{ job_id: plan.jobs[0].job_id, exit_code: 0 }]);
+      expect(report).toContain("### LiteLLM 1.0.0: 1/1 benchmarks succeeded in ");
+      expect(report).toContain("| 1 | sdk-import-time / base | ok | ");
+      expect(report).toContain("| 0/0 valid | Median: 100 ms |");
+      expect(stepSummary).toBe(report);
       expect(spec.case_id).toMatch(/^[a-f0-9]{64}$/);
       expect(spec.comparison_id).toMatch(/^[a-f0-9]{64}$/);
     } finally {

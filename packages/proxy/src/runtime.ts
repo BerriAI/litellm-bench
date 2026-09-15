@@ -754,6 +754,39 @@ const measureTrial = (
   })).pipe(Effect.catch((error) => Effect.succeed({ ...base, error: error.message })));
 };
 
+const trialOutcomeAnnotations = (measured: {
+  readonly error?: string;
+  readonly client?: {
+    readonly exit_code: number;
+    readonly error?: string;
+    readonly result?: {
+      readonly completed: number;
+      readonly failed: number;
+      readonly dropped: number;
+      readonly error_rate: number;
+      readonly completion_rps: number;
+      readonly latency?: { readonly p50_ms: number; readonly p95_ms: number };
+    };
+  };
+}): Record<string, unknown> => {
+  if (measured.client === undefined) return {};
+  const { exit_code, error, result } = measured.client;
+  return {
+    exit_code,
+    ...(error === undefined ? {} : { client_error: error }),
+    ...(result === undefined ? {} : {
+      completed: result.completed,
+      failed: result.failed + result.dropped,
+      error_rate: Number(result.error_rate.toFixed(4)),
+      completion_rps: Number(result.completion_rps.toFixed(2)),
+      ...(result.latency === undefined ? {} : {
+        p50_ms: Math.round(result.latency.p50_ms),
+        p95_ms: Math.round(result.latency.p95_ms),
+      }),
+    }),
+  };
+};
+
 const optionalFile = (path: string): string | undefined => {
   try {
     return readFileSync(path, "utf8").trim();
@@ -873,10 +906,13 @@ export const runProxyExperiment = (
       contracts: preflights.length,
     }));
     const pressureBefore = hostPressure();
+    const experimentStartedAt = Date.now();
     const trials = yield* Effect.forEach(
       experiment.trials,
       (trial, index) =>
         Effect.gen(function*() {
+          const startedAt = Date.now();
+          yield* Effect.logInfo("proxy trial started");
           const measured = yield* measureTrial(
             docker,
             k6,
@@ -894,8 +930,34 @@ export const runProxyExperiment = (
             `${JSON.stringify(measured)}\n`,
             { flag: "a" },
           ).pipe(Effect.mapError((cause) => runtimeError("record trial", cause)));
+          const now = Date.now();
+          const remaining = experiment.trials.length - index - 1;
+          const averageMs = (now - experimentStartedAt) / (index + 1);
+          const failure = "error" in measured ? measured.error : undefined;
+          yield* (failure === undefined
+            ? Effect.logInfo("proxy trial completed")
+            : Effect.logWarning(`proxy trial failed: ${failure}`)).pipe(
+              Effect.annotateLogs({
+                trial_seconds: Math.round((now - startedAt) / 1000),
+                remaining_trials: remaining,
+                estimated_remaining_seconds: Math.round(remaining * averageMs / 1000),
+                ...trialOutcomeAnnotations(measured),
+              }),
+            );
           return measured;
-        }),
+        }).pipe(Effect.annotateLogs({
+          trial: index + 1,
+          trials: experiment.trials.length,
+          trial_id: trial.id,
+          round: trial.round,
+          scenario: trial.scenario,
+          variant: trial.variant,
+          load: trial.load.mode === "fixed"
+            ? `${trial.load.rate} rps`
+            : `${trial.load.concurrency} vus`,
+          measurement_seconds: trial.load.duration_seconds,
+          warmup_seconds: trial.load.warmup_seconds,
+        })),
       { concurrency: 1 },
     );
     const processor = cpus();

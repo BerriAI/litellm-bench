@@ -10,7 +10,16 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
+    - id: dist
+      name: Restore built CLI
+      if: inputs.build-cli == 'true'
+      uses: actions/cache@v6
+      with:
+        path: |
+          apps/*/dist
+          packages/*/dist
+        key: litellm-bench-cli-dist-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'apps/**', 'packages/**', 'benchmarks/**', '!**/node_modules/**', '!**/dist/**') }}
+    - uses: pnpm/action-setup@v6
       with:
         run_install: false
     - uses: actions/setup-node@v6
@@ -20,5 +29,5 @@ runs:
     - shell: bash
       run: pnpm install --frozen-lockfile
     - shell: bash
-      if: inputs.build-cli == 'true'
+      if: inputs.build-cli == 'true' && steps.dist.outputs.cache-hit != 'true'
       run: pnpm --filter @litellm-bench/cli... build

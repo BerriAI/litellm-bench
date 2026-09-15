@@ -10,11 +10,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - id: paths
+      shell: bash
+      run: echo "bin_dir=${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}" >> "$GITHUB_OUTPUT"
+
     - id: cache
       name: Restore k6
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
-        path: ${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}
+        path: ${{ steps.paths.outputs.bin_dir }}
         key: litellm-bench-k6-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.k6-version }}
 
     - name: Install k6
@@ -28,7 +32,7 @@ runs:
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       env:
-        K6_CACHE_DIR: ${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}
+        K6_CACHE_DIR: ${{ steps.paths.outputs.bin_dir }}
       run: |
         mkdir -p "$K6_CACHE_DIR"
         install -m 0755 "$(command -v k6)" "$K6_CACHE_DIR/k6"
@@ -36,7 +40,7 @@ runs:
     - name: Add cached k6 to PATH
       shell: bash
       env:
-        K6_CACHE_DIR: ${{ runner.tool_cache }}/litellm-bench/k6/${{ inputs.k6-version }}/${{ runner.os }}-${{ runner.arch }}
+        K6_CACHE_DIR: ${{ steps.paths.outputs.bin_dir }}
       run: |
         test -x "$K6_CACHE_DIR/k6"
         echo "$K6_CACHE_DIR" >> "$GITHUB_PATH"
