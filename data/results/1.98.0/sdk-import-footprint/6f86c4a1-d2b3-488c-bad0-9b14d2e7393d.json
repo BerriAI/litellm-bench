@@ -1,7 +1,7 @@
 {
-  "record_id": "b22bba7254a175442640ee75ed267bbe462ff7e7d0270766cc8259246b4c43f0",
-  "case_id": "e9227f56c71a5ac872e4a3b6a3059985fc52f0ab9a7b5a637cc2911c6401b231",
-  "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+  "record_id": "4c575c50052aaac9d312d17451483a6d740ed36456212990f2ffdd47930d8fc7",
+  "case_id": "c01a8dd633f315b3bf9a60b5a5767d39d4f8813118a21b86e6dc6b68744964a4",
+  "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
   "identity": {
     "domain": "case",
     "benchmark_id": "sdk-import-footprint",
@@ -69,7 +69,7 @@
       ],
       "validity": {
         "trial": "The instrumented import must exit successfully",
-        "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+        "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
       }
     },
     "job": {
@@ -79,6 +79,9 @@
         "workload": {
           "name": "root-import",
           "statement": "import litellm"
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         },
         "measurements": {
           "warmups": 0,
@@ -109,13 +112,13 @@
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
     "workflow": ".github/workflows/benchmark.yml",
-    "workflow_run_id": "34877399985",
-    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
+    "workflow_run_id": "35109065726",
+    "commit": "cf7fb81268c52e2fe73dbe39eea23dbd93e5dcf9",
     "ref": "refs/heads/main"
   },
   "spec": {
-    "case_id": "e9227f56c71a5ac872e4a3b6a3059985fc52f0ab9a7b5a637cc2911c6401b231",
-    "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+    "case_id": "c01a8dd633f315b3bf9a60b5a5767d39d4f8813118a21b86e6dc6b68744964a4",
+    "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
     "benchmark": {
       "id": "sdk-import-footprint",
       "label": "Fresh-process LiteLLM import footprint",
@@ -139,7 +142,7 @@
       ],
       "protocol": {
         "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
-        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
         "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
@@ -191,7 +194,7 @@
         ],
         "validity": {
           "trial": "The instrumented import must exit successfully",
-          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       }
     },
@@ -204,6 +207,9 @@
         "workload": {
           "name": "root-import",
           "statement": "import litellm"
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         },
         "measurements": {
           "warmups": 0,
@@ -240,10 +246,10 @@
     }
   },
   "result": {
-    "run_id": "f0275eab-8ecb-4f26-83cd-f8c7fc4c03df",
-    "created_at": "2026-09-14T21:22:56.668Z",
-    "case_id": "e9227f56c71a5ac872e4a3b6a3059985fc52f0ab9a7b5a637cc2911c6401b231",
-    "comparison_id": "300a271ab9d9504fa51a2f33d45a970d319599d20640845da9d931a83be3efee",
+    "run_id": "6f86c4a1-d2b3-488c-bad0-9b14d2e7393d",
+    "created_at": "2026-09-16T14:32:23.390Z",
+    "case_id": "c01a8dd633f315b3bf9a60b5a5767d39d4f8813118a21b86e6dc6b68744964a4",
+    "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
     "benchmark": {
       "id": "sdk-import-footprint",
       "label": "Fresh-process LiteLLM import footprint",
@@ -267,7 +273,7 @@
       ],
       "protocol": {
         "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
-        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners.",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
         "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
@@ -319,7 +325,7 @@
         ],
         "validity": {
           "trial": "The instrumented import must exit successfully",
-          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process."
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       }
     },
@@ -332,6 +338,9 @@
         "workload": {
           "name": "root-import",
           "statement": "import litellm"
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         },
         "measurements": {
           "warmups": 0,
@@ -363,31 +372,36 @@
         "host": "github-hosted",
         "node_version": "v24.20.0",
         "ci": true,
+        "kernel_release": "6.17.0-1022-azure",
+        "cpu_model": "AMD EPYC 7763 64-Core Processor",
+        "cpu_count": 4,
+        "memory_total_bytes": 16766414848,
+        "load_average_1m": 1.2,
         "python_version": "3.12.10",
         "python_implementation": "CPython"
       },
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-KKOaZq/resolver/lib/python3.12/site-packages/pip (python 3.12)"
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-gQypP1/resolver/lib/python3.12/site-packages/pip (python 3.12)"
     },
     "metrics": [
       {
         "id": "import.peak_rss",
         "label": "Process-lifetime peak RSS during import",
-        "value": 206.8125,
+        "value": 203.94140625,
         "unit": "MiB",
         "better": "lower"
       },
       {
         "id": "import.loaded_modules",
         "label": "Modules loaded by import",
-        "value": 2266,
+        "value": 2226,
         "unit": "modules",
         "better": "lower"
       },
       {
         "id": "import.disk_growth",
         "label": "First-import site-packages growth",
-        "value": 17.017620086669922,
+        "value": 16.620006561279297,
         "unit": "MiB",
         "better": "lower"
       }
@@ -401,18 +415,18 @@
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-KKOaZq/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-gQypP1/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
       "diagnostics": {
-        "import_only_seconds": 2.6021337649999623,
-        "new_module_count": 2266,
-        "peak_rss_bytes": 216858624
+        "import_only_seconds": 2.6314377429999922,
+        "new_module_count": 2226,
+        "peak_rss_bytes": 213848064
       },
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61868140,
+        "download_bytes": 62071878,
         "package_artifact_bytes": 24190393,
         "artifacts": [
           {
@@ -446,14 +460,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.94-py3-none-any.whl",
-            "bytes": 140023,
-            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
+            "filename": "boto3-1.43.95-py3-none-any.whl",
+            "bytes": 140026,
+            "sha256": "c906921c4f9ab41e9587af6586f072c8f2be6979e8bde2ec26aa443bb1745019"
           },
           {
-            "filename": "botocore-1.43.94-py3-none-any.whl",
-            "bytes": 15797479,
-            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
+            "filename": "botocore-1.43.95-py3-none-any.whl",
+            "bytes": 15800616,
+            "sha256": "0fda26d16c7c7bf7082c421390a817b696f98a43d3da7c43dbbb093f76662876"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -481,9 +495,9 @@
             "sha256": "808527f2407f58a76c916d6aa15d58692a4a019fdf8d4c32ac7ff303b7d7af09"
           },
           {
-            "filename": "filelock-3.32.6-py3-none-any.whl",
-            "bytes": 100189,
-            "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+            "filename": "filelock-3.32.7-py3-none-any.whl",
+            "bytes": 100157,
+            "sha256": "65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52"
           },
           {
             "filename": "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
@@ -581,9 +595,9 @@
             "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
           },
           {
-            "filename": "propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 61639,
-            "sha256": "6f328175a2cde1f0ff2c4ed8ce968b9dcfb55f3a7153f39e2957ed994da13476"
+            "filename": "propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 250424,
+            "sha256": "2814ecd8e818f487bee4b0f921bc4d1c176cc5fc71ac0f072d0fa67eda4ac14b"
           },
           {
             "filename": "pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
@@ -676,14 +690,14 @@
             "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
           },
           {
-            "filename": "urllib3-2.7.0-py3-none-any.whl",
-            "bytes": 131087,
-            "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
+            "filename": "urllib3-2.8.0-py3-none-any.whl",
+            "bytes": 135717,
+            "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
           },
           {
-            "filename": "yarl-1.24.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 109835,
-            "sha256": "f08c7513ecef5aad65687bfdf6bc601ae9fccd04a42904501f8f7141abad9eb9"
+            "filename": "yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 117050,
+            "sha256": "c6f117789d22dce188e5754e8bc65b7e6ebf8cb73963b9fa761f672a5883769d"
           },
           {
             "filename": "zipp-4.1.0-py3-none-any.whl",
@@ -694,12 +708,12 @@
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 167089602
+          "logical_bytes": 167820374
         },
         "installed_after_first_run": {
-          "logical_bytes": 184933870
+          "logical_bytes": 185247714
         },
-        "first_run_logical_delta_bytes": 17844268
+        "first_run_logical_delta_bytes": 17427340
       }
     },
     "status": "ok"
