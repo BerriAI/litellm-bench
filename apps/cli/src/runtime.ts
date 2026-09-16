@@ -8,7 +8,7 @@ import { makeCliCommand } from "./commands.js";
 import { BenchmarkCatalog, CliResponse, errorResponse, ExitCode } from "./model.js";
 
 const usage =
-  "Usage: litellm-bench <list | describe | plan | run | run-version | smoke | validate | data | schema>";
+  "Usage: litellm-bench <list | describe | plan | run | run-job | summarize-version | smoke | validate | data | schema>";
 
 const cliRuntimeLayer = Layer.mergeAll(
   Stdio.layerTest({}),

@@ -13,6 +13,10 @@ curl -N http://localhost:8080/v1/chat/completions \
 ```
 
 `MOCK_PORT` defaults to `8080`. The server binds to `0.0.0.0`.
+`MOCK_WORKERS` defaults to `1`. A larger value forks that many `node:cluster` workers that share the
+listening port; the primary only supervises and aggregates `/__stats` across workers, and it exits
+if any worker exits so a degraded upstream never masquerades as a healthy one. The proxy harness
+sets it from the mock CPU quota so the validator can use every CPU it is pinned to.
 `dist/main.js` bundles runtime dependencies and runs with Node 24+ without `node_modules`, including
 inside the existing Docker mount. SIGINT/SIGTERM close the server scope and interrupt active requests.
 

@@ -1,7 +1,17 @@
 import type { ProxyRawObservation } from "@litellm-bench/contracts";
 import { Effect } from "effect";
 import { expect, it } from "vitest";
+import type { OcrIntegrity } from "./config.js";
 import { classifyOcrTrial, decodeOcrObservation } from "./observation.js";
+
+const integrity: OcrIntegrity = {
+  proxy_cpu_min_percent: 90,
+  mock_cpu_max_percent: 80,
+  load_generator_cpu_max_percent: 160,
+};
+
+const classify = (candidate: ProxyRawObservation["trials"][number]) =>
+  classifyOcrTrial(candidate, integrity);
 
 const trial = (
   overrides: Partial<ProxyRawObservation["trials"][number]> = {},
@@ -101,7 +111,7 @@ const trial = (
 });
 
 it("classifies valid OCR fields and ignores extra dimension keys", () => {
-  expect(classifyOcrTrial(trial({
+  expect(classify(trial({
     dimensions: {
       payload_requested_bytes: 1,
       wire_body_bytes: 100,
@@ -122,7 +132,7 @@ it("classifies valid OCR fields and ignores extra dimension keys", () => {
 });
 
 it("derives proxy service demand, memory growth, and apparatus utilization", async () => {
-  const row = await Effect.runPromise(decodeOcrObservation(trial()));
+  const row = await Effect.runPromise(decodeOcrObservation(trial(), integrity));
   expect(row).toMatchObject({
     cpu_average_percent: 95,
     cpu_ms_per_request: 95,
@@ -135,74 +145,90 @@ it("derives proxy service demand, memory growth, and apparatus utilization", asy
 
 it("preserves existing issue text for malformed OCR boundaries", () => {
   const { telemetry: _telemetry, ...withoutTelemetry } = trial();
-  expect(classifyOcrTrial(withoutTelemetry)).toEqual({
+  expect(classify(withoutTelemetry)).toEqual({
     ok: false,
+    kind: "measurement",
     issue: "missing telemetry",
   });
   const { mock_telemetry: _mockTelemetry, ...withoutMockTelemetry } = trial();
-  expect(classifyOcrTrial(withoutMockTelemetry)).toEqual({
+  expect(classify(withoutMockTelemetry)).toEqual({
     ok: false,
+    kind: "measurement",
     issue: "missing mock telemetry",
   });
   const { load_generator_telemetry: _loadTelemetry, ...withoutLoadTelemetry } = trial();
-  expect(classifyOcrTrial(withoutLoadTelemetry)).toEqual({
+  expect(classify(withoutLoadTelemetry)).toEqual({
     ok: false,
+    kind: "measurement",
     issue: "missing load-generator telemetry",
   });
-  expect(classifyOcrTrial(trial({
+  expect(classify(trial({
     telemetry: { ...trial().telemetry!, cpu_after_usec: 890_000 },
-  }))).toEqual({ ok: false, issue: "proxy was not CPU-saturated: 89.0%" });
-  expect(classifyOcrTrial(trial({
-    mock_telemetry: { ...trial().mock_telemetry!, cpu_after_usec: 800_000 },
-  }))).toEqual({ ok: false, issue: "mock may be limiting: 80.0% CPU" });
-  expect(classifyOcrTrial(trial({
-    load_generator_telemetry: { ...trial().load_generator_telemetry!, cpu_percent: 160 },
-  }))).toEqual({ ok: false, issue: "load generator may be limiting: 160.0% CPU" });
-  expect(classifyOcrTrial(trial({ variant: "go" }))).toEqual({
+  }))).toEqual({
     ok: false,
+    kind: "apparatus",
+    issue: "proxy was not CPU-saturated: 89.0% (proxy_cpu_min_percent 90)",
+  });
+  expect(classify(trial({
+    mock_telemetry: { ...trial().mock_telemetry!, cpu_after_usec: 800_000 },
+  }))).toEqual({
+    ok: false,
+    kind: "apparatus",
+    issue: "mock may be limiting: 80.0% CPU (mock_cpu_max_percent 80)",
+  });
+  expect(classify(trial({
+    load_generator_telemetry: { ...trial().load_generator_telemetry!, cpu_percent: 160 },
+  }))).toEqual({
+    ok: false,
+    kind: "apparatus",
+    issue: "load generator may be limiting: 160.0% CPU (load_generator_cpu_max_percent 160)",
+  });
+  expect(classify(trial({ variant: "go" }))).toEqual({
+    ok: false,
+    kind: "measurement",
     issue: "unknown variant go",
   });
-  expect(classifyOcrTrial(trial({
+  expect(classify(trial({
     dimensions: {
       payload_requested_bytes: "1",
       wire_body_bytes: 100,
       document_bytes: 68,
       document_sha256: "a".repeat(64),
     },
-  }))).toEqual({ ok: false, issue: "missing payload dimensions" });
-  expect(classifyOcrTrial(trial({
+  }))).toEqual({ ok: false, kind: "measurement", issue: "missing payload dimensions" });
+  expect(classify(trial({
     dimensions: {
       payload_requested_bytes: Number.NaN,
       wire_body_bytes: 100,
       document_bytes: 68,
       document_sha256: "a".repeat(64),
     },
-  }))).toEqual({ ok: false, issue: "missing payload dimensions" });
-  expect(classifyOcrTrial(trial({
+  }))).toEqual({ ok: false, kind: "measurement", issue: "missing payload dimensions" });
+  expect(classify(trial({
     dimensions: {
       payload_requested_bytes: Number.POSITIVE_INFINITY,
       wire_body_bytes: 100,
       document_bytes: 68,
       document_sha256: "a".repeat(64),
     },
-  }))).toEqual({ ok: false, issue: "missing payload dimensions" });
-  expect(classifyOcrTrial(trial({
+  }))).toEqual({ ok: false, kind: "measurement", issue: "missing payload dimensions" });
+  expect(classify(trial({
     dimensions: {
       payload_requested_bytes: 1.5,
       wire_body_bytes: 100,
       document_bytes: 68,
       document_sha256: "a".repeat(64),
     },
-  }))).toEqual({ ok: false, issue: "missing payload dimensions" });
-  expect(classifyOcrTrial(trial({
+  }))).toEqual({ ok: false, kind: "measurement", issue: "missing payload dimensions" });
+  expect(classify(trial({
     dimensions: {
       payload_requested_bytes: 1,
       wire_body_bytes: 100,
       document_bytes: 68,
       document_sha256: "A".repeat(64),
     },
-  }))).toEqual({ ok: false, issue: "missing payload dimensions" });
-  expect(classifyOcrTrial(trial({
+  }))).toEqual({ ok: false, kind: "measurement", issue: "missing payload dimensions" });
+  expect(classify(trial({
     client: {
       engine: "k6",
       exit_code: 0,
@@ -231,5 +257,20 @@ it("preserves existing issue text for malformed OCR boundaries", () => {
         errors: {},
       },
     },
-  }))).toEqual({ ok: false, issue: "no successful requests" });
+  }))).toEqual({ ok: false, kind: "measurement", issue: "no successful requests" });
+});
+
+it("judges apparatus headroom against the configured gates", () => {
+  const relaxed: OcrIntegrity = {
+    proxy_cpu_min_percent: 85,
+    mock_cpu_max_percent: 95,
+    load_generator_cpu_max_percent: 190,
+  };
+  const busy = trial({
+    telemetry: { ...trial().telemetry!, cpu_after_usec: 890_000 },
+    mock_telemetry: { ...trial().mock_telemetry!, cpu_after_usec: 900_000 },
+    load_generator_telemetry: { ...trial().load_generator_telemetry!, cpu_percent: 180 },
+  });
+  expect(classifyOcrTrial(busy, integrity)).toMatchObject({ ok: false, kind: "apparatus" });
+  expect(classifyOcrTrial(busy, relaxed)).toMatchObject({ ok: true });
 });

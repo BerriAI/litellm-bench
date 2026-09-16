@@ -20,6 +20,9 @@ import {
   fragmentBytes,
   isPngDocument,
   matches,
+  mergeStats,
+  type MockServerOptions,
+  type MockStats,
   pacedStream,
   validateFixture,
 } from "./server.js";
@@ -52,11 +55,13 @@ const readFile = (location: string | URL, _encoding: "utf8") =>
       );
     }).pipe(Effect.provide(NodeServices.layer)),
   );
-const start = async (fixture: unknown) => {
+const start = async (fixture: unknown, options: MockServerOptions = {}) => {
   const scope = Scope.makeUnsafe();
   scopes.push(scope);
   const server = await Effect.runPromise(
-    createMockServer(fixture, { port: 0, host: "127.0.0.1" }).pipe(Scope.provide(scope)),
+    createMockServer(fixture, { port: 0, host: "127.0.0.1", ...options }).pipe(
+      Scope.provide(scope),
+    ),
   );
   if (server.address._tag === "UnixPathAddress") throw new Error("expected TCP");
   const base = `http://127.0.0.1:${server.address.port}`;
@@ -154,6 +159,22 @@ describe("mock provider", () => {
       sha256: "431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460",
     })).toBe(false);
     expect(isPngDocument("data:image/png;base64,bm90LXBuZw==")).toBe(false);
+    const encoded = png.slice("data:image/png;base64,".length);
+    for (
+      const noncanonical of [
+        `${encoded.slice(0, 8)} ${encoded.slice(8)}`,
+        `${encoded.slice(0, 8)}\n${encoded.slice(8)}`,
+        encoded.replace("+", "-").replace("/", "_"),
+        `${encoded.slice(0, -1)}!`,
+        encoded.slice(0, -1),
+        `${encoded}=`,
+      ]
+    ) {
+      expect(isPngDocument(`data:image/png;base64,${noncanonical}`)).toBe(false);
+    }
+    const corruptCrc = Buffer.from(encoded, "base64");
+    corruptCrc.writeUInt8(corruptCrc.readUInt8(corruptCrc.length - 1) ^ 1, corruptCrc.length - 1);
+    expect(isPngDocument(`data:image/png;base64,${corruptCrc.toString("base64")}`)).toBe(false);
     expect(encodeSse({ event: "example", data: "a\nb" })).toBe(
       "event: example\ndata: a\ndata: b\n\n",
     );
@@ -550,6 +571,64 @@ describe("mock provider", () => {
         { version: 2, operations: [{ ...multi.operations[0], path: "/__stats" }] },
       ]
     ) expect(() => validateFixture(fixture)).toThrow();
+  });
+
+  it("exposes local counters and answers /__stats through the configured reader", async () => {
+    const statistics = Ref.makeUnsafe<MockStats>({ requests: 0, failures: 0, errors: {} });
+    const sibling: MockStats = {
+      requests: 5,
+      failures: 2,
+      errors: { request_body: 2 },
+      streams: { started: 1, completed: 1, cancelled: 0, failed: 0 },
+    };
+    const server = await start(validateFixture(single), {
+      statistics,
+      readStats: (local) => Effect.succeed(mergeStats(local, sibling)),
+    });
+    await server.post("/v1/test", { model: "bench", nested: { enabled: true } });
+    await server.post("/missing", {});
+    expect(Ref.getUnsafe(statistics)).toMatchObject({
+      requests: 2,
+      failures: 1,
+      errors: { method_or_path: 1 },
+    });
+    expect(await server.stats()).toEqual({
+      requests: 7,
+      failures: 3,
+      errors: { request_body: 2, method_or_path: 1 },
+      streams: { started: 1, completed: 1, cancelled: 0, failed: 0 },
+      last_mismatch: {
+        reason: "method_or_path",
+        method: "POST",
+        path: "/missing",
+        detail: "no operation accepts POST /missing",
+      },
+    });
+  });
+
+  it("merges counters without inventing stream stats", () => {
+    const empty: MockStats = { requests: 0, failures: 0, errors: {} };
+    expect(mergeStats(empty, { requests: 3, failures: 1, errors: { request_body: 1 } })).toEqual({
+      requests: 3,
+      failures: 1,
+      errors: { request_body: 1 },
+    });
+    expect(
+      mergeStats(
+        {
+          requests: 1,
+          failures: 0,
+          errors: {},
+          streams: { started: 2, completed: 1, cancelled: 1, failed: 0 },
+        },
+        { requests: 1, failures: 0, errors: {} },
+      ),
+    ).toEqual({
+      requests: 2,
+      failures: 0,
+      errors: {},
+      streams: { started: 2, completed: 1, cancelled: 1, failed: 0 },
+    });
   });
 });
 

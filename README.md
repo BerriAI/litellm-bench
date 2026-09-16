@@ -58,7 +58,7 @@ pnpm bench list
 pnpm bench describe proxy-ocr
 ```
 
-Build the same version matrix consumed by GitHub Actions:
+Build the same job matrix consumed by GitHub Actions:
 
 ```bash
 pnpm bench plan \
@@ -71,18 +71,29 @@ Omit `--versions` to plan the latest stable LiteLLM release from PyPI, or use
 last three 30-day months. Explicit `--versions` are not restricted to stable
 releases and may include RC, dev, or exact image-tag forms.
 
-`selection` accepts `all`, `sdk`, `proxy`, or comma-separated benchmark IDs. One matrix entry represents one version VM; its selected benchmark jobs run sequentially on that host
+`selection` accepts `all`, `sdk`, `proxy`, or comma-separated benchmark IDs. One matrix entry
+represents one (version, benchmark job) pair and runs on its own VM; entries only carrying SDK
+benchmarks skip the Docker/k6 setup. The workflow then publishes each version once all of its
+entries finished.
 
 Run one matrix entry locally:
 
 ```bash
 matrix="$(pnpm --silent bench plan --versions 1.102.0rc1 --selection sdk)"
-version_plan="$(printf '%s' "$matrix" | jq -c '.include[0]')"
+job_plan="$(printf '%s' "$matrix" | jq -c '.include[0]')"
 
-pnpm bench run-version \
-  --version 1.102.0rc1 \
-  --plan-json "$version_plan" \
+pnpm bench run-job \
+  --plan-json "$job_plan" \
   --output data/runs/version-1.102.0rc1
+```
+
+Each entry writes into `<output>/<job_id>/`, so the other entries of the same version can share
+the output directory. Summarize them the way the publish job does:
+
+```bash
+pnpm bench summarize-version \
+  --version 1.102.0rc1 \
+  --input data/runs/version-1.102.0rc1
 ```
 
 Run an already materialized current-format specification:
@@ -118,7 +129,7 @@ This mode keeps only the latest result for each version+benchmark pair. A failed
 the previous snapshot for that pair and is stored with `status: failed`, no metrics, and the
 structured error, so the dashboard can show why a version has no measurement. Failed records never
 enter published metric series. `data/runs/` is ignored
-working output. A version output directory must be empty before execution so stale result pairs
+working output. A job output directory must be empty before execution so stale result pairs
 cannot be ingested
 
 ## SDK apparatus

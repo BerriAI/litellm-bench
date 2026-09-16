@@ -13,10 +13,15 @@ therefore an upper bound. The result reports proxy CPU milliseconds per successf
 addition to throughput. Memory is reported both as absolute footprint and as growth above the
 post-warm-up baseline, so footprint and load-attributable growth are not conflated.
 
-The comparison fails closed unless the single-CPU proxy is saturated (at least 90% average CPU),
-the one-CPU mock remains below 80%, and the two-CPU load generator remains below 160%. These gates
-prevent an upstream validator or client-side generator bottleneck from becoming a published proxy
-speedup. The raw observation retains their telemetry for inspection.
+The comparison fails closed unless the proxy is saturated and the mock and load generator keep
+headroom. The thresholds are the job's `config.integrity` gates in `benchmark.json`
+(`proxy_cpu_min_percent`, `mock_cpu_max_percent`, `load_generator_cpu_max_percent`), so they are
+versioned with the CPU allocation they judge. These gates prevent an upstream validator or
+client-side generator bottleneck from becoming a published proxy speedup. A gate miss is an
+apparatus issue, not measurement noise: the first paired round runs alone as a probe, and any gate
+miss halts the run and names the gate, the observed value, and the limit instead of retrying the
+whole matrix. Only measurement issues (failed, dropped, or mismatched requests) rerun the round. The
+raw observation retains the telemetry for inspection.
 
 Stable ID: `proxy-ocr`. Measures paired Python and Rust OCR request paths against a deterministic,
 validating local upstream. Seeded scenario-treatment blocks keep each Python/Rust pair adjacent,

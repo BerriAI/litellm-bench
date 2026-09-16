@@ -1,9 +1,15 @@
 import { expect, it } from "vitest";
 
+import type { OcrIntegrity } from "./config.js";
 import { projectOcr } from "./projection.js";
 import { trialSchedule } from "./schedule.js";
 import type { OcrObservation, OcrScenario } from "./types.js";
 
+const integrity: OcrIntegrity = {
+  proxy_cpu_min_percent: 90,
+  mock_cpu_max_percent: 80,
+  load_generator_cpu_max_percent: 160,
+};
 const scenario: OcrScenario = {
   id: "core",
   label: "Core",
@@ -51,6 +57,7 @@ it("uses seeded adjacent blocks and computes per-round Rust/Python ratios", () =
     ],
     [scenario],
     2,
+    integrity,
   );
   expect(projected.metrics.find(({ id }) => id === "core.paired_ratio")?.value).toBe(2.5);
   expect(projected.trials).toHaveLength(4);
@@ -71,6 +78,7 @@ it.each(
       ],
       [scenario],
       1,
+      integrity,
     )
   ).toThrow(message);
 });

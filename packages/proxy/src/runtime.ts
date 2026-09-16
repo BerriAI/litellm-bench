@@ -384,6 +384,9 @@ const startMock = (
     ...(trial.bypassProxy === true ? { ports: [{ hostPort: port, containerPort: 8080 }] } : {}),
     environment: {
       MOCK_FIXTURE: "/fixture.json",
+      ...(experiment.resources.mockCpus === undefined
+        ? {}
+        : { MOCK_WORKERS: String(Math.ceil(experiment.resources.mockCpus)) }),
       ...(trial.mockEnvironment ?? {}),
     },
     mounts: [
