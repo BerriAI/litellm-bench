@@ -1,88 +1,75 @@
 {
-  "record_id": "a767fd1a4eaaa0a510cd73a23e6dd2fe4dad01ce9e92e05935e71f778c5f5be9",
-  "case_id": "4de73dd68b41e613112d261d0d4df3e8293c4b73935bc4b7929cd79d9c43ae86",
-  "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
+  "record_id": "17d897be7f5730f6e786c86e59abf95b789fc15f8ba047e70a63044b1fc994de",
+  "case_id": "65d17c24f1ef9e7d4df203ca90545dc0147a476a57cfcbcf101a3e00936ea4f9",
+  "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
   "identity": {
     "domain": "case",
-    "benchmark_id": "sdk-package-size",
+    "benchmark_id": "sdk-import-footprint",
     "output_metrics": [
       {
-        "id": "package.wheel",
+        "id": "import.peak_rss",
         "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "package.download",
-        "unit": "MiB",
+        "id": "import.loaded_modules",
+        "unit": "modules",
         "better": "lower"
       },
       {
-        "id": "package.installed",
+        "id": "import.disk_growth",
         "unit": "MiB",
-        "better": "lower"
-      },
-      {
-        "id": "package.artifacts",
-        "unit": "artifacts",
         "better": "lower"
       }
     ],
     "protocol": {
-      "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
+      "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
       "scenarios": [
         {
-          "id": "base-install",
+          "id": "root-import",
           "dimensions": {
-            "binary_only": true,
-            "extras": []
+            "statement": "import litellm",
+            "isolated_python": true
           }
         }
       ],
       "measurements": [
         {
-          "id": "package.wheel",
+          "id": "import.peak_rss",
           "unit": "MiB",
           "role": "primary",
           "better": "lower"
         },
         {
-          "id": "package.download",
-          "unit": "MiB",
+          "id": "import.loaded_modules",
+          "unit": "modules",
           "role": "secondary",
           "better": "lower"
         },
         {
-          "id": "package.installed",
+          "id": "import.disk_growth",
           "unit": "MiB",
           "role": "secondary",
-          "better": "lower"
-        },
-        {
-          "id": "package.artifacts",
-          "unit": "artifacts",
-          "role": "diagnostic",
           "better": "lower"
         }
       ],
       "analyses": [
         {
-          "id": "clean_install_sizes",
-          "measurement": "package.wheel",
+          "id": "instrumented_import",
+          "measurement": "import.peak_rss",
           "additional_measurements": [
-            "package.download",
-            "package.installed",
-            "package.artifacts"
+            "import.loaded_modules",
+            "import.disk_growth"
           ],
           "scenarios": [
-            "base-install"
+            "root-import"
           ],
-          "aggregation": "exact byte counts converted to MiB for display"
+          "aggregation": "single observation"
         }
       ],
       "validity": {
-        "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
-        "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
-        "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
+        "trial": "The instrumented import must exit successfully",
+        "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
       }
     },
     "job": {
@@ -93,19 +80,17 @@
           "name": "root-import",
           "statement": "import litellm"
         },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
+        },
         "measurements": {
           "warmups": 0,
           "samples": 1,
           "timing": false,
-          "diagnostics": false,
+          "diagnostics": true,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
-        },
-        "resolver": {
-          "extra_index_urls": [],
-          "find_links": [],
-          "binary_only": true
         }
       },
       "requirements": {
@@ -127,103 +112,89 @@
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
     "workflow": ".github/workflows/benchmark.yml",
-    "workflow_run_id": "34877399985",
-    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
+    "workflow_run_id": "35109065726",
+    "commit": "cf7fb81268c52e2fe73dbe39eea23dbd93e5dcf9",
     "ref": "refs/heads/main"
   },
   "spec": {
-    "case_id": "4de73dd68b41e613112d261d0d4df3e8293c4b73935bc4b7929cd79d9c43ae86",
-    "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
+    "case_id": "65d17c24f1ef9e7d4df203ca90545dc0147a476a57cfcbcf101a3e00936ea4f9",
+    "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
     "benchmark": {
-      "id": "sdk-package-size",
-      "label": "Clean LiteLLM package size",
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
       "kind": "sdk",
       "output_metrics": [
         {
-          "id": "package.wheel",
+          "id": "import.peak_rss",
           "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "package.download",
-          "unit": "MiB",
+          "id": "import.loaded_modules",
+          "unit": "modules",
           "better": "lower"
         },
         {
-          "id": "package.installed",
+          "id": "import.disk_growth",
           "unit": "MiB",
-          "better": "lower"
-        },
-        {
-          "id": "package.artifacts",
-          "unit": "artifacts",
           "better": "lower"
         }
       ],
       "protocol": {
-        "question": "How large are the LiteLLM wheel, resolved wheel-only dependency closure, and files installed from that closure?",
-        "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Installed logical size covers every regular file and symlink named by installed wheel RECORDs, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
-        "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
-            "id": "base-install",
-            "label": "Base LiteLLM installation",
+            "id": "root-import",
+            "label": "import litellm",
             "dimensions": {
-              "binary_only": true,
-              "extras": []
+              "statement": "import litellm",
+              "isolated_python": true
             }
           }
         ],
         "measurements": [
           {
-            "id": "package.wheel",
-            "label": "LiteLLM wheel",
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
             "unit": "MiB",
             "role": "primary",
             "better": "lower"
           },
           {
-            "id": "package.download",
-            "label": "Dependency download closure",
-            "unit": "MiB",
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
             "role": "secondary",
             "better": "lower"
           },
           {
-            "id": "package.installed",
-            "label": "Installed RECORD footprint before import",
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
             "unit": "MiB",
             "role": "secondary",
-            "better": "lower"
-          },
-          {
-            "id": "package.artifacts",
-            "label": "Downloaded artifact count",
-            "unit": "artifacts",
-            "role": "diagnostic",
             "better": "lower"
           }
         ],
         "analyses": [
           {
-            "id": "clean_install_sizes",
-            "label": "Clean resolution and installation sizes",
-            "measurement": "package.wheel",
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
             "additional_measurements": [
-              "package.download",
-              "package.installed",
-              "package.artifacts"
+              "import.loaded_modules",
+              "import.disk_growth"
             ],
             "scenarios": [
-              "base-install"
+              "root-import"
             ],
-            "aggregation": "exact byte counts converted to MiB for display"
+            "aggregation": "single observation"
           }
         ],
         "validity": {
-          "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
-          "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
-          "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       }
     },
@@ -237,19 +208,17 @@
           "name": "root-import",
           "statement": "import litellm"
         },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
+        },
         "measurements": {
           "warmups": 0,
           "samples": 1,
           "timing": false,
-          "diagnostics": false,
+          "diagnostics": true,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
-        },
-        "resolver": {
-          "extra_index_urls": [],
-          "find_links": [],
-          "binary_only": true
         }
       },
       "requirements": {
@@ -277,100 +246,86 @@
     }
   },
   "result": {
-    "run_id": "3670bc0b-bb3c-4f94-9cbe-35b3027c8628",
-    "created_at": "2026-09-14T21:30:55.142Z",
-    "case_id": "4de73dd68b41e613112d261d0d4df3e8293c4b73935bc4b7929cd79d9c43ae86",
-    "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
+    "run_id": "b7f15c55-f88d-48de-9548-34cb93ecc211",
+    "created_at": "2026-09-16T14:32:11.710Z",
+    "case_id": "65d17c24f1ef9e7d4df203ca90545dc0147a476a57cfcbcf101a3e00936ea4f9",
+    "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
     "benchmark": {
-      "id": "sdk-package-size",
-      "label": "Clean LiteLLM package size",
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
       "kind": "sdk",
       "output_metrics": [
         {
-          "id": "package.wheel",
+          "id": "import.peak_rss",
           "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "package.download",
-          "unit": "MiB",
+          "id": "import.loaded_modules",
+          "unit": "modules",
           "better": "lower"
         },
         {
-          "id": "package.installed",
+          "id": "import.disk_growth",
           "unit": "MiB",
-          "better": "lower"
-        },
-        {
-          "id": "package.artifacts",
-          "unit": "artifacts",
           "better": "lower"
         }
       ],
       "protocol": {
-        "question": "How large are the LiteLLM wheel, resolved wheel-only dependency closure, and files installed from that closure?",
-        "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Installed logical size covers every regular file and symlink named by installed wheel RECORDs, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
-        "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
-            "id": "base-install",
-            "label": "Base LiteLLM installation",
+            "id": "root-import",
+            "label": "import litellm",
             "dimensions": {
-              "binary_only": true,
-              "extras": []
+              "statement": "import litellm",
+              "isolated_python": true
             }
           }
         ],
         "measurements": [
           {
-            "id": "package.wheel",
-            "label": "LiteLLM wheel",
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
             "unit": "MiB",
             "role": "primary",
             "better": "lower"
           },
           {
-            "id": "package.download",
-            "label": "Dependency download closure",
-            "unit": "MiB",
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
             "role": "secondary",
             "better": "lower"
           },
           {
-            "id": "package.installed",
-            "label": "Installed RECORD footprint before import",
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
             "unit": "MiB",
             "role": "secondary",
-            "better": "lower"
-          },
-          {
-            "id": "package.artifacts",
-            "label": "Downloaded artifact count",
-            "unit": "artifacts",
-            "role": "diagnostic",
             "better": "lower"
           }
         ],
         "analyses": [
           {
-            "id": "clean_install_sizes",
-            "label": "Clean resolution and installation sizes",
-            "measurement": "package.wheel",
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
             "additional_measurements": [
-              "package.download",
-              "package.installed",
-              "package.artifacts"
+              "import.loaded_modules",
+              "import.disk_growth"
             ],
             "scenarios": [
-              "base-install"
+              "root-import"
             ],
-            "aggregation": "exact byte counts converted to MiB for display"
+            "aggregation": "single observation"
           }
         ],
         "validity": {
-          "trial": "Resolution and installation must succeed; every resolved artifact must be a wheel; downloaded and pip-report closures must match; every installed distribution must expose a RECORD inventory; and the resolved and installed subject versions must exactly match the requested version",
-          "retention": "Retain the pip installation report plus the complete wheel inventory, byte sizes, and SHA-256 hashes. Record the requested Python selector, resolved Python patch, resolver inputs, uv version, and seeded pip version. Treat dependency resolution as campaign-local because indexes are mutable.",
-          "allocated_size": "Not published: filesystem allocation units, hard-link accounting, and sparse-file behavior are not portable across supported hosts"
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       }
     },
@@ -384,19 +339,17 @@
           "name": "root-import",
           "statement": "import litellm"
         },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
+        },
         "measurements": {
           "warmups": 0,
           "samples": 1,
           "timing": false,
-          "diagnostics": false,
+          "diagnostics": true,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
-        },
-        "resolver": {
-          "extra_index_urls": [],
-          "find_links": [],
-          "binary_only": true
         }
       },
       "requirements": {
@@ -412,46 +365,44 @@
       "distribution": "litellm"
     },
     "apparatus": {
-      "runner": "@litellm-bench/benchmark-sdk-package-size",
+      "runner": "@litellm-bench/benchmark-sdk-import-footprint",
       "host": {
         "platform": "linux",
         "architecture": "x86_64",
         "host": "github-hosted",
         "node_version": "v24.20.0",
         "ci": true,
+        "kernel_release": "6.17.0-1022-azure",
+        "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+        "cpu_count": 4,
+        "memory_total_bytes": 16766414848,
+        "load_average_1m": 0.22,
         "python_version": "3.12.10",
         "python_implementation": "CPython"
       },
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-7G9muY/resolver/lib/python3.12/site-packages/pip (python 3.12)"
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-OkBLMJ/resolver/lib/python3.12/site-packages/pip (python 3.12)"
     },
     "metrics": [
       {
-        "id": "package.wheel",
-        "label": "LiteLLM wheel",
-        "value": 22.94838047027588,
+        "id": "import.peak_rss",
+        "label": "Process-lifetime peak RSS during import",
+        "value": 210.109375,
         "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "package.download",
-        "label": "Dependency download closure",
-        "value": 58.880680084228516,
-        "unit": "MiB",
+        "id": "import.loaded_modules",
+        "label": "Modules loaded by import",
+        "value": 2249,
+        "unit": "modules",
         "better": "lower"
       },
       {
-        "id": "package.installed",
-        "label": "Installed RECORD footprint before import",
-        "value": 158.80800342559814,
+        "id": "import.disk_growth",
+        "label": "First-import site-packages growth",
+        "value": 17.505160331726074,
         "unit": "MiB",
-        "better": "lower"
-      },
-      {
-        "id": "package.artifacts",
-        "label": "Downloaded artifact count",
-        "value": 55,
-        "unit": "artifacts",
         "better": "lower"
       }
     ],
@@ -459,18 +410,23 @@
     "analyses": [],
     "details": {
       "runtime": {
+        "requested_python": "3.12.10",
         "resolved_package_version": "1.100.1",
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-7G9muY/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-OkBLMJ/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
-      "diagnostics": {},
+      "diagnostics": {
+        "import_only_seconds": 1.5554926579999915,
+        "new_module_count": 2249,
+        "peak_rss_bytes": 220315648
+      },
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61740868,
+        "download_bytes": 61944606,
         "package_artifact_bytes": 24063121,
         "artifacts": [
           {
@@ -504,14 +460,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.94-py3-none-any.whl",
-            "bytes": 140023,
-            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
+            "filename": "boto3-1.43.95-py3-none-any.whl",
+            "bytes": 140026,
+            "sha256": "c906921c4f9ab41e9587af6586f072c8f2be6979e8bde2ec26aa443bb1745019"
           },
           {
-            "filename": "botocore-1.43.94-py3-none-any.whl",
-            "bytes": 15797479,
-            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
+            "filename": "botocore-1.43.95-py3-none-any.whl",
+            "bytes": 15800616,
+            "sha256": "0fda26d16c7c7bf7082c421390a817b696f98a43d3da7c43dbbb093f76662876"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -539,9 +495,9 @@
             "sha256": "808527f2407f58a76c916d6aa15d58692a4a019fdf8d4c32ac7ff303b7d7af09"
           },
           {
-            "filename": "filelock-3.32.6-py3-none-any.whl",
-            "bytes": 100189,
-            "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+            "filename": "filelock-3.32.7-py3-none-any.whl",
+            "bytes": 100157,
+            "sha256": "65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52"
           },
           {
             "filename": "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
@@ -639,9 +595,9 @@
             "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
           },
           {
-            "filename": "propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 61639,
-            "sha256": "6f328175a2cde1f0ff2c4ed8ce968b9dcfb55f3a7153f39e2957ed994da13476"
+            "filename": "propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 250424,
+            "sha256": "2814ecd8e818f487bee4b0f921bc4d1c176cc5fc71ac0f072d0fa67eda4ac14b"
           },
           {
             "filename": "pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
@@ -734,38 +690,30 @@
             "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
           },
           {
-            "filename": "urllib3-2.7.0-py3-none-any.whl",
-            "bytes": 131087,
-            "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
+            "filename": "urllib3-2.8.0-py3-none-any.whl",
+            "bytes": 135717,
+            "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
           },
           {
-            "filename": "yarl-1.24.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 109835,
-            "sha256": "f08c7513ecef5aad65687bfdf6bc601ae9fccd04a42904501f8f7141abad9eb9"
+            "filename": "yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 117050,
+            "sha256": "c6f117789d22dce188e5754e8bc65b7e6ebf8cb73963b9fa761f672a5883769d"
           },
           {
             "filename": "zipp-4.1.0-py3-none-any.whl",
             "bytes": 10238,
             "sha256": "25ad4e16390cd314347dd8f1de67a2ac538ae658ed4ab9db16029c07c188e97f"
           }
-        ],
-        "policy": "same-campaign-wheel-closure-v1",
-        "inputs": {
-          "python": "3.12.10",
-          "requirement": "litellm==1.100.1",
-          "distribution": "litellm",
-          "expected_version": "1.100.1",
-          "resolver": {
-            "extra_index_urls": [],
-            "find_links": [],
-            "binary_only": true
-          }
-        }
+        ]
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 166522261
-        }
+          "logical_bytes": 167255464
+        },
+        "installed_after_first_run": {
+          "logical_bytes": 185610955
+        },
+        "first_run_logical_delta_bytes": 18355491
       }
     },
     "status": "ok"
