@@ -26,6 +26,11 @@ const config = {
   duration_seconds: 1,
   idle_seconds: 0,
   log_driver: "none",
+  integrity: {
+    proxy_cpu_min_percent: 90,
+    mock_cpu_max_percent: 80,
+    load_generator_cpu_max_percent: 160,
+  },
 };
 const scenario = {
   id: "core",
@@ -257,6 +262,48 @@ it.effect("reruns the entire paired round after a failed trial", () =>
     expect(experiments).toHaveLength(2);
     expect(experiments[1]?.trials).toHaveLength(2);
     expect(experiments[1]?.trials.every(({ id }) => id.endsWith("_retry2"))).toBe(true);
+  }));
+
+it.effect("halts after the probe round when the mock is the bottleneck, without retrying", () =>
+  Effect.gen(function*() {
+    const experiments: Array<{
+      readonly artifactsDirectory: string;
+      readonly trials: readonly { readonly id: string }[];
+    }> = [];
+    const runner = yield* makeTestRunner.pipe(
+      Effect.provideService(ProxyEnvironment, {
+        run: (experiment) =>
+          Effect.sync(() => {
+            experiments.push(experiment);
+            const observed = raw();
+            return {
+              ...observed,
+              trials: experiment.trials.map((plan) => ({
+                ...observed.trials.find(({ variant }) => variant === plan.variant)!,
+                id: plan.id,
+                round: plan.round,
+                mock_telemetry: {
+                  ...observed.trials[0]!.mock_telemetry!,
+                  cpu_after_usec: plan.variant === "rust" ? 990_000 : 250_000,
+                },
+              })),
+            };
+          }),
+      }),
+      Effect.provideService(OcrArtifacts, { writeRows: () => Effect.void }),
+    );
+    const error = yield* Effect.flip(runner.run({
+      ...context,
+      spec: { ...context.spec, job: { ...context.spec.job, config: { ...config, rounds: 3 } } },
+    }));
+    expect(experiments.map(({ artifactsDirectory }) => artifactsDirectory)).toEqual([
+      "/artifacts/probe",
+    ]);
+    expect(experiments[0]?.trials).toHaveLength(2);
+    expect(error).toMatchObject({
+      _tag: "InvalidObservation",
+      message: expect.stringContaining("mock may be limiting: 99.0% CPU (mock_cpu_max_percent 80)"),
+    });
   }));
 
 it.effect("keeps artifact persistence failures typed", () =>

@@ -15,7 +15,7 @@ import { respondWithCatalog, respondWithEffect } from "./responses.js";
 import { makeRunCommand } from "./runs.js";
 import { makeSmokeCommand } from "./smoke.js";
 import { sourceMetadata } from "./source-metadata.js";
-import { makePlanCommand, makeRunVersionCommand } from "./suite.js";
+import { makePlanCommand, makeRunJobCommand, makeSummarizeVersionCommand } from "./suite.js";
 
 const WriteMode = Schema.Literals([
   "append",
@@ -139,7 +139,8 @@ export const makeCliCommand = (respond: CliResponder) =>
         makeDescribeCommand(respond),
         makePlanCommand(respond),
         makeRunCommand(respond),
-        makeRunVersionCommand(respond),
+        makeRunJobCommand(respond),
+        makeSummarizeVersionCommand(respond),
         makeSmokeCommand(respond),
         makeValidateCommand(respond),
         makeDataCommand(respond),

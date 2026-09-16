@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      versions: ${{ steps.plan.outputs.versions }}
       has_jobs: ${{ steps.plan.outputs.has_jobs }}
     steps:
       - uses: actions/checkout@v6
@@ -35,7 +36,6 @@ jobs:
           versions: ${{ inputs.versions }}
           backfill_months: ${{ inputs.backfill_months }}
           default_branch: ${{ github.event.repository.default_branch }}
-          order_seed: ${{ github.run_id }}
       # Save tools before the matrix starts so cold-cache jobs do not all download them.
       - name: Warm the uv cache
         if: steps.plan.outputs.has_jobs == 'true'
@@ -45,23 +45,132 @@ jobs:
         uses: ./.github/actions/setup-k6
 
   benchmark:
-    name: LiteLLM ${{ matrix.version }}
+    name: ${{ matrix.benchmark_id }} / ${{ matrix.benchmark_job }} @ LiteLLM ${{ matrix.version }}
     needs: plan
     if: needs.plan.outputs.has_jobs == 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 240
     concurrency:
-      group: litellm-bench-version-${{ matrix.version }}
+      group: litellm-bench-job-${{ matrix.job_id }}
       cancel-in-progress: true
+    env:
+      BENCHMARK_RUN_NOTE: ${{ inputs.run_note || '' }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-node-workspace
+      - uses: ./.github/actions/setup-benchmark-runtime
+        with:
+          proxy: ${{ matrix.needs_proxy }}
+      - id: benchmark
+        name: Run the planned benchmark job
+        env:
+          LITELLM_BENCH_HOST: ${{ runner.environment }}
+          JOB_PLAN: ${{ toJSON(matrix) }}
+        run: |
+          pnpm bench run-job \
+            --plan-json "$JOB_PLAN" \
+            --output data/runs/benchmark-output \
+            --github-step-summary "$GITHUB_STEP_SUMMARY"
+      - name: Upload results and diagnostics
+        if: ${{ !cancelled() && (steps.benchmark.outcome == 'success' || steps.benchmark.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-${{ github.run_id }}-${{ github.run_attempt }}-v${{ matrix.version }}-job-${{ matrix.job_id }}
+          path: data/runs/benchmark-output/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish LiteLLM ${{ matrix.version }} data
+    needs: [plan, benchmark]
+    # Runs once every benchmark job of the run has finished, whether or not it succeeded, so
+    # failed benchmarks are still recorded as `status: failed` records.
+    if: ${{ !cancelled() && needs.plan.outputs.has_jobs == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(needs.plan.outputs.versions) }}
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: litellm-bench-results-${{ matrix.version }}
+      cancel-in-progress: false
     permissions:
-      actions: read
       contents: write
       pull-requests: write
-    uses: ./.github/workflows/benchmark-version.yml
-    with:
-      version: ${{ matrix.version }}
-      version-plan: ${{ toJSON(matrix) }}
-      run-note: ${{ inputs.run_note || '' }}
-    secrets:
-      LITELLM_BENCH_BOT_TOKEN: ${{ secrets.LITELLM_BENCH_BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ secrets.LITELLM_BENCH_BOT_TOKEN || github.token }}
+      - uses: ./.github/actions/setup-node-workspace
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-${{ github.run_id }}-${{ github.run_attempt }}-v${{ matrix.version }}-job-*
+          path: collected-results
+          merge-multiple: true
+      - id: results
+        name: Summarize this version's benchmark jobs
+        env:
+          LITELLM_VERSION: ${{ matrix.version }}
+        run: |
+          pnpm --silent bench summarize-version \
+            --version "$LITELLM_VERSION" \
+            --input collected-results \
+            --github-output "$GITHUB_OUTPUT" \
+            --github-step-summary "$GITHUB_STEP_SUMMARY"
+      - id: results-change
+        name: Determine results change type
+        env:
+          LITELLM_VERSION: ${{ matrix.version }}
+        run: |
+          mapfile -d '' result_files < <(find collected-results -name benchmark-result.json -print0)
+          if (( ${#result_files[@]} == 0 )); then
+            echo "The collected artifacts contain no benchmark results." >&2
+            exit 1
+          fi
+          result_versions="$(jq -r '.version' "${result_files[@]}" | sort -u)"
+          if [[ -z "$result_versions" || "$result_versions" == *$'\n'* ]]; then
+            echo "The collected artifacts do not contain one unique benchmark version." >&2
+            exit 1
+          fi
+
+          operation=Add
+          while IFS= read -r -d '' record; do
+            if jq -e --arg version "$result_versions" '.result.version == $version' "$record" >/dev/null; then
+              operation=Update
+              break
+            fi
+          done < <(find data/results -name '*.json' -print0)
+          echo "operation=$operation" >> "$GITHUB_OUTPUT"
+      - name: Validate and ingest this version's results
+        run: >-
+          pnpm bench data ingest
+          --input collected-results
+          --data data --mode replace-benchmark-version
+      - name: Create or update the version's results pull request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
+        with:
+          token: ${{ secrets.LITELLM_BENCH_BOT_TOKEN || github.token }}
+          base: ${{ github.event.repository.default_branch }}
+          branch: bench-results-${{ matrix.version }}
+          add-paths: data/
+          commit-message: "data(${{ matrix.version }}): ${{ steps.results-change.outputs.operation }}"
+          title: "data(${{ matrix.version }}): ${{ steps.results-change.outputs.operation }}"
+          body: |
+            Automated benchmark evidence generated by the committed harness.
+
+            - LiteLLM version: `${{ matrix.version }}`
+            - Benchmarks succeeded: ${{ steps.results.outputs.succeeded }}
+            - Benchmarks failed: ${{ steps.results.outputs.failed }}
+            - Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ${{ steps.results.outputs.report }}
+
+            Every (version, benchmark) pair runs on its own Ubuntu VM. Reruns update this
+            version's branch and PR, replacing the latest result for each benchmark. Failed
+            benchmarks are reported above and stored as `status: failed` records without
+            metrics, so the dashboard shows the failure instead of a silently missing version.

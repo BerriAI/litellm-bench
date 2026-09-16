@@ -1,18 +1,13 @@
 import { type ProxyRawObservation, Sha256Id } from "@litellm-bench/contracts";
 import { InvalidObservation } from "@litellm-bench/harness";
-import { proxyTrialIssue } from "@litellm-bench/proxy";
+import { proxyTrialIssue, type RoundIssue } from "@litellm-bench/proxy";
 import { Effect, Option, Schema } from "effect";
+import type { OcrIntegrity } from "./config.js";
 import type { OcrObservation } from "./types.js";
 
 const ByteCount = Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)));
 
 export const OcrVariant = Schema.Literals(["python", "rust"]);
-
-export const OcrApparatusLimits = {
-  minimumProxyCpuPercent: 90,
-  maximumMockCpuPercent: 80,
-  maximumLoadGeneratorCpuPercent: 160,
-} as const;
 
 export const OcrDimensions = Schema.Struct({
   payload_requested_bytes: ByteCount,
@@ -31,44 +26,67 @@ export type ClassifiedOcrFields = {
 
 export type ClassifiedOcrTrial =
   | { readonly ok: true; readonly fields: ClassifiedOcrFields }
-  | { readonly ok: false; readonly issue: string };
+  | { readonly ok: false; readonly kind: RoundIssue["kind"]; readonly issue: string };
+
+const measurement = (issue: string): ClassifiedOcrTrial => ({
+  ok: false,
+  kind: "measurement",
+  issue,
+});
+const apparatus = (issue: string): ClassifiedOcrTrial => ({ ok: false, kind: "apparatus", issue });
+
+export interface OcrApparatusUtilization {
+  readonly proxy_cpu_percent: number;
+  readonly mock_cpu_percent: number;
+  readonly load_generator_cpu_percent: number;
+}
+
+/** Names the first violated gate with the observed value and the configured limit. */
+export const apparatusGateIssue = (
+  utilization: OcrApparatusUtilization,
+  integrity: OcrIntegrity,
+): string | undefined => {
+  if (utilization.proxy_cpu_percent < integrity.proxy_cpu_min_percent) {
+    return `proxy was not CPU-saturated: ${
+      utilization.proxy_cpu_percent.toFixed(1)
+    }% (proxy_cpu_min_percent ${integrity.proxy_cpu_min_percent})`;
+  }
+  if (utilization.mock_cpu_percent >= integrity.mock_cpu_max_percent) {
+    return `mock may be limiting: ${
+      utilization.mock_cpu_percent.toFixed(1)
+    }% CPU (mock_cpu_max_percent ${integrity.mock_cpu_max_percent})`;
+  }
+  if (utilization.load_generator_cpu_percent >= integrity.load_generator_cpu_max_percent) {
+    return `load generator may be limiting: ${
+      utilization.load_generator_cpu_percent.toFixed(1)
+    }% CPU (load_generator_cpu_max_percent ${integrity.load_generator_cpu_max_percent})`;
+  }
+  return undefined;
+};
 
 export const classifyOcrTrial = (
   trial: ProxyRawObservation["trials"][number],
+  integrity: OcrIntegrity,
 ): ClassifiedOcrTrial => {
   const issue = proxyTrialIssue(trial);
-  if (issue !== undefined) return { ok: false, issue };
-  if (trial.telemetry === undefined) return { ok: false, issue: "missing telemetry" };
-  if (trial.mock_telemetry === undefined) return { ok: false, issue: "missing mock telemetry" };
+  if (issue !== undefined) return measurement(issue);
+  if (trial.telemetry === undefined) return measurement("missing telemetry");
+  if (trial.mock_telemetry === undefined) return measurement("missing mock telemetry");
   if (trial.load_generator_telemetry === undefined) {
-    return { ok: false, issue: "missing load-generator telemetry" };
+    return measurement("missing load-generator telemetry");
   }
-  const proxyCpuPercent = (trial.telemetry.cpu_after_usec - trial.telemetry.cpu_before_usec)
-    / 1_000_000 / trial.telemetry.wall_seconds * 100;
-  const mockCpuPercent = (
-    trial.mock_telemetry.cpu_after_usec - trial.mock_telemetry.cpu_before_usec
-  ) / 1_000_000 / trial.mock_telemetry.wall_seconds * 100;
-  if (proxyCpuPercent < OcrApparatusLimits.minimumProxyCpuPercent) {
-    return { ok: false, issue: `proxy was not CPU-saturated: ${proxyCpuPercent.toFixed(1)}%` };
-  }
-  if (mockCpuPercent >= OcrApparatusLimits.maximumMockCpuPercent) {
-    return { ok: false, issue: `mock may be limiting: ${mockCpuPercent.toFixed(1)}% CPU` };
-  }
-  if (
-    trial.load_generator_telemetry.cpu_percent
-      >= OcrApparatusLimits.maximumLoadGeneratorCpuPercent
-  ) {
-    return {
-      ok: false,
-      issue: `load generator may be limiting: ${
-        trial.load_generator_telemetry.cpu_percent.toFixed(1)
-      }% CPU`,
-    };
-  }
+  const gate = apparatusGateIssue({
+    proxy_cpu_percent: (trial.telemetry.cpu_after_usec - trial.telemetry.cpu_before_usec)
+      / 1_000_000 / trial.telemetry.wall_seconds * 100,
+    mock_cpu_percent: (trial.mock_telemetry.cpu_after_usec - trial.mock_telemetry.cpu_before_usec)
+      / 1_000_000 / trial.mock_telemetry.wall_seconds * 100,
+    load_generator_cpu_percent: trial.load_generator_telemetry.cpu_percent,
+  }, integrity);
+  if (gate !== undefined) return apparatus(gate);
   const dimensions = Schema.decodeUnknownOption(OcrDimensions)(trial.dimensions);
-  if (Option.isNone(dimensions)) return { ok: false, issue: "missing payload dimensions" };
+  if (Option.isNone(dimensions)) return measurement("missing payload dimensions");
   if (!Schema.is(OcrVariant)(trial.variant)) {
-    return { ok: false, issue: `unknown variant ${trial.variant}` };
+    return measurement(`unknown variant ${trial.variant}`);
   }
   return {
     ok: true,
@@ -83,8 +101,8 @@ export const classifyOcrTrial = (
 };
 
 export const decodeOcrObservation = Effect.fn("ProxyOcr.decodeObservation")(
-  function*(trial: ProxyRawObservation["trials"][number]) {
-    const classified = classifyOcrTrial(trial);
+  function*(trial: ProxyRawObservation["trials"][number], integrity: OcrIntegrity) {
+    const classified = classifyOcrTrial(trial, integrity);
     const client = trial.client?.result;
     const telemetry = trial.telemetry;
     if (!classified.ok) {

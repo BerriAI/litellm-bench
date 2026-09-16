@@ -11,34 +11,21 @@ import {
   resolveVersion,
 } from "@litellm-bench/versions";
 import { Data, Effect, Schema } from "effect";
-import { createHash } from "node:crypto";
 
-export const PlanEntry = Schema.Struct({
+export const BenchmarkJob = Schema.Struct({
+  version: Schema.NonEmptyString,
   job_id: Schema.NonEmptyString,
   benchmark_id: Schema.NonEmptyString,
   benchmark_job: Schema.NonEmptyString,
   runner: Schema.NonEmptyString,
-});
-
-export type PlanEntry = typeof PlanEntry.Type;
-
-export const VersionJob = Schema.Struct({
-  version: Schema.NonEmptyString,
-  runner: Schema.Literal("ubuntu-24.04"),
-  jobs: Schema.NonEmptyArray(PlanEntry),
   needs_proxy: Schema.Boolean,
-  comparison_order: Schema.Struct({
-    method: Schema.Literal("seeded-fisher-yates"),
-    position: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
-    total: Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
-    seed_sha256: Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-f0-9]{64}$/))),
-  }),
 });
 
-export type VersionJob = typeof VersionJob.Type;
+export type BenchmarkJob = typeof BenchmarkJob.Type;
 
-export interface VersionMatrix {
-  readonly include: ReadonlyArray<VersionJob>;
+export interface BenchmarkMatrix {
+  readonly include: ReadonlyArray<BenchmarkJob>;
+  readonly versions: ReadonlyArray<string>;
 }
 
 export interface SuiteBenchmark {
@@ -195,57 +182,29 @@ const releaseArtifacts = (release: ResolvedRelease): JsonRecord => ({
   proxy: { image: release.proxy.image },
 });
 
-const shuffled = <T>(values: readonly T[], seed: string): T[] => {
-  const output = [...values];
-  let state = Number.parseInt(createHash("sha256").update(seed).digest("hex").slice(0, 8), 16);
-  for (let index = output.length - 1; index > 0; index -= 1) {
-    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
-    const target = state % (index + 1);
-    [output[index], output[target]] = [output[target]!, output[index]!];
-  }
-  return output;
-};
-
-export const buildVersionMatrix = <Benchmark extends SuiteBenchmark>(
+export const buildBenchmarkMatrix = <Benchmark extends SuiteBenchmark>(
   benchmarks: ReadonlyArray<Benchmark>,
   versions: string,
   selection: string,
-  orderSeed = "local",
-): Effect.Effect<VersionMatrix, SuiteError> =>
+): Effect.Effect<BenchmarkMatrix, SuiteError> =>
   Effect.gen(function*() {
     const selected = yield* selectedBenchmarks(benchmarks, selection);
-    const releases = shuffled(yield* resolvedVersions(versions), orderSeed);
-    const seedSha256 = createHash("sha256").update(orderSeed).digest("hex");
-    return {
-      include: releases.flatMap(([requested, release], index) => {
-        const jobs = selected.flatMap((benchmark) =>
-          artifactFor(benchmark, release) === undefined
-            ? []
-            : benchmark.definition.jobs.map((job): PlanEntry => ({
-              job_id: slug(benchmark.id, release.version, job.id),
-              benchmark_id: benchmark.id,
-              benchmark_job: job.id,
-              runner: job.runner,
-            }))
-        );
-        return jobs.length === 0
+    const releases = yield* resolvedVersions(versions);
+    const include = releases.flatMap(([requested, release]) =>
+      selected.flatMap((benchmark) =>
+        artifactFor(benchmark, release) === undefined
           ? []
-          : [{
+          : benchmark.definition.jobs.map((job): BenchmarkJob => ({
             version: requested,
-            runner: "ubuntu-24.04" as const,
-            jobs: jobs as [PlanEntry, ...PlanEntry[]],
-            needs_proxy: jobs.some((job) =>
-              selected.some(({ id, artifact }) => id === job.benchmark_id && artifact === "proxy")
-            ),
-            comparison_order: {
-              method: "seeded-fisher-yates" as const,
-              position: index + 1,
-              total: releases.length,
-              seed_sha256: seedSha256,
-            },
-          }];
-      }),
-    };
+            job_id: slug(benchmark.id, release.version, job.id),
+            benchmark_id: benchmark.id,
+            benchmark_job: job.id,
+            runner: job.runner,
+            needs_proxy: benchmark.artifact === "proxy",
+          }))
+      )
+    );
+    return { include, versions: [...new Set(include.map(({ version }) => version))] };
   });
 
 export const makeRunSpec = (

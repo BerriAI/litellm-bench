@@ -123,50 +123,46 @@ describe("runCli", () => {
     expect(JSON.parse(response.stdout)).toEqual({
       include: [{
         version: "1.80.0",
+        job_id: "sdk-import-time-1-80-0-base",
+        benchmark_id: "sdk-import-time",
+        benchmark_job: "base",
         runner: "ubuntu-24.04",
-        jobs: [{
-          job_id: "sdk-import-time-1-80-0-base",
-          benchmark_id: "sdk-import-time",
-          benchmark_job: "base",
-          runner: "ubuntu-24.04",
-        }],
         needs_proxy: false,
-        comparison_order: {
-          method: "seeded-fisher-yates",
-          position: 1,
-          total: 1,
-          seed_sha256: "25bf8e1a2393f1108d37029b3df5593236c755742ec93465bbafa9b290bddcf6",
-        },
       }],
+      versions: ["1.80.0"],
     });
   });
 
-  it("seed-shuffles version jobs and records the reproducible serial order", async () => {
-    const args = [
-      "plan",
-      "--versions",
-      "1.80.0,1.81.0,1.82.0",
-      "--selection",
-      "sdk-import-time",
-      "--order-seed",
-      "workflow-42",
-    ];
-    const first = JSON.parse((await invoke(args)).stdout);
-    const second = JSON.parse((await invoke(args)).stdout);
-    expect(first).toEqual(second);
-    expect(first.include.map((entry: any) => entry.version).toSorted()).toEqual([
-      "1.80.0",
-      "1.81.0",
-      "1.82.0",
-    ]);
-    expect(first.include.map((entry: any) => entry.comparison_order.position)).toEqual([1, 2, 3]);
-    expect(
-      first.include.every((entry: any) =>
-        entry.comparison_order.method === "seeded-fisher-yates"
-        && entry.comparison_order.total === 3
-        && /^[a-f0-9]{64}$/.test(entry.comparison_order.seed_sha256)
-      ),
-    ).toBe(true);
+  it("fans out one matrix entry per version and benchmark job", async () => {
+    const root = await mkdtemp(join(tmpdir(), "litellm-bench-cli-plan-"));
+    const githubOutput = join(root, "github-output");
+    try {
+      const response = await invoke([
+        "plan",
+        "--versions",
+        "1.80.0,1.81.0",
+        "--selection",
+        "sdk-import-time",
+        "--github-output",
+        githubOutput,
+      ]);
+      expect(response.exitCode).toBe(ExitCode.Success);
+      const written = await readFile(githubOutput, "utf8");
+      const outputs = Object.fromEntries(
+        written.trimEnd().split("\n").map((line) => {
+          const separator = line.indexOf("=");
+          return [line.slice(0, separator), line.slice(separator + 1)];
+        }),
+      );
+      expect(JSON.parse(outputs.matrix).include.map((entry: any) => entry.job_id)).toEqual([
+        "sdk-import-time-1-80-0-base",
+        "sdk-import-time-1-81-0-base",
+      ]);
+      expect(JSON.parse(outputs.versions)).toEqual(["1.80.0", "1.81.0"]);
+      expect(outputs.has_jobs).toBe("true");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it("discovers the latest stable release and date-window stable backfills", async () => {
@@ -305,8 +301,8 @@ describe("runCli", () => {
     }
   });
 
-  it("runs a planned version through the registered TS runner", async () => {
-    const root = await mkdtemp(join(tmpdir(), "litellm-bench-cli-version-"));
+  it("runs a planned job through the registered TS runner and summarizes it", async () => {
+    const root = await mkdtemp(join(tmpdir(), "litellm-bench-cli-job-"));
     const output = join(root, "output");
     const runner: BenchmarkRunner = {
       id: "sdk-import-time",
@@ -335,29 +331,18 @@ describe("runCli", () => {
     };
     const plan = {
       version: "1.0.0",
+      job_id: "sdk-import-time-1-0-0-base",
+      benchmark_id: "sdk-import-time",
+      benchmark_job: "base",
       runner: "ubuntu-24.04",
-      jobs: [{
-        job_id: "sdk-import-time-1-0-0-base",
-        benchmark_id: "sdk-import-time",
-        benchmark_job: "base",
-        runner: "ubuntu-24.04",
-      }],
       needs_proxy: false,
-      comparison_order: {
-        method: "seeded-fisher-yates",
-        position: 1,
-        total: 1,
-        seed_sha256: "25bf8e1a2393f1108d37029b3df5593236c755742ec93465bbafa9b290bddcf6",
-      },
     };
     const logMessages: Array<string> = [];
 
     try {
       const response = await invokeWithRunners(
         [
-          "run-version",
-          "--version",
-          "1.0.0",
+          "run-job",
           "--plan-json",
           JSON.stringify(plan),
           "--output",
@@ -368,34 +353,61 @@ describe("runCli", () => {
         [runner],
         logMessages,
       );
-      const summary = JSON.parse(
-        await readFile(join(output, "version-summary.json"), "utf8"),
-      );
-      const report = await readFile(join(output, "version-summary.md"), "utf8");
+      const jobOutput = join(output, plan.job_id);
+      const summary = JSON.parse(await readFile(join(jobOutput, "job-summary.json"), "utf8"));
+      const report = await readFile(join(jobOutput, "job-summary.md"), "utf8");
       const stepSummary = await readFile(join(root, "step-summary.md"), "utf8");
-      const spec = JSON.parse(
-        await readFile(
-          join(output, plan.jobs[0].job_id, "benchmark-spec.json"),
-          "utf8",
-        ),
-      );
+      const spec = JSON.parse(await readFile(join(jobOutput, "benchmark-spec.json"), "utf8"));
 
-      expect(response).toMatchObject({ exitCode: ExitCode.Success, stdout: "completed=1\n" });
+      expect(response).toMatchObject({
+        exitCode: ExitCode.Success,
+        stdout: `result=${join(jobOutput, "benchmark-result.json")}\n`,
+      });
       expect(logMessages).toEqual([
-        "version run started",
-        "version job started",
+        "job started",
         "benchmark started",
         "benchmark completed",
-        "version job completed",
-        "version run completed",
+        "job completed",
       ]);
-      expect(summary).toEqual([{ job_id: plan.jobs[0].job_id, exit_code: 0 }]);
-      expect(report).toContain("### LiteLLM 1.0.0: 1/1 benchmarks succeeded in ");
-      expect(report).toContain("| 1 | sdk-import-time / base | ok | ");
+      expect(summary).toMatchObject({
+        version: plan.version,
+        job_id: plan.job_id,
+        benchmark_id: plan.benchmark_id,
+        benchmark_job: plan.benchmark_job,
+        status: "ok",
+        exit_code: 0,
+        trials: "0/0 valid",
+        result: "Median: 100 ms",
+      });
+      expect(report).toContain("### LiteLLM 1.0.0: sdk-import-time / base ok in ");
+      expect(report).toContain("| sdk-import-time / base | ok | ");
       expect(report).toContain("| 0/0 valid | Median: 100 ms |");
       expect(stepSummary).toBe(report);
       expect(spec.case_id).toMatch(/^[a-f0-9]{64}$/);
       expect(spec.comparison_id).toMatch(/^[a-f0-9]{64}$/);
+
+      const githubOutput = join(root, "github-output");
+      const versionSummary = await invoke([
+        "summarize-version",
+        "--version",
+        "1.0.0",
+        "--input",
+        output,
+        "--github-output",
+        githubOutput,
+      ]);
+      expect(versionSummary.exitCode).toBe(ExitCode.Success);
+      expect(versionSummary.stdout).toContain("### LiteLLM 1.0.0: 1/1 benchmarks succeeded");
+      expect(versionSummary.stdout).toContain("| sdk-import-time / base | ok | ");
+      const outputs = await readFile(githubOutput, "utf8");
+      expect(outputs).toContain("succeeded=1\nfailed=0\nreport<<LITELLM_BENCH_REPORT\n");
+      expect(outputs.endsWith("LITELLM_BENCH_REPORT\n")).toBe(true);
+
+      await expect(invoke(["summarize-version", "--version", "2.0.0", "--input", output]))
+        .resolves.toMatchObject({
+          exitCode: ExitCode.UsageError,
+          stderr: "job summaries belong to other versions: 1.0.0\n",
+        });
     } finally {
       await rm(root, { recursive: true, force: true });
     }

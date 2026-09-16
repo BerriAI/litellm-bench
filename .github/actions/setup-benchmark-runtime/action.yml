@@ -1,6 +1,12 @@
 name: Set up benchmark runtime
 description: Install and verify the fixed toolchain used by the benchmark suite
 
+inputs:
+  proxy:
+    description: Also install and verify the proxy apparatus (k6 and Docker)
+    required: false
+    default: "true"
+
 runs:
   using: composite
   steps:
@@ -14,8 +20,10 @@ runs:
       run: |
         interpreter="$(uv --no-config python find)"
         "$interpreter" --version
-    - uses: ./.github/actions/setup-k6
+    - if: inputs.proxy == 'true'
+      uses: ./.github/actions/setup-k6
     - name: Verify Docker using the benchmark adapter
+      if: inputs.proxy == 'true'
       shell: bash
       working-directory: packages/proxy
       run: |
@@ -32,5 +40,6 @@ runs:
         console.log(JSON.stringify(metadata));
         NODE
     - name: Verify load generator
+      if: inputs.proxy == 'true'
       shell: bash
       run: k6 version

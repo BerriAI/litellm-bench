@@ -1,6 +1,7 @@
 import { median, pairedRatios } from "@litellm-bench/analysis";
 import type { Analysis, Metric, Trial } from "@litellm-bench/contracts";
-import { OcrApparatusLimits } from "./observation.js";
+import type { OcrIntegrity } from "./config.js";
+import { apparatusGateIssue } from "./observation.js";
 import { seededUint32 } from "./random.js";
 import type { OcrObservation, OcrProjection, OcrScenario } from "./types.js";
 
@@ -74,6 +75,7 @@ export const validatePrimaryRows = (
   rows: readonly OcrObservation[],
   scenarios: readonly OcrScenario[],
   rounds: number,
+  integrity: OcrIntegrity,
 ): readonly string[] => {
   const scenarioMap = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
   const actual = rows.map((row) => `${scenarioId(row)}:${roundNumber(row)}:${row.variant}`);
@@ -87,6 +89,11 @@ export const validatePrimaryRows = (
   const rowIssues = rows.flatMap((row) => {
     const scenario = scenarioMap.get(scenarioId(row));
     if (scenario === undefined) return [`unexpected OCR scenario: ${scenarioId(row)}`];
+    const gate = apparatusGateIssue({
+      proxy_cpu_percent: row.cpu_average_percent,
+      mock_cpu_percent: row.mock_cpu_average_percent,
+      load_generator_cpu_percent: row.load_generator_cpu_percent,
+    }, integrity);
     return [
       ...(row.payload_requested_bytes === scenario.payload_bytes
         ? []
@@ -96,19 +103,7 @@ export const validatePrimaryRows = (
         ? []
         : [`wrong load model for ${row.label}`]),
       ...(row.failures === 0 && row.successes > 0 ? [] : [`invalid responses in ${row.label}`]),
-      ...(row.cpu_average_percent >= OcrApparatusLimits.minimumProxyCpuPercent
-        ? []
-        : [`proxy was not CPU-saturated in ${row.label}: ${row.cpu_average_percent.toFixed(1)}%`]),
-      ...(row.mock_cpu_average_percent < OcrApparatusLimits.maximumMockCpuPercent
-        ? []
-        : [`mock may be limiting ${row.label}: ${row.mock_cpu_average_percent.toFixed(1)}% CPU`]),
-      ...(row.load_generator_cpu_percent < OcrApparatusLimits.maximumLoadGeneratorCpuPercent
-        ? []
-        : [
-          `load generator may be limiting ${row.label}: ${
-            row.load_generator_cpu_percent.toFixed(1)
-          }% CPU`,
-        ]),
+      ...(gate === undefined ? [] : [`${row.label} ${row.variant}: ${gate}`]),
     ];
   });
   const actualSet = new Set(actual);
@@ -145,9 +140,10 @@ export const projectOcr = (
   rows: readonly OcrObservation[],
   scenarios: readonly OcrScenario[],
   rounds: number,
+  integrity: OcrIntegrity,
   orderSeed = "proxy-ocr-v1",
 ): OcrProjection => {
-  const issues = validatePrimaryRows(rows, scenarios, rounds);
+  const issues = validatePrimaryRows(rows, scenarios, rounds, integrity);
   if (issues.length > 0) throw new Error(issues.join(", "));
   const outputs = scenarios.map((scenario) => {
     const selected = rows.filter((row) => scenarioId(row) === scenario.id);

@@ -2,6 +2,21 @@ import { InvalidRunnerConfig, type RunContext } from "@litellm-bench/harness";
 import { Effect, Schema } from "effect";
 import type { OcrScenario } from "./types.js";
 
+const Percent = Schema.Finite.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)));
+
+/**
+ * Apparatus gates a trial must satisfy before it counts as evidence. They fail closed against an
+ * upstream validator or load-generator bottleneck being published as a proxy result, and a trial
+ * that misses one reports an apparatus (never a measurement) issue.
+ */
+export const OcrIntegrity = Schema.Struct({
+  proxy_cpu_min_percent: Percent,
+  mock_cpu_max_percent: Percent,
+  load_generator_cpu_max_percent: Percent,
+});
+
+export type OcrIntegrity = typeof OcrIntegrity.Type;
+
 export const OcrConfig = Schema.Struct({
   cpus: Schema.Finite.pipe(Schema.check(Schema.isGreaterThan(0))),
   proxy_cpu_set: Schema.NonEmptyString,
@@ -21,7 +36,11 @@ export const OcrConfig = Schema.Struct({
   duration_seconds: Schema.Finite.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1))),
   idle_seconds: Schema.Finite.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0))),
   log_driver: Schema.NonEmptyString,
+  integrity: OcrIntegrity,
 });
+
+export type OcrConfig = typeof OcrConfig.Type;
+
 const Scenario = Schema.Struct({
   id: Schema.NonEmptyString,
   label: Schema.NonEmptyString,

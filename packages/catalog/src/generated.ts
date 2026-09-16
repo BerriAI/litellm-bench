@@ -901,8 +901,8 @@ export const benchmarkCatalog = {
           }
         ],
         "validity": {
-          "trial": "Every response and upstream request must pass semantic validation; client and upstream request counts must agree; no dropped, interrupted, or failed warmup requests; proxy CPU must be at least 90%, mock CPU below 80%, and load-generator CPU below 160%",
-          "exclusions": "Keep failed output and its reason, then rerun every scenario and treatment in the entire paired round, up to the configured attempt limit",
+          "trial": "Every response and upstream request must pass semantic validation; client and upstream request counts must agree; no dropped, interrupted, or failed warmup requests; proxy, mock, and load-generator CPU must satisfy the job's declared integrity gates",
+          "exclusions": "Keep failed output and its reason. Measurement failures rerun every scenario and treatment in the entire paired round, up to the configured attempt limit. Integrity-gate failures are apparatus misallocation, so the first paired round runs alone as a probe and any gate failure halts the run without retrying",
           "outliers": "Do not remove statistical outliers",
           "publication": "Publish all valid trials, paired ratios, range, and round wins"
         },
@@ -931,9 +931,9 @@ export const benchmarkCatalog = {
           "config": {
             "cpus": 1,
             "proxy_cpu_set": "0",
-            "mock_cpu_set": "1",
-            "load_generator_cpu_set": "2-3",
-            "mock_cpus": 1,
+            "mock_cpu_set": "1-2",
+            "load_generator_cpu_set": "3",
+            "mock_cpus": 2,
             "memory": "2g",
             "mock_memory": "512m",
             "workers": 1,
@@ -944,7 +944,12 @@ export const benchmarkCatalog = {
             "warmup_seconds": 10,
             "duration_seconds": 30,
             "idle_seconds": 5,
-            "log_driver": "none"
+            "log_driver": "none",
+            "integrity": {
+              "proxy_cpu_min_percent": 90,
+              "mock_cpu_max_percent": 160,
+              "load_generator_cpu_max_percent": 80
+            }
           },
           "requirements": {
             "platform": "linux",

@@ -2,7 +2,7 @@ import { resolveVersion } from "@litellm-bench/versions";
 import { Effect } from "effect";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildVersionMatrix, makeRunSpec, type SuiteBenchmark } from "./index.js";
+import { buildBenchmarkMatrix, makeRunSpec, type SuiteBenchmark } from "./index.js";
 
 const benchmark: SuiteBenchmark = {
   id: "sdk-import-time",
@@ -35,18 +35,30 @@ const benchmark: SuiteBenchmark = {
   },
 };
 
-test("builds reproducible version plans", async () => {
+test("plans one job per version and benchmark job", async () => {
   const matrix = await Effect.runPromise(
-    buildVersionMatrix([benchmark], "1.80.0,1.81.0", "all", "workflow-42"),
+    buildBenchmarkMatrix([benchmark], "1.80.0,1.81.0", "all"),
   );
 
-  assert.deepEqual(matrix.include.map(({ version }) => version).toSorted(), ["1.80.0", "1.81.0"]);
-  assert.deepEqual(matrix.include.map(({ comparison_order }) => comparison_order.position), [1, 2]);
-  assert.ok(
-    matrix.include.every(({ comparison_order }) =>
-      comparison_order.total === 2 && /^[a-f0-9]{64}$/.test(comparison_order.seed_sha256)
-    ),
-  );
+  assert.deepEqual(matrix.versions, ["1.80.0", "1.81.0"]);
+  assert.deepEqual(matrix.include, [
+    {
+      version: "1.80.0",
+      job_id: "sdk-import-time-1-80-0-base",
+      benchmark_id: "sdk-import-time",
+      benchmark_job: "base",
+      runner: "ubuntu-24.04",
+      needs_proxy: false,
+    },
+    {
+      version: "1.81.0",
+      job_id: "sdk-import-time-1-81-0-base",
+      benchmark_id: "sdk-import-time",
+      benchmark_job: "base",
+      runner: "ubuntu-24.04",
+      needs_proxy: false,
+    },
+  ]);
 });
 
 test("creates an identified run spec", async () => {
@@ -65,7 +77,7 @@ test("creates an identified run spec", async () => {
 
 test("rejects unknown benchmark selections", async () => {
   const result = await Effect.runPromiseExit(
-    buildVersionMatrix([benchmark], "1.80.0", "missing"),
+    buildBenchmarkMatrix([benchmark], "1.80.0", "missing"),
   );
   assert.equal(result._tag, "Failure");
   assert.match(String(result), /unknown benchmark ids: missing/);

@@ -259,8 +259,10 @@ it.effect("constructs the sweep and reports its bracketed sustainable capacity",
         }),
     }));
     const result = yield* runner.run(context);
-    expect(experiments[0].trials).toHaveLength(20);
-    expect(experiments[0].trials.filter((trial: any) => trial.bypassProxy)).toHaveLength(5);
+    expect(experiments.map((experiment) => experiment.trials.length)).toEqual([4, 16]);
+    expect(experiments[0].trials.every((trial: any) => trial.round === 1)).toBe(true);
+    const trials = experiments.flatMap((experiment) => experiment.trials);
+    expect(trials.filter((trial: any) => trial.bypassProxy)).toHaveLength(5);
     expect(result.metrics[0]?.value).toBe(20);
     expect(result.trials).toHaveLength(20);
   }));

@@ -51,10 +51,9 @@ const pngBytes = (value: unknown): Buffer | undefined => {
   const prefix = "data:image/png;base64,";
   if (typeof value !== "string" || !value.startsWith(prefix)) return undefined;
   const encoded = value.slice(prefix.length);
-  if (encoded.length === 0 || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
-    return undefined;
-  }
+  if (encoded.length === 0) return undefined;
   const bytes = Buffer.from(encoded, "base64");
+  // Re-encoding reproduces the input only for canonical base64 (alphabet, padding, no whitespace).
   if (bytes.toString("base64") !== encoded) return undefined;
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   if (!bytes.subarray(0, 8).equals(signature)) return undefined;
@@ -65,10 +64,11 @@ const pngBytes = (value: unknown): Buffer | undefined => {
     const length = bytes.readUInt32BE(offset);
     const end = offset + 12 + length;
     if (end > bytes.length) return undefined;
-    const type = bytes.subarray(offset + 4, offset + 8).toString("ascii");
+    const typeBytes = bytes.subarray(offset + 4, offset + 8);
+    const type = typeBytes.toString("ascii");
     const data = bytes.subarray(offset + 8, offset + 8 + length);
     const expectedCrc = bytes.readUInt32BE(offset + 8 + length);
-    const actualCrc = crc32(Buffer.concat([Buffer.from(type, "ascii"), data])) >>> 0;
+    const actualCrc = crc32(data, crc32(typeBytes)) >>> 0;
     if (actualCrc !== expectedCrc) return undefined;
     if (chunks === 0 && (type !== "IHDR" || length !== 13)) return undefined;
     if (type === "IDAT") sawIdat = true;
@@ -316,15 +316,12 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
                 detail: `missing or different headers: ${missingOrDifferent.join(", ")}`,
               });
             }
+            const exactBody = selected.fixture.body_match === "exact"
+              ? exactExpectedBody(selected.fixture, body as Record<string, unknown>)
+              : undefined;
             if (
-              selected.fixture.body_match === "exact"
-              && (
-                !matches(body, exactExpectedBody(selected.fixture, body as Record<string, unknown>))
-                || !matches(
-                  exactExpectedBody(selected.fixture, body as Record<string, unknown>),
-                  body as Json,
-                )
-              )
+              exactBody !== undefined
+              && (!matches(body, exactBody) || !matches(exactBody, body as Json))
             ) {
               return yield* new RequestMismatch({
                 reason: "request_body",
@@ -355,12 +352,43 @@ export const registryLayer = (input: unknown, pngExpectations: readonly PngExpec
 export class Statistics extends Context.Service<Statistics, Ref.Ref<MockStats>>()(
   "@litellm-bench/mock-provider/Statistics",
 ) {}
-export const statisticsLayer = Layer.effect(
-  Statistics,
-  Ref.make<MockStats>({ requests: 0, failures: 0, errors: {} }),
-);
+export const emptyStats: MockStats = { requests: 0, failures: 0, errors: {} };
+export const statisticsLayer = (statistics?: Ref.Ref<MockStats>) =>
+  Layer.effect(
+    Statistics,
+    statistics === undefined ? Ref.make(emptyStats) : Effect.succeed(statistics),
+  );
 
 const emptyStreams = { started: 0, completed: 0, cancelled: 0, failed: 0 };
+
+const sumRecords = (
+  left: Readonly<Record<string, number>>,
+  right: Readonly<Record<string, number>>,
+): Record<string, number> =>
+  Object.fromEntries(
+    [...new Set([...Object.keys(left), ...Object.keys(right)])].map((key) => [
+      key,
+      (left[key] ?? 0) + (right[key] ?? 0),
+    ]),
+  );
+
+/** Adds counters from sibling processes; stream stats appear only when some process reported them. */
+export const mergeStats = (left: MockStats, right: MockStats): MockStats => ({
+  requests: left.requests + right.requests,
+  failures: left.failures + right.failures,
+  errors: sumRecords(left.errors, right.errors),
+  ...(left.streams === undefined && right.streams === undefined ? {} : {
+    streams: {
+      started: (left.streams?.started ?? 0) + (right.streams?.started ?? 0),
+      completed: (left.streams?.completed ?? 0) + (right.streams?.completed ?? 0),
+      cancelled: (left.streams?.cancelled ?? 0) + (right.streams?.cancelled ?? 0),
+      failed: (left.streams?.failed ?? 0) + (right.streams?.failed ?? 0),
+    },
+  }),
+  ...(left.last_mismatch === undefined
+    ? right.last_mismatch === undefined ? {} : { last_mismatch: right.last_mismatch }
+    : { last_mismatch: left.last_mismatch }),
+});
 const streamStat = (stats: Ref.Ref<MockStats>, key: keyof typeof emptyStreams) =>
   Ref.update(stats, (current) => ({
     ...current,
@@ -384,97 +412,105 @@ export const pacedStream = (
     Stream.flatMap(Stream.fromIterable),
   );
 
-const application = Effect.gen(function*() {
-  const registry = yield* OperationRegistry;
-  const stats = yield* Statistics;
-  const router = yield* HttpRouter.make;
-  yield* router.add(
-    "GET",
-    "/__stats",
-    Ref.get(stats).pipe(Effect.map(HttpServerResponse.jsonUnsafe)),
-  );
-  yield* router.add(
-    "*",
-    "/*",
-    Effect.gen(function*() {
-      const request = yield* HttpServerRequest.HttpServerRequest;
-      yield* Ref.update(stats, (current) => ({ ...current, requests: current.requests + 1 }));
-      const body = request.method === "GET" || request.method === "HEAD"
-        ? {}
-        : yield* request.json.pipe(Effect.catch(() => Effect.succeed(undefined)));
-      return yield* registry.select(request.method, request.url, body, request.headers).pipe(
-        Effect.flatMap(({ fixture, bytes }) =>
-          Effect.gen(function*() {
-            const response = fixture.response;
-            const options = { status: response.status ?? 200, headers: response.headers ?? {} };
-            if (response.kind === "json") {
-              yield* Effect.sleep(response.timing.response_delay_ms);
-              return HttpServerResponse.uint8Array(bytes[0]![0]!, {
-                ...options,
-                contentType: "application/json",
-              });
-            }
-            yield* streamStat(stats, "started");
-            const stream = pacedStream(bytes, response.timing).pipe(
-              Stream.onExit((exit) =>
-                streamStat(
-                  stats,
-                  Exit.isSuccess(exit)
-                    ? "completed"
-                    : Exit.hasInterrupts(exit)
-                    ? "cancelled"
-                    : "failed",
-                )
-              ),
-            );
-            return HttpServerResponse.stream(stream, {
-              ...options,
-              contentType: "text/event-stream",
-              headers: {
-                "cache-control": "no-cache",
-                "x-accel-buffering": "no",
-                ...options.headers,
-              },
-            });
-          })
-        ),
-        Effect.catchTag(
-          "RequestMismatch",
-          ({ detail, operationId, reason }) =>
+const application = (readStats: (local: MockStats) => Effect.Effect<MockStats>) =>
+  Effect.gen(function*() {
+    const registry = yield* OperationRegistry;
+    const stats = yield* Statistics;
+    const router = yield* HttpRouter.make;
+    yield* router.add(
+      "GET",
+      "/__stats",
+      Ref.get(stats).pipe(Effect.flatMap(readStats), Effect.map(HttpServerResponse.jsonUnsafe)),
+    );
+    yield* router.add(
+      "*",
+      "/*",
+      Effect.gen(function*() {
+        const request = yield* HttpServerRequest.HttpServerRequest;
+        yield* Ref.update(stats, (current) => ({ ...current, requests: current.requests + 1 }));
+        const body = request.method === "GET" || request.method === "HEAD"
+          ? {}
+          : yield* request.json.pipe(Effect.catch(() => Effect.succeed(undefined)));
+        return yield* registry.select(request.method, request.url, body, request.headers).pipe(
+          Effect.flatMap(({ fixture, bytes }) =>
             Effect.gen(function*() {
-              const diagnostic: RequestMismatchDiagnostic = {
-                reason,
-                method: request.method,
-                path: request.url,
-                ...(operationId === undefined ? {} : { operation_id: operationId }),
-                detail,
-              };
-              yield* Ref.update(stats, (current) => ({
-                ...current,
-                failures: current.failures + 1,
-                errors: { ...current.errors, [reason]: (current.errors[reason] ?? 0) + 1 },
-                last_mismatch: diagnostic,
-              }));
-              return HttpServerResponse.jsonUnsafe({ error: reason }, { status: 422 });
-            }),
-        ),
-      );
-    }),
-  );
-  return router.asHttpEffect();
-});
+              const response = fixture.response;
+              const options = { status: response.status ?? 200, headers: response.headers ?? {} };
+              if (response.kind === "json") {
+                yield* Effect.sleep(response.timing.response_delay_ms);
+                return HttpServerResponse.uint8Array(bytes[0]![0]!, {
+                  ...options,
+                  contentType: "application/json",
+                });
+              }
+              yield* streamStat(stats, "started");
+              const stream = pacedStream(bytes, response.timing).pipe(
+                Stream.onExit((exit) =>
+                  streamStat(
+                    stats,
+                    Exit.isSuccess(exit)
+                      ? "completed"
+                      : Exit.hasInterrupts(exit)
+                      ? "cancelled"
+                      : "failed",
+                  )
+                ),
+              );
+              return HttpServerResponse.stream(stream, {
+                ...options,
+                contentType: "text/event-stream",
+                headers: {
+                  "cache-control": "no-cache",
+                  "x-accel-buffering": "no",
+                  ...options.headers,
+                },
+              });
+            })
+          ),
+          Effect.catchTag(
+            "RequestMismatch",
+            ({ detail, operationId, reason }) =>
+              Effect.gen(function*() {
+                const diagnostic: RequestMismatchDiagnostic = {
+                  reason,
+                  method: request.method,
+                  path: request.url,
+                  ...(operationId === undefined ? {} : { operation_id: operationId }),
+                  detail,
+                };
+                yield* Ref.update(stats, (current) => ({
+                  ...current,
+                  failures: current.failures + 1,
+                  errors: { ...current.errors, [reason]: (current.errors[reason] ?? 0) + 1 },
+                  last_mismatch: diagnostic,
+                }));
+                return HttpServerResponse.jsonUnsafe({ error: reason }, { status: 422 });
+              }),
+          ),
+        );
+      }),
+    );
+    return router.asHttpEffect();
+  });
 
 export interface MockServerOptions {
   readonly port?: number;
   readonly host?: string;
   readonly pngExpectations?: readonly PngExpectation[];
+  /** Counters this server increments; supply one to observe them outside the request path. */
+  readonly statistics?: Ref.Ref<MockStats>;
+  /** Combines this process's counters with sibling processes' before `/__stats` answers. */
+  readonly readStats?: (local: MockStats) => Effect.Effect<MockStats>;
 }
 
 /** Acquire a server in the caller's scope; closing that scope interrupts active requests. */
 export const createMockServer = (fixture: unknown, options: MockServerOptions = {}) =>
   Effect.gen(function*() {
-    const app = yield* application.pipe(
-      Effect.provide(Layer.merge(registryLayer(fixture, options.pngExpectations), statisticsLayer)),
+    const app = yield* application(options.readStats ?? Effect.succeed).pipe(
+      Effect.provide(Layer.merge(
+        registryLayer(fixture, options.pngExpectations),
+        statisticsLayer(options.statistics),
+      )),
     );
     const server = yield* NodeHttpServer.make(createServer, {
       port: options.port ?? 8080,

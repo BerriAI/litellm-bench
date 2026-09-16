@@ -132,6 +132,7 @@ const runLive = <A, E>(
 const fakeDocker = (
   events: string[],
   stats: Record<string, unknown> = { requests: 1, failures: 0, errors: {} },
+  specs: DockerContainerSpec[] = [],
 ): DockerEngineShape => ({
   verify: Effect.succeed({
     version: "27.1",
@@ -152,6 +153,7 @@ const fakeDocker = (
     Effect.acquireRelease(
       Effect.sync(() => {
         events.push(`start container ${spec.name}`);
+        specs.push(spec);
         const container: DockerContainer = {
           name: spec.name,
           exec: (args) => {
@@ -556,6 +558,34 @@ describe("proxy runtime", () => {
     expect(raw.trials[0]?.client?.result?.warmup_requests).toBe(1);
     expect(raw.trials[0]?.telemetry?.window).toMatch(/^post-warmup measurement process and drain/);
     expect(raw.trials[0]?.telemetry?.peak_memory_bytes).toBe(30);
+  });
+
+  it("sizes the mock cluster from the mock CPU quota", async () => {
+    const base = await temporaryExperiment();
+    const experiment: ProxyExperiment = {
+      ...base,
+      resources: { ...base.resources, mockCpus: 2 },
+    };
+    const k6: K6Shape = {
+      verify: Effect.succeed("k6 v2.2.0 (test)"),
+      run: (request) => Effect.succeed(successfulMeasurement(request.artifactsDirectory)),
+    };
+    const mockEnvironments = async (candidate: ProxyExperiment, network: string) => {
+      const specs: DockerContainerSpec[] = [];
+      await runLive(runProxyExperiment(fakeDocker([], undefined, specs), k6, candidate, {
+        networkName: () => network,
+        readinessRequest: async () => ({ ok: true, status: 200 }),
+      }));
+      return specs.filter((spec) => spec.name.endsWith("-mock")).map((spec) => spec.environment);
+    };
+    expect(await mockEnvironments(experiment, "bench-workers")).toEqual([
+      { MOCK_FIXTURE: "/fixture.json", MOCK_WORKERS: "2" },
+      { MOCK_FIXTURE: "/fixture.json", MOCK_WORKERS: "2" },
+    ]);
+    expect(await mockEnvironments(base, "bench-single")).toEqual([
+      { MOCK_FIXTURE: "/fixture.json" },
+      { MOCK_FIXTURE: "/fixture.json" },
+    ]);
   });
 
   it("accepts version 2 fixtures through the shared preflight decoder", async () => {

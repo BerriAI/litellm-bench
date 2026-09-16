@@ -11,14 +11,14 @@ inputs:
   default_branch:
     description: Repository default branch
     required: true
-  order_seed:
-    description: Seed used to shuffle version order
-    required: true
 
 outputs:
   matrix:
-    description: Benchmark job matrix
+    description: Benchmark job matrix with one entry per (version, benchmark job)
     value: ${{ steps.plan.outputs.matrix }}
+  versions:
+    description: JSON array of the planned LiteLLM versions
+    value: ${{ steps.plan.outputs.versions }}
   has_jobs:
     description: Whether the matrix contains benchmark jobs
     value: ${{ steps.plan.outputs.has_jobs }}
@@ -41,11 +41,9 @@ runs:
       env:
         REQUESTED_VERSIONS: ${{ inputs.versions }}
         BACKFILL_MONTHS: ${{ inputs.backfill_months }}
-        ORDER_SEED: ${{ inputs.order_seed }}
       run: |
         args=(
           pnpm bench plan
-          --order-seed "$ORDER_SEED"
           --github-output "$GITHUB_OUTPUT"
         )
         if [[ -n "$REQUESTED_VERSIONS" ]]; then

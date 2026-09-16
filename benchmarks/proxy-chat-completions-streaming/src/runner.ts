@@ -1,5 +1,5 @@
 import { type BenchmarkRunner, type RunContext } from "@litellm-bench/harness";
-import { ProxyEnvironment, runWithRoundRetries } from "@litellm-bench/proxy";
+import { measurementIssue, ProxyEnvironment, runWithRoundRetries } from "@litellm-bench/proxy";
 import { Effect, Path } from "effect";
 import { decodeStreamingChatRun } from "./config.js";
 import { makeStreamingChatExperiment } from "./experiment.js";
@@ -20,7 +20,7 @@ export const makeStreamingChatCompletionsRunner: Effect.Effect<
         run: environment.run,
         experiment: makeStreamingChatExperiment(context, config, subject.image),
         maximumAttempts: config.retry_attempts,
-        issue: (trial) => trialRetryIssue(trial, config),
+        issue: (trial) => measurementIssue(trialRetryIssue(trial, config)),
         metadataKey: "round_retries",
       }).pipe(Effect.provideService(Path.Path, path));
       return yield* buildStreamingChatResult(context, raw, config);
