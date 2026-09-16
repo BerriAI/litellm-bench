@@ -1,5 +1,5 @@
 {
-  "record_id": "c89307343191df6dce871a2e969f9a23a467e6dbfc3d0a49267bf04f389a223f",
+  "record_id": "16fad650011cb734dedf5dc6d653681f05d3208fc0bd3ef159bb783018e873d8",
   "case_id": "c3a9687fdc73cec751d3849d5ce66f3c6739a0a0cf026762db5bfb489e4e1da6",
   "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
   "identity": {
@@ -127,8 +127,8 @@
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
     "workflow": ".github/workflows/benchmark.yml",
-    "workflow_run_id": "34877399985",
-    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
+    "workflow_run_id": "35109065726",
+    "commit": "cf7fb81268c52e2fe73dbe39eea23dbd93e5dcf9",
     "ref": "refs/heads/main"
   },
   "spec": {
@@ -277,8 +277,8 @@
     }
   },
   "result": {
-    "run_id": "f490ff07-8a58-43c7-aaf5-240372ddcaec",
-    "created_at": "2026-09-14T21:25:15.471Z",
+    "run_id": "9835a686-bf48-46a5-95c7-3016023bae7b",
+    "created_at": "2026-09-16T14:32:17.891Z",
     "case_id": "c3a9687fdc73cec751d3849d5ce66f3c6739a0a0cf026762db5bfb489e4e1da6",
     "comparison_id": "69c4349fd5fbd19c78caaede8af2eab672ee2944b8db334ed2ff5ded23e3eb1a",
     "benchmark": {
@@ -419,11 +419,16 @@
         "host": "github-hosted",
         "node_version": "v24.20.0",
         "ci": true,
+        "kernel_release": "6.17.0-1022-azure",
+        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "cpu_count": 4,
+        "memory_total_bytes": 16765378560,
+        "load_average_1m": 0.87,
         "python_version": "3.12.10",
         "python_implementation": "CPython"
       },
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-2SHich/resolver/lib/python3.12/site-packages/pip (python 3.12)"
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-uGFcRS/resolver/lib/python3.12/site-packages/pip (python 3.12)"
     },
     "metrics": [
       {
@@ -436,14 +441,14 @@
       {
         "id": "package.download",
         "label": "Dependency download closure",
-        "value": 59.00205612182617,
+        "value": 59.19635581970215,
         "unit": "MiB",
         "better": "lower"
       },
       {
         "id": "package.installed",
         "label": "Installed RECORD footprint before import",
-        "value": 159.3467435836792,
+        "value": 160.04366207122803,
         "unit": "MiB",
         "better": "lower"
       },
@@ -463,14 +468,14 @@
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-2SHich/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-uGFcRS/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
       "diagnostics": {},
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61868140,
+        "download_bytes": 62071878,
         "package_artifact_bytes": 24190393,
         "artifacts": [
           {
@@ -504,14 +509,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.94-py3-none-any.whl",
-            "bytes": 140023,
-            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
+            "filename": "boto3-1.43.95-py3-none-any.whl",
+            "bytes": 140026,
+            "sha256": "c906921c4f9ab41e9587af6586f072c8f2be6979e8bde2ec26aa443bb1745019"
           },
           {
-            "filename": "botocore-1.43.94-py3-none-any.whl",
-            "bytes": 15797479,
-            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
+            "filename": "botocore-1.43.95-py3-none-any.whl",
+            "bytes": 15800616,
+            "sha256": "0fda26d16c7c7bf7082c421390a817b696f98a43d3da7c43dbbb093f76662876"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -539,9 +544,9 @@
             "sha256": "808527f2407f58a76c916d6aa15d58692a4a019fdf8d4c32ac7ff303b7d7af09"
           },
           {
-            "filename": "filelock-3.32.6-py3-none-any.whl",
-            "bytes": 100189,
-            "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+            "filename": "filelock-3.32.7-py3-none-any.whl",
+            "bytes": 100157,
+            "sha256": "65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52"
           },
           {
             "filename": "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
@@ -639,9 +644,9 @@
             "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
           },
           {
-            "filename": "propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 61639,
-            "sha256": "6f328175a2cde1f0ff2c4ed8ce968b9dcfb55f3a7153f39e2957ed994da13476"
+            "filename": "propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 250424,
+            "sha256": "2814ecd8e818f487bee4b0f921bc4d1c176cc5fc71ac0f072d0fa67eda4ac14b"
           },
           {
             "filename": "pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
@@ -734,14 +739,14 @@
             "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
           },
           {
-            "filename": "urllib3-2.7.0-py3-none-any.whl",
-            "bytes": 131087,
-            "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
+            "filename": "urllib3-2.8.0-py3-none-any.whl",
+            "bytes": 135717,
+            "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
           },
           {
-            "filename": "yarl-1.24.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 109835,
-            "sha256": "f08c7513ecef5aad65687bfdf6bc601ae9fccd04a42904501f8f7141abad9eb9"
+            "filename": "yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 117050,
+            "sha256": "c6f117789d22dce188e5754e8bc65b7e6ebf8cb73963b9fa761f672a5883769d"
           },
           {
             "filename": "zipp-4.1.0-py3-none-any.whl",
@@ -764,7 +769,7 @@
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 167087171
+          "logical_bytes": 167817943
         }
       }
     },

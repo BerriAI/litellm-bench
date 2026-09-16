@@ -1,7 +1,7 @@
 {
-  "record_id": "a7180859653df8b491a4e3990dabbc87c19c3b278b6151e4045dd7539d4d1212",
-  "case_id": "9ae090e8e55b9b6eb98359f5777b59538d94b4877742e6d3dbf86428f554044b",
-  "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+  "record_id": "fd2e73cfb85d1e21da240c397ffeede6b3e45ed6ae27a18e287a1aac14a728e1",
+  "case_id": "acc4da268af490486ef484454520bc6d305cd4338fe56071f2a8db4933aa0d35",
+  "comparison_id": "0028746def7eb3c98ba190c4ff4000f6b5e72c243159d4c66c9ce1e521af60bc",
   "identity": {
     "domain": "case",
     "benchmark_id": "sdk-import-time",
@@ -85,7 +85,7 @@
       "validity": {
         "trial": "The isolated process must exit successfully",
         "outliers": "Do not remove samples",
-        "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+        "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation. Every timed process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the import reads the bundled model cost map instead of fetching the live one over the network inside the timed region."
       }
     },
     "job": {
@@ -104,6 +104,9 @@
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         }
       },
       "requirements": {
@@ -125,13 +128,13 @@
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
     "workflow": ".github/workflows/benchmark.yml",
-    "workflow_run_id": "34877399985",
-    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
+    "workflow_run_id": "35109065726",
+    "commit": "cf7fb81268c52e2fe73dbe39eea23dbd93e5dcf9",
     "ref": "refs/heads/main"
   },
   "spec": {
-    "case_id": "9ae090e8e55b9b6eb98359f5777b59538d94b4877742e6d3dbf86428f554044b",
-    "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+    "case_id": "acc4da268af490486ef484454520bc6d305cd4338fe56071f2a8db4933aa0d35",
+    "comparison_id": "0028746def7eb3c98ba190c4ff4000f6b5e72c243159d4c66c9ce1e521af60bc",
     "benchmark": {
       "id": "sdk-import-time",
       "label": "Fresh-process LiteLLM import time",
@@ -165,7 +168,7 @@
       ],
       "protocol": {
         "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
+        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True, so it excludes the time a live model-cost-map fetch would add.",
         "experimental_unit": "One fresh isolated Python process executing import litellm",
         "scenarios": [
           {
@@ -222,7 +225,7 @@
         "validity": {
           "trial": "The isolated process must exit successfully",
           "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation. Every timed process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the import reads the bundled model cost map instead of fetching the live one over the network inside the timed region."
         }
       }
     },
@@ -244,6 +247,9 @@
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         }
       },
       "requirements": {
@@ -271,10 +277,10 @@
     }
   },
   "result": {
-    "run_id": "26329618-f0ac-421d-ba29-dfef9bf94a28",
-    "created_at": "2026-09-14T21:23:38.328Z",
-    "case_id": "9ae090e8e55b9b6eb98359f5777b59538d94b4877742e6d3dbf86428f554044b",
-    "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+    "run_id": "1ffd4cf7-bdc5-4cb6-8e35-9332ad1ca8f5",
+    "created_at": "2026-09-16T14:32:15.488Z",
+    "case_id": "acc4da268af490486ef484454520bc6d305cd4338fe56071f2a8db4933aa0d35",
+    "comparison_id": "0028746def7eb3c98ba190c4ff4000f6b5e72c243159d4c66c9ce1e521af60bc",
     "benchmark": {
       "id": "sdk-import-time",
       "label": "Fresh-process LiteLLM import time",
@@ -308,7 +314,7 @@
       ],
       "protocol": {
         "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
+        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True, so it excludes the time a live model-cost-map fetch would add.",
         "experimental_unit": "One fresh isolated Python process executing import litellm",
         "scenarios": [
           {
@@ -365,7 +371,7 @@
         "validity": {
           "trial": "The isolated process must exit successfully",
           "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation. Every timed process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the import reads the bundled model cost map instead of fetching the live one over the network inside the timed region."
         }
       }
     },
@@ -387,6 +393,9 @@
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
+        },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
         }
       },
       "requirements": {
@@ -409,48 +418,53 @@
         "host": "github-hosted",
         "node_version": "v24.20.0",
         "ci": true,
+        "kernel_release": "6.17.0-1022-azure",
+        "cpu_model": "AMD EPYC 7763 64-Core Processor",
+        "cpu_count": 4,
+        "memory_total_bytes": 16766414848,
+        "load_average_1m": 0.28,
         "python_version": "3.12.10",
         "python_implementation": "CPython"
       },
       "python_version": "3.12.10",
       "python_implementation": "CPython",
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-4NcQ6S/resolver/lib/python3.12/site-packages/pip (python 3.12)",
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-niXXXa/resolver/lib/python3.12/site-packages/pip (python 3.12)",
       "timer": "python-time-perf-counter-subprocess-run"
     },
     "metrics": [
       {
         "id": "import.median",
         "label": "Median fresh import",
-        "value": 3323.9424604989836,
+        "value": 2874.1590825000003,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.p95",
         "label": "p95 fresh import",
-        "value": 3425.2308909999556,
+        "value": 2920.148376000043,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.minimum",
         "label": "Minimum fresh import",
-        "value": 3022.9849019997346,
+        "value": 2850.8912409999994,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.maximum",
         "label": "Maximum fresh import",
-        "value": 3431.54961899927,
+        "value": 2928.4222320000026,
         "unit": "ms",
         "better": "lower"
       },
       {
         "id": "import.first",
         "label": "First import in prepared environment",
-        "value": 6332.991690000199,
+        "value": 5534.799848000034,
         "unit": "ms",
         "better": "lower"
       }
@@ -461,7 +475,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3418.344851999791
+          "import_duration_ms": 2871.705909999946
         },
         "attempt": 1
       },
@@ -470,7 +484,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3358.5786889998417
+          "import_duration_ms": 2928.4222320000026
         },
         "attempt": 2
       },
@@ -479,7 +493,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3355.1760440004728
+          "import_duration_ms": 2850.8912409999994
         },
         "attempt": 3
       },
@@ -488,7 +502,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3320.658899998307
+          "import_duration_ms": 2898.247709999964
         },
         "attempt": 4
       },
@@ -497,7 +511,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3307.4903310007358
+          "import_duration_ms": 2877.7796379999927
         },
         "attempt": 5
       },
@@ -506,7 +520,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3275.5701540008886
+          "import_duration_ms": 2897.561666999991
         },
         "attempt": 6
       },
@@ -515,7 +529,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3216.6093999985605
+          "import_duration_ms": 2872.641900000076
         },
         "attempt": 7
       },
@@ -524,7 +538,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3375.580041998546
+          "import_duration_ms": 2882.624344999954
         },
         "attempt": 8
       },
@@ -533,7 +547,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3231.5634850001516
+          "import_duration_ms": 2889.726238000094
         },
         "attempt": 9
       },
@@ -542,7 +556,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3319.0157410008396
+          "import_duration_ms": 2868.5929040000246
         },
         "attempt": 10
       },
@@ -551,7 +565,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3236.3304130012693
+          "import_duration_ms": 2869.3906190000007
         },
         "attempt": 11
       },
@@ -560,7 +574,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3327.2260209996602
+          "import_duration_ms": 2867.493742000079
         },
         "attempt": 12
       },
@@ -569,7 +583,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3378.3614530002524
+          "import_duration_ms": 2852.5697580000724
         },
         "attempt": 13
       },
@@ -578,7 +592,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3022.9849019997346
+          "import_duration_ms": 2894.461379000063
         },
         "attempt": 14
       },
@@ -587,7 +601,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3300.90528600158
+          "import_duration_ms": 2866.414029999987
         },
         "attempt": 15
       },
@@ -596,7 +610,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3425.2308909999556
+          "import_duration_ms": 2920.148376000043
         },
         "attempt": 16
       },
@@ -605,7 +619,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3383.8671389985393
+          "import_duration_ms": 2874.503408999999
         },
         "attempt": 17
       },
@@ -614,7 +628,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3431.54961899927
+          "import_duration_ms": 2879.784713999925
         },
         "attempt": 18
       },
@@ -623,7 +637,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3411.309404000349
+          "import_duration_ms": 2873.8147560000016
         },
         "attempt": 19
       },
@@ -632,7 +646,7 @@
         "scenario": "root-import",
         "valid": true,
         "measurements": {
-          "import_duration_ms": 3319.8782079998637
+          "import_duration_ms": 2869.251009999971
         },
         "attempt": 20
       }
@@ -647,10 +661,10 @@
           "scenario": "root-import",
           "summary": {
             "attempt_count": 20,
-            "minimum": 3022.9849019997346,
-            "median": 3323.9424604989836,
-            "p95": 3425.2308909999556,
-            "maximum": 3431.54961899927
+            "minimum": 2850.8912409999994,
+            "median": 2874.1590825000003,
+            "p95": 2920.148376000043,
+            "maximum": 2928.4222320000026
           }
         }
       }
@@ -662,51 +676,51 @@
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-4NcQ6S/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-niXXXa/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
       "timing": {
-        "first_ever_process_seconds": 6.332991690000199,
+        "first_ever_process_seconds": 5.534799848000034,
         "warmup_samples_seconds": [
-          3.414937187999385,
-          3.2826869180007634,
-          3.423051325000415
+          2.911123155000041,
+          2.854765892000046,
+          2.8578170620000947
         ],
         "fresh_process": {
           "count": 20,
           "samples_seconds": [
-            3.418344851999791,
-            3.3585786889998417,
-            3.3551760440004728,
-            3.320658899998307,
-            3.3074903310007358,
-            3.2755701540008886,
-            3.2166093999985605,
-            3.375580041998546,
-            3.2315634850001516,
-            3.3190157410008396,
-            3.2363304130012693,
-            3.3272260209996602,
-            3.3783614530002524,
-            3.0229849019997346,
-            3.30090528600158,
-            3.4252308909999556,
-            3.3838671389985393,
-            3.43154961899927,
-            3.411309404000349,
-            3.3198782079998637
+            2.871705909999946,
+            2.9284222320000026,
+            2.8508912409999994,
+            2.898247709999964,
+            2.8777796379999927,
+            2.897561666999991,
+            2.872641900000076,
+            2.882624344999954,
+            2.889726238000094,
+            2.8685929040000246,
+            2.8693906190000007,
+            2.867493742000079,
+            2.8525697580000724,
+            2.894461379000063,
+            2.866414029999987,
+            2.920148376000043,
+            2.874503408999999,
+            2.879784713999925,
+            2.8738147560000016,
+            2.869251009999971
           ],
-          "minimum_seconds": 3.0229849019997346,
-          "median_seconds": 3.3239424604989836,
-          "p95_seconds": 3.4252308909999556,
-          "maximum_seconds": 3.43154961899927
+          "minimum_seconds": 2.8508912409999994,
+          "median_seconds": 2.8741590825000003,
+          "p95_seconds": 2.920148376000043,
+          "maximum_seconds": 2.9284222320000026
         }
       },
       "diagnostics": {},
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61868140,
+        "download_bytes": 62071878,
         "artifacts": [
           {
             "filename": "aiohappyeyeballs-2.7.1-py3-none-any.whl",
@@ -739,14 +753,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.94-py3-none-any.whl",
-            "bytes": 140023,
-            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
+            "filename": "boto3-1.43.95-py3-none-any.whl",
+            "bytes": 140026,
+            "sha256": "c906921c4f9ab41e9587af6586f072c8f2be6979e8bde2ec26aa443bb1745019"
           },
           {
-            "filename": "botocore-1.43.94-py3-none-any.whl",
-            "bytes": 15797479,
-            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
+            "filename": "botocore-1.43.95-py3-none-any.whl",
+            "bytes": 15800616,
+            "sha256": "0fda26d16c7c7bf7082c421390a817b696f98a43d3da7c43dbbb093f76662876"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -774,9 +788,9 @@
             "sha256": "808527f2407f58a76c916d6aa15d58692a4a019fdf8d4c32ac7ff303b7d7af09"
           },
           {
-            "filename": "filelock-3.32.6-py3-none-any.whl",
-            "bytes": 100189,
-            "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+            "filename": "filelock-3.32.7-py3-none-any.whl",
+            "bytes": 100157,
+            "sha256": "65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52"
           },
           {
             "filename": "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
@@ -874,9 +888,9 @@
             "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
           },
           {
-            "filename": "propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 61639,
-            "sha256": "6f328175a2cde1f0ff2c4ed8ce968b9dcfb55f3a7153f39e2957ed994da13476"
+            "filename": "propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 250424,
+            "sha256": "2814ecd8e818f487bee4b0f921bc4d1c176cc5fc71ac0f072d0fa67eda4ac14b"
           },
           {
             "filename": "pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
@@ -969,14 +983,14 @@
             "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
           },
           {
-            "filename": "urllib3-2.7.0-py3-none-any.whl",
-            "bytes": 131087,
-            "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
+            "filename": "urllib3-2.8.0-py3-none-any.whl",
+            "bytes": 135717,
+            "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
           },
           {
-            "filename": "yarl-1.24.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 109835,
-            "sha256": "f08c7513ecef5aad65687bfdf6bc601ae9fccd04a42904501f8f7141abad9eb9"
+            "filename": "yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 117050,
+            "sha256": "c6f117789d22dce188e5754e8bc65b7e6ebf8cb73963b9fa761f672a5883769d"
           },
           {
             "filename": "zipp-4.1.0-py3-none-any.whl",
@@ -987,12 +1001,12 @@
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 167089602
+          "logical_bytes": 167820374
         },
         "installed_after_first_run": {
-          "logical_bytes": 184933870
+          "logical_bytes": 185247714
         },
-        "first_run_logical_delta_bytes": 17844268
+        "first_run_logical_delta_bytes": 17427340
       }
     },
     "status": "ok"
