@@ -1,39 +1,29 @@
 {
-  "record_id": "4cbfa0e43cc5a5d0a8ecb6f138bf171c30211b6618af278b312fe83409dc8866",
-  "case_id": "6e1cbb398685e2e47f97b87b7c52062cbe24da420d819bd479fd68f3feb2bfe2",
-  "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+  "record_id": "9b1dda9ccaba16632d9dc6fe254937934fc792cfd0b8919fcb114a7d090a01eb",
+  "case_id": "cdb29a52d0bd10e40aaf43bd1cc7fae65ef43ab5247ac5bc1789800bd431a809",
+  "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
   "identity": {
     "domain": "case",
-    "benchmark_id": "sdk-import-time",
+    "benchmark_id": "sdk-import-footprint",
     "output_metrics": [
       {
-        "id": "import.median",
-        "unit": "ms",
+        "id": "import.peak_rss",
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.p95",
-        "unit": "ms",
+        "id": "import.loaded_modules",
+        "unit": "modules",
         "better": "lower"
       },
       {
-        "id": "import.minimum",
-        "unit": "ms",
-        "better": "lower"
-      },
-      {
-        "id": "import.maximum",
-        "unit": "ms",
-        "better": "lower"
-      },
-      {
-        "id": "import.first",
-        "unit": "ms",
+        "id": "import.disk_growth",
+        "unit": "MiB",
         "better": "lower"
       }
     ],
     "protocol": {
-      "experimental_unit": "One fresh isolated Python process executing import litellm",
+      "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
       "scenarios": [
         {
           "id": "root-import",
@@ -43,49 +33,43 @@
           }
         }
       ],
-      "attempts": {
-        "count": 20,
-        "count_from": "measurements.samples",
-        "retention": "Retain every sample in execution order",
-        "unit": "fresh-process sample",
-        "warmups": 3
-      },
       "measurements": [
         {
-          "id": "import_duration_ms",
-          "unit": "ms",
+          "id": "import.peak_rss",
+          "unit": "MiB",
           "role": "primary",
           "better": "lower"
         },
         {
-          "id": "first_import_duration_ms",
-          "unit": "ms",
+          "id": "import.loaded_modules",
+          "unit": "modules",
+          "role": "secondary",
+          "better": "lower"
+        },
+        {
+          "id": "import.disk_growth",
+          "unit": "MiB",
           "role": "secondary",
           "better": "lower"
         }
       ],
       "analyses": [
         {
-          "id": "fresh_import_distribution",
-          "measurement": "import_duration_ms",
-          "group_by": [
-            "scenario"
+          "id": "instrumented_import",
+          "measurement": "import.peak_rss",
+          "additional_measurements": [
+            "import.loaded_modules",
+            "import.disk_growth"
           ],
-          "aggregation": "median and nearest-rank p95",
-          "report": [
-            "all_samples",
-            "minimum",
-            "median",
-            "p95",
-            "maximum",
-            "attempt_count"
-          ]
+          "scenarios": [
+            "root-import"
+          ],
+          "aggregation": "single observation"
         }
       ],
       "validity": {
-        "trial": "The isolated process must exit successfully",
-        "outliers": "Do not remove samples",
-        "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+        "trial": "The instrumented import must exit successfully",
+        "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
       }
     },
     "job": {
@@ -96,18 +80,21 @@
           "name": "root-import",
           "statement": "import litellm"
         },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
+        },
         "measurements": {
-          "warmups": 3,
-          "samples": 20,
-          "timing": true,
-          "diagnostics": false,
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
         }
       },
       "requirements": {
-        "python": "3.12",
+        "python": "3.12.10",
         "tools": [
           "uv"
         ]
@@ -125,48 +112,38 @@
     "provider": "github-actions",
     "repository": "BerriAI/litellm-bench",
     "workflow": ".github/workflows/benchmark.yml",
-    "workflow_run_id": "34877399985",
-    "commit": "f7f7e4d374939c26dc80cbbd46a5dc5ab287e1f9",
+    "workflow_run_id": "35109065726",
+    "commit": "cf7fb81268c52e2fe73dbe39eea23dbd93e5dcf9",
     "ref": "refs/heads/main"
   },
   "spec": {
-    "case_id": "6e1cbb398685e2e47f97b87b7c52062cbe24da420d819bd479fd68f3feb2bfe2",
-    "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+    "case_id": "cdb29a52d0bd10e40aaf43bd1cc7fae65ef43ab5247ac5bc1789800bd431a809",
+    "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
     "benchmark": {
-      "id": "sdk-import-time",
-      "label": "Fresh-process LiteLLM import time",
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
       "kind": "sdk",
       "output_metrics": [
         {
-          "id": "import.median",
-          "unit": "ms",
+          "id": "import.peak_rss",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.p95",
-          "unit": "ms",
+          "id": "import.loaded_modules",
+          "unit": "modules",
           "better": "lower"
         },
         {
-          "id": "import.minimum",
-          "unit": "ms",
-          "better": "lower"
-        },
-        {
-          "id": "import.maximum",
-          "unit": "ms",
-          "better": "lower"
-        },
-        {
-          "id": "import.first",
-          "unit": "ms",
+          "id": "import.disk_growth",
+          "unit": "MiB",
           "better": "lower"
         }
       ],
       "protocol": {
-        "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
-        "experimental_unit": "One fresh isolated Python process executing import litellm",
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
             "id": "root-import",
@@ -177,52 +154,47 @@
             }
           }
         ],
-        "attempts": {
-          "count": 20,
-          "count_from": "measurements.samples",
-          "retention": "Retain every sample in execution order",
-          "unit": "fresh-process sample",
-          "warmups": 3
-        },
         "measurements": [
           {
-            "id": "import_duration_ms",
-            "label": "Fresh-process wall time",
-            "unit": "ms",
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
+            "unit": "MiB",
             "role": "primary",
             "better": "lower"
           },
           {
-            "id": "first_import_duration_ms",
-            "label": "First process in the prepared environment",
-            "unit": "ms",
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
+            "unit": "MiB",
             "role": "secondary",
             "better": "lower"
           }
         ],
         "analyses": [
           {
-            "id": "fresh_import_distribution",
-            "label": "Fresh-process import distribution",
-            "measurement": "import_duration_ms",
-            "group_by": [
-              "scenario"
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
+            "additional_measurements": [
+              "import.loaded_modules",
+              "import.disk_growth"
             ],
-            "aggregation": "median and nearest-rank p95",
-            "report": [
-              "all_samples",
-              "minimum",
-              "median",
-              "p95",
-              "maximum",
-              "attempt_count"
-            ]
+            "scenarios": [
+              "root-import"
+            ],
+            "aggregation": "single observation"
           }
         ],
         "validity": {
-          "trial": "The isolated process must exit successfully",
-          "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       }
     },
@@ -236,18 +208,21 @@
           "name": "root-import",
           "statement": "import litellm"
         },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
+        },
         "measurements": {
-          "warmups": 3,
-          "samples": 20,
-          "timing": true,
-          "diagnostics": false,
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
         }
       },
       "requirements": {
-        "python": "3.12",
+        "python": "3.12.10",
         "tools": [
           "uv"
         ]
@@ -271,45 +246,35 @@
     }
   },
   "result": {
-    "run_id": "39e54963-79ae-4831-a9f9-9325feed269e",
-    "created_at": "2026-09-14T21:25:34.513Z",
-    "case_id": "6e1cbb398685e2e47f97b87b7c52062cbe24da420d819bd479fd68f3feb2bfe2",
-    "comparison_id": "6c151e267e35ef775eace37fafd67c8f47c5f04c99f5fca765a2f841f9d8bdb9",
+    "run_id": "d0049f5f-0460-4ce9-8e54-7aa302572162",
+    "created_at": "2026-09-16T14:32:15.326Z",
+    "case_id": "cdb29a52d0bd10e40aaf43bd1cc7fae65ef43ab5247ac5bc1789800bd431a809",
+    "comparison_id": "13cb99dc9d67d4e992054df51605aadd33c0c46a267fdc135c54c9ce50229d99",
     "benchmark": {
-      "id": "sdk-import-time",
-      "label": "Fresh-process LiteLLM import time",
+      "id": "sdk-import-footprint",
+      "label": "Fresh-process LiteLLM import footprint",
       "kind": "sdk",
       "output_metrics": [
         {
-          "id": "import.median",
-          "unit": "ms",
+          "id": "import.peak_rss",
+          "unit": "MiB",
           "better": "lower"
         },
         {
-          "id": "import.p95",
-          "unit": "ms",
+          "id": "import.loaded_modules",
+          "unit": "modules",
           "better": "lower"
         },
         {
-          "id": "import.minimum",
-          "unit": "ms",
-          "better": "lower"
-        },
-        {
-          "id": "import.maximum",
-          "unit": "ms",
-          "better": "lower"
-        },
-        {
-          "id": "import.first",
-          "unit": "ms",
+          "id": "import.disk_growth",
+          "unit": "MiB",
           "better": "lower"
         }
       ],
       "protocol": {
-        "question": "How long does importing LiteLLM take in a fresh isolated Python process?",
-        "claim_scope": "Wall time for spawning an isolated Python process, importing LiteLLM, and shutting down, on the named runner, Python version, and dependency resolution. Includes interpreter startup; not import-only execution time, application startup, or first API-call latency.",
-        "experimental_unit": "One fresh isolated Python process executing import litellm",
+        "question": "What process-lifetime memory, module, and site-packages growth does importing LiteLLM create?",
+        "claim_scope": "First-import net logical-byte growth under site-packages in one clean installation, plus module diagnostics and externally measured process-lifetime peak RSS in a second independent installation. It does not cover caches or temporary files outside site-packages. RSS is platform-specific and should only be compared on matching runners. The import runs with LITELLM_LOCAL_MODEL_COST_MAP=True so the measured process reads the bundled model cost map instead of fetching the live one from GitHub; it therefore excludes the memory and modules that the remote fetch would add.",
+        "experimental_unit": "A clean installation, one uninstrumented first import for disk growth, and one separate instrumented import for RSS and modules",
         "scenarios": [
           {
             "id": "root-import",
@@ -320,52 +285,47 @@
             }
           }
         ],
-        "attempts": {
-          "count": 20,
-          "count_from": "measurements.samples",
-          "retention": "Retain every sample in execution order",
-          "unit": "fresh-process sample",
-          "warmups": 3
-        },
         "measurements": [
           {
-            "id": "import_duration_ms",
-            "label": "Fresh-process wall time",
-            "unit": "ms",
+            "id": "import.peak_rss",
+            "label": "Process-lifetime peak resident memory during import",
+            "unit": "MiB",
             "role": "primary",
             "better": "lower"
           },
           {
-            "id": "first_import_duration_ms",
-            "label": "First process in the prepared environment",
-            "unit": "ms",
+            "id": "import.loaded_modules",
+            "label": "Newly loaded modules",
+            "unit": "modules",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
+            "id": "import.disk_growth",
+            "label": "First-import site-packages logical-byte growth",
+            "unit": "MiB",
             "role": "secondary",
             "better": "lower"
           }
         ],
         "analyses": [
           {
-            "id": "fresh_import_distribution",
-            "label": "Fresh-process import distribution",
-            "measurement": "import_duration_ms",
-            "group_by": [
-              "scenario"
+            "id": "instrumented_import",
+            "label": "Instrumented import footprint",
+            "measurement": "import.peak_rss",
+            "additional_measurements": [
+              "import.loaded_modules",
+              "import.disk_growth"
             ],
-            "aggregation": "median and nearest-rank p95",
-            "report": [
-              "all_samples",
-              "minimum",
-              "median",
-              "p95",
-              "maximum",
-              "attempt_count"
-            ]
+            "scenarios": [
+              "root-import"
+            ],
+            "aggregation": "single observation"
           }
         ],
         "validity": {
-          "trial": "The isolated process must exit successfully",
-          "outliers": "Do not remove samples",
-          "instrumentation": "Timing samples run without RSS, module, network, or importtime instrumentation"
+          "trial": "The instrumented import must exit successfully",
+          "instrumentation": "Disk mutation and diagnostics use independent clean installations. RSS is measured externally around an uninstrumented fresh process; module counting uses a separate instrumented process. Every measured process runs with LITELLM_LOCAL_MODEL_COST_MAP=True so no network request, remote content, or fetch failure can change the observation."
         }
       }
     },
@@ -379,18 +339,21 @@
           "name": "root-import",
           "statement": "import litellm"
         },
+        "environment": {
+          "LITELLM_LOCAL_MODEL_COST_MAP": "True"
+        },
         "measurements": {
-          "warmups": 3,
-          "samples": 20,
-          "timing": true,
-          "diagnostics": false,
+          "warmups": 0,
+          "samples": 1,
+          "timing": false,
+          "diagnostics": true,
           "importtime": false,
           "network": false,
           "timeout_seconds": 120
         }
       },
       "requirements": {
-        "python": "3.12",
+        "python": "3.12.10",
         "tools": [
           "uv"
         ]
@@ -402,311 +365,69 @@
       "distribution": "litellm"
     },
     "apparatus": {
-      "runner": "@litellm-bench/benchmark-sdk-import-time",
+      "runner": "@litellm-bench/benchmark-sdk-import-footprint",
       "host": {
         "platform": "linux",
         "architecture": "x86_64",
         "host": "github-hosted",
         "node_version": "v24.20.0",
         "ci": true,
+        "kernel_release": "6.17.0-1022-azure",
+        "cpu_model": "AMD EPYC 7763 64-Core Processor",
+        "cpu_count": 4,
+        "memory_total_bytes": 16766414848,
+        "load_average_1m": 0.6,
         "python_version": "3.12.10",
         "python_implementation": "CPython"
       },
-      "python_version": "3.12.10",
-      "python_implementation": "CPython",
       "uv_version": "uv 0.8.17",
-      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-3QHz1Z/resolver/lib/python3.12/site-packages/pip (python 3.12)",
-      "timer": "python-time-perf-counter-subprocess-run"
+      "pip_version": "pip 26.2.1 from /tmp/litellm-bench-sdk-l84LQ7/resolver/lib/python3.12/site-packages/pip (python 3.12)"
     },
     "metrics": [
       {
-        "id": "import.median",
-        "label": "Median fresh import",
-        "value": 3049.6725160001006,
-        "unit": "ms",
+        "id": "import.peak_rss",
+        "label": "Process-lifetime peak RSS during import",
+        "value": 205.95703125,
+        "unit": "MiB",
         "better": "lower"
       },
       {
-        "id": "import.p95",
-        "label": "p95 fresh import",
-        "value": 3136.442568000348,
-        "unit": "ms",
+        "id": "import.loaded_modules",
+        "label": "Modules loaded by import",
+        "value": 2236,
+        "unit": "modules",
         "better": "lower"
       },
       {
-        "id": "import.minimum",
-        "label": "Minimum fresh import",
-        "value": 3005.70536899977,
-        "unit": "ms",
-        "better": "lower"
-      },
-      {
-        "id": "import.maximum",
-        "label": "Maximum fresh import",
-        "value": 3141.193305998968,
-        "unit": "ms",
-        "better": "lower"
-      },
-      {
-        "id": "import.first",
-        "label": "First import in prepared environment",
-        "value": 5711.547426000834,
-        "unit": "ms",
+        "id": "import.disk_growth",
+        "label": "First-import site-packages growth",
+        "value": 16.92722511291504,
+        "unit": "MiB",
         "better": "lower"
       }
     ],
-    "trials": [
-      {
-        "id": "fresh-import-1",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3043.0154829991807
-        },
-        "attempt": 1
-      },
-      {
-        "id": "fresh-import-2",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3025.0206210002943
-        },
-        "attempt": 2
-      },
-      {
-        "id": "fresh-import-3",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3005.70536899977
-        },
-        "attempt": 3
-      },
-      {
-        "id": "fresh-import-4",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3050.383342000714
-        },
-        "attempt": 4
-      },
-      {
-        "id": "fresh-import-5",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3075.140201999602
-        },
-        "attempt": 5
-      },
-      {
-        "id": "fresh-import-6",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3047.8891559996555
-        },
-        "attempt": 6
-      },
-      {
-        "id": "fresh-import-7",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3024.96055300071
-        },
-        "attempt": 7
-      },
-      {
-        "id": "fresh-import-8",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3096.119264999288
-        },
-        "attempt": 8
-      },
-      {
-        "id": "fresh-import-9",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3072.7059860000736
-        },
-        "attempt": 9
-      },
-      {
-        "id": "fresh-import-10",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3052.8916040002514
-        },
-        "attempt": 10
-      },
-      {
-        "id": "fresh-import-11",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3042.2036240015586
-        },
-        "attempt": 11
-      },
-      {
-        "id": "fresh-import-12",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3053.3618279987422
-        },
-        "attempt": 12
-      },
-      {
-        "id": "fresh-import-13",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3013.1628889994317
-        },
-        "attempt": 13
-      },
-      {
-        "id": "fresh-import-14",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3048.961689999487
-        },
-        "attempt": 14
-      },
-      {
-        "id": "fresh-import-15",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3020.2633230001084
-        },
-        "attempt": 15
-      },
-      {
-        "id": "fresh-import-16",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3044.312853999145
-        },
-        "attempt": 16
-      },
-      {
-        "id": "fresh-import-17",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3077.154321999842
-        },
-        "attempt": 17
-      },
-      {
-        "id": "fresh-import-18",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3141.193305998968
-        },
-        "attempt": 18
-      },
-      {
-        "id": "fresh-import-19",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3136.442568000348
-        },
-        "attempt": 19
-      },
-      {
-        "id": "fresh-import-20",
-        "scenario": "root-import",
-        "valid": true,
-        "measurements": {
-          "import_duration_ms": 3053.7653650007996
-        },
-        "attempt": 20
-      }
-    ],
-    "analyses": [
-      {
-        "id": "root-import.fresh_import_distribution",
-        "measurement": "import_duration_ms",
-        "aggregation": "median and nearest-rank p95",
-        "payload": {
-          "definition": "fresh_import_distribution",
-          "scenario": "root-import",
-          "summary": {
-            "attempt_count": 20,
-            "minimum": 3005.70536899977,
-            "median": 3049.6725160001006,
-            "p95": 3136.442568000348,
-            "maximum": 3141.193305998968
-          }
-        }
-      }
-    ],
+    "trials": [],
+    "analyses": [],
     "details": {
       "runtime": {
-        "requested_python": "3.12",
+        "requested_python": "3.12.10",
         "resolved_package_version": "1.99.0",
         "version": "3.12.10",
         "implementation": "CPython",
         "cache_tag": "cpython-312",
-        "executable": "/tmp/litellm-bench-sdk-3QHz1Z/target/bin/python",
+        "executable": "/tmp/litellm-bench-sdk-l84LQ7/target/bin/python",
         "platform": "linux",
         "architecture": "x86_64"
       },
-      "timing": {
-        "first_ever_process_seconds": 5.711547426000834,
-        "warmup_samples_seconds": [
-          3.046904077000363,
-          3.0402485489994433,
-          3.1143746660000033
-        ],
-        "fresh_process": {
-          "count": 20,
-          "samples_seconds": [
-            3.0430154829991807,
-            3.0250206210002943,
-            3.00570536899977,
-            3.050383342000714,
-            3.075140201999602,
-            3.0478891559996555,
-            3.02496055300071,
-            3.096119264999288,
-            3.0727059860000736,
-            3.0528916040002514,
-            3.0422036240015586,
-            3.0533618279987422,
-            3.0131628889994317,
-            3.048961689999487,
-            3.0202633230001084,
-            3.044312853999145,
-            3.077154321999842,
-            3.141193305998968,
-            3.136442568000348,
-            3.0537653650007996
-          ],
-          "minimum_seconds": 3.00570536899977,
-          "median_seconds": 3.0496725160001006,
-          "p95_seconds": 3.136442568000348,
-          "maximum_seconds": 3.141193305998968
-        }
+      "diagnostics": {
+        "import_only_seconds": 2.5981064200000077,
+        "new_module_count": 2236,
+        "peak_rss_bytes": 215961600
       },
-      "diagnostics": {},
       "resolution": {
         "artifact_count": 55,
-        "download_bytes": 61196401,
+        "download_bytes": 61400139,
+        "package_artifact_bytes": 23518654,
         "artifacts": [
           {
             "filename": "aiohappyeyeballs-2.7.1-py3-none-any.whl",
@@ -739,14 +460,14 @@
             "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
           },
           {
-            "filename": "boto3-1.43.94-py3-none-any.whl",
-            "bytes": 140023,
-            "sha256": "2534bf331acd2f448b9cf8317f4eed453c65d9e0b7de254e77c99d390ac57aec"
+            "filename": "boto3-1.43.95-py3-none-any.whl",
+            "bytes": 140026,
+            "sha256": "c906921c4f9ab41e9587af6586f072c8f2be6979e8bde2ec26aa443bb1745019"
           },
           {
-            "filename": "botocore-1.43.94-py3-none-any.whl",
-            "bytes": 15797479,
-            "sha256": "1dfb86603a87fdaebda2540db56aef5b226ec58ab72c13ca56737e4d66dea9ab"
+            "filename": "botocore-1.43.95-py3-none-any.whl",
+            "bytes": 15800616,
+            "sha256": "0fda26d16c7c7bf7082c421390a817b696f98a43d3da7c43dbbb093f76662876"
           },
           {
             "filename": "certifi-2026.7.22-py3-none-any.whl",
@@ -774,9 +495,9 @@
             "sha256": "808527f2407f58a76c916d6aa15d58692a4a019fdf8d4c32ac7ff303b7d7af09"
           },
           {
-            "filename": "filelock-3.32.6-py3-none-any.whl",
-            "bytes": 100189,
-            "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1"
+            "filename": "filelock-3.32.7-py3-none-any.whl",
+            "bytes": 100157,
+            "sha256": "65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52"
           },
           {
             "filename": "frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
@@ -874,9 +595,9 @@
             "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
           },
           {
-            "filename": "propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 61639,
-            "sha256": "6f328175a2cde1f0ff2c4ed8ce968b9dcfb55f3a7153f39e2957ed994da13476"
+            "filename": "propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 250424,
+            "sha256": "2814ecd8e818f487bee4b0f921bc4d1c176cc5fc71ac0f072d0fa67eda4ac14b"
           },
           {
             "filename": "pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
@@ -969,14 +690,14 @@
             "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
           },
           {
-            "filename": "urllib3-2.7.0-py3-none-any.whl",
-            "bytes": 131087,
-            "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
+            "filename": "urllib3-2.8.0-py3-none-any.whl",
+            "bytes": 135717,
+            "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
           },
           {
-            "filename": "yarl-1.24.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-            "bytes": 109835,
-            "sha256": "f08c7513ecef5aad65687bfdf6bc601ae9fccd04a42904501f8f7141abad9eb9"
+            "filename": "yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+            "bytes": 117050,
+            "sha256": "c6f117789d22dce188e5754e8bc65b7e6ebf8cb73963b9fa761f672a5883769d"
           },
           {
             "filename": "zipp-4.1.0-py3-none-any.whl",
@@ -987,12 +708,12 @@
       },
       "size": {
         "installed_before_first_run": {
-          "logical_bytes": 164594178
+          "logical_bytes": 165324950
         },
         "installed_after_first_run": {
-          "logical_bytes": 182760588
+          "logical_bytes": 183074432
         },
-        "first_run_logical_delta_bytes": 18166410
+        "first_run_logical_delta_bytes": 17749482
       }
     },
     "status": "ok"
