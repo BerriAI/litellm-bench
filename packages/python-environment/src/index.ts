@@ -150,6 +150,7 @@ export interface PreparedEnvironment {
   readonly python: string;
   readonly site_packages: readonly string[];
   readonly installed_files: readonly string[];
+  readonly subject_installed_files: readonly string[];
   readonly downloads: string;
   readonly pip_report: string;
   readonly artifacts: ReadonlyArray<{
@@ -180,6 +181,7 @@ const SitePackages = Schema.Array(Schema.String);
 
 const InstalledFileInventory = Schema.Struct({
   paths: Schema.Array(Schema.String),
+  subject_paths: Schema.Array(Schema.String),
   missing: Schema.Array(Schema.String),
   outside: Schema.Array(Schema.String),
   nonfiles: Schema.Array(Schema.String),
@@ -382,14 +384,29 @@ export const prepareEnvironment = (
       "-c",
       "import json, platform, sys; print(json.dumps({'version': platform.python_version(), 'implementation': platform.python_implementation(), 'cache_tag': sys.implementation.cache_tag, 'executable': sys.executable}))",
     ]);
+    const installedFilesScript = [
+      "import importlib.metadata as m, json, os, re, sys",
+      "root = os.path.realpath(sys.prefix)",
+      "canonical = lambda name: re.sub(r'[-_.]+', '_', name).lower()",
+      "subject = canonical(sys.argv[1])",
+      "paths, subject_paths, missing = [], [], []",
+      "for distribution in m.distributions():",
+      "    if distribution.files is None:",
+      "        missing.append(distribution.metadata.get('Name', '<unknown>'))",
+      "        continue",
+      "    files = [os.path.abspath(distribution.locate_file(file)) for file in distribution.files]",
+      "    paths.extend(files)",
+      "    if canonical(distribution.metadata.get('Name', '')) == subject:",
+      "        subject_paths.extend(files)",
+      "outside = [file for file in paths if os.path.commonpath([root, os.path.realpath(file)]) != root]",
+      "nonfiles = [file for file in paths if not (os.path.isfile(file) or os.path.islink(file))]",
+      "print(json.dumps({'paths': sorted(set(paths)), 'subject_paths': sorted(set(subject_paths)), 'missing': missing, 'outside': outside, 'nonfiles': nonfiles}))",
+    ].join("\n");
     const installedFilesResult = yield* run(targetPython, [
       "-I",
       "-c",
-      "import importlib.metadata as m, json, os, sys; root=os.path.realpath(sys.prefix); paths=[]; missing=[]; "
-      + "[(missing.append(d.metadata.get('Name','<unknown>')) if d.files is None else paths.extend(os.path.abspath(d.locate_file(p)) for p in d.files)) for d in m.distributions()]; "
-      + "outside=[p for p in paths if os.path.commonpath([root,os.path.realpath(p)]) != root]; "
-      + "nonfiles=[p for p in paths if not (os.path.isfile(p) or os.path.islink(p))]; "
-      + "print(json.dumps({'paths':sorted(set(paths)), 'missing':missing, 'outside':outside, 'nonfiles':nonfiles}))",
+      installedFilesScript,
+      spec.distribution,
     ]);
     const inspected = yield* Effect.gen(function*() {
       const entries = yield* fs.readDirectory(downloads);
@@ -516,6 +533,14 @@ export const prepareEnvironment = (
         }),
       );
     }
+    if (installedFiles.subject_paths.length === 0) {
+      return yield* Effect.fail(
+        new PythonEnvironmentError({
+          operation: "inspect-installed-files",
+          message: `Installed ${spec.distribution} distribution has no RECORD file inventory`,
+        }),
+      );
+    }
     if (packageVersionResult.stdout.trim() !== spec.expected_version) {
       return yield* Effect.fail(
         new PythonEnvironmentError({
@@ -538,6 +563,7 @@ export const prepareEnvironment = (
       python: targetPython,
       site_packages: sitePackages,
       installed_files: installedFiles.paths,
+      subject_installed_files: installedFiles.subject_paths,
       downloads,
       pip_report: report,
       artifacts: inspected.artifacts,

@@ -1,7 +1,8 @@
 # Clean LiteLLM package size
 
-Stable ID: `sdk-package-size`. Measures the LiteLLM wheel, complete resolved wheel download
-closure, every file installed from that closure, and downloaded artifact count before import.
+Stable ID: `sdk-package-size`. Measures the compressed LiteLLM wheel, files installed from that
+wheel, the complete resolved wheel download closure, every file installed from that closure, and
+downloaded artifact count before import.
 
 Resolution is isolated from ambient `PIP_*` and `UV_*` settings. Pip runs in isolated mode, uv
 ignores configuration files, and the recorded observation contains the resolver inputs, resolved
@@ -9,8 +10,9 @@ Python patch, uv/pip versions, complete artifact inventory, and SHA-256 for ever
 is reproducible and comparable within a campaign; mutable indexes mean historical campaigns do not
 implicitly hold transitive dependency versions constant.
 
-Installed footprint is the sum of logical sizes for all unique regular files and symlinks named by
-the installed distributions' `RECORD` files. This includes site-packages, generated console scripts,
+`package.installed_subject` sums files named by LiteLLM's installed `RECORD` only;
+`package.installed` sums files named by all installed distributions' `RECORD` files. This includes
+site-packages, generated console scripts,
 and wheel `.data` files moved into other install-scheme locations. Directories are excluded,
 hard-linked regular files are counted once, symlinks contribute the link's own byte length, and
 sparse files contribute logical length. Allocated bytes are deliberately not published because the

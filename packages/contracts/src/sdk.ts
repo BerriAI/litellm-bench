@@ -93,6 +93,7 @@ export const SdkRawObservation = Schema.Struct({
   resolution: ResolutionObservation,
   size: Schema.Struct({
     installed_before_first_run: DirectoryMeasurement,
+    subject_installed_before_first_run: Schema.optionalKey(DirectoryMeasurement),
     installed_after_first_run: Schema.optionalKey(DirectoryMeasurement),
     first_run_logical_delta_bytes: Schema.optionalKey(Schema.Int),
     first_run_allocated_delta_bytes: Schema.optionalKey(Schema.Int),

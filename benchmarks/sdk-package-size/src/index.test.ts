@@ -11,7 +11,10 @@ const raw = {
     package_artifact_bytes: 1_048_576,
     artifacts: [],
   },
-  size: { installed_before_first_run: { logical_bytes: 3_145_728 } },
+  size: {
+    installed_before_first_run: { logical_bytes: 3_145_728 },
+    subject_installed_before_first_run: { logical_bytes: 1_048_576 },
+  },
 } as const;
 
 describe("package-size projection", () => {
@@ -19,6 +22,7 @@ describe("package-size projection", () => {
     expect(projectPackageSize(raw).map(({ id, value }) => [id, value])).toEqual([
       ["package.wheel", 1],
       ["package.download", 2],
+      ["package.installed_subject", 1],
       ["package.installed", 3],
       ["package.artifacts", 2],
     ]);

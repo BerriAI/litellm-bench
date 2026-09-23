@@ -56,6 +56,7 @@ const prepared: PreparedEnvironment = {
   python: "/python",
   site_packages: ["/site"],
   installed_files: [],
+  subject_installed_files: [],
   downloads: "/downloads",
   pip_report: "/report",
   artifacts: [],

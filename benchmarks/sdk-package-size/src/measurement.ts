@@ -14,6 +14,7 @@ export const observePackageSize = Effect.fn("PackageSize.observe")(
   ) {
     const probe = yield* PackageSizeProbe;
     const installed = yield* probe.installedSize(prepared.installed_files);
+    const subjectInstalled = yield* probe.installedSize(prepared.subject_installed_files);
     return yield* Schema.decodeUnknownEffect(SdkRawObservation, { onExcessProperty: "error" })({
       runtime: {
         resolved_package_version: prepared.package_version,
@@ -39,6 +40,12 @@ export const observePackageSize = Effect.fn("PackageSize.observe")(
         },
       },
       size: {
+        subject_installed_before_first_run: {
+          logical_bytes: subjectInstalled.logical_bytes,
+          ...(subjectInstalled.allocated_bytes === null
+            ? {}
+            : { allocated_bytes: subjectInstalled.allocated_bytes }),
+        },
         installed_before_first_run: {
           logical_bytes: installed.logical_bytes,
           ...(installed.allocated_bytes === null

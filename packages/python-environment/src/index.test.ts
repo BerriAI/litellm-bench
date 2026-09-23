@@ -148,7 +148,7 @@ describe("python environments", () => {
             : command.arguments.some((argument) => argument.includes("site.getsitepackages"))
             ? "[\"/target/site-packages\"]\n"
             : command.arguments.some((argument) => argument.includes("m.distributions"))
-            ? "{\"paths\":[\"/target/site-packages/litellm.py\",\"/target/bin/litellm\"],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n"
+            ? "{\"paths\":[\"/target/site-packages/litellm.py\",\"/target/bin/litellm\"],\"subject_paths\":[\"/target/site-packages/litellm.py\",\"/target/bin/litellm\"],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n"
             : command.arguments.some((argument) => argument.includes("importlib.metadata"))
             ? "1.0.0\n"
             : command.arguments.some((argument) => argument.includes("platform.python_version"))
@@ -175,6 +175,7 @@ describe("python environments", () => {
       expect(prepared.package_artifact_bytes).toBe(5);
       expect(prepared.artifacts[0]?.sha256).toMatch(/^[a-f0-9]{64}$/);
       expect(prepared.installed_files).toContain("/target/bin/litellm");
+      expect(prepared.subject_installed_files).toEqual(prepared.installed_files);
       expect(commands.some((command) => command.arguments.includes("--dry-run"))).toBe(true);
       expect(commands.some((command) => command.arguments.includes("--no-index"))).toBe(true);
       expect(commands.every((command) => command.timeoutMs === 7_000)).toBe(true);
@@ -270,6 +271,12 @@ describe("python environments", () => {
         message: "Python returned an invalid installed-file inventory",
       },
       {
+        name: "missing subject RECORD inventory",
+        installedFiles: "{\"paths\":[\"/target/site-packages/dependency.py\"],\"subject_paths\":[],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n",
+        operation: "inspect-installed-files",
+        message: "Installed litellm distribution has no RECORD file inventory",
+      },
+      {
         name: "array python metadata",
         pythonMetadata: "[\"3.12.0\"]\n",
         operation: "inspect-python",
@@ -320,7 +327,7 @@ describe("python environments", () => {
               ? candidate.sitePackages ?? "[\"/target/site-packages\"]\n"
               : command.arguments.some((argument) => argument.includes("m.distributions"))
               ? candidate.installedFiles
-                ?? "{\"paths\":[\"/target/site-packages/litellm.py\"],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n"
+                ?? "{\"paths\":[\"/target/site-packages/litellm.py\"],\"subject_paths\":[\"/target/site-packages/litellm.py\"],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n"
               : command.arguments.some((argument) => argument.includes("importlib.metadata"))
               ? "1.0.0\n"
               : command.arguments.some((argument) => argument.includes("platform.python_version"))
@@ -386,7 +393,7 @@ describe("python environments", () => {
             : command.arguments.some((argument) => argument.includes("site.getsitepackages"))
             ? "[\"/target/site-packages\"]\n"
             : command.arguments.some((argument) => argument.includes("m.distributions"))
-            ? "{\"paths\":[\"/target/site-packages/litellm.py\"],\"missing\":[],\"outside\":[],\"nonfiles\":[],\"extra\":true}\n"
+            ? "{\"paths\":[\"/target/site-packages/litellm.py\"],\"subject_paths\":[\"/target/site-packages/litellm.py\"],\"missing\":[],\"outside\":[],\"nonfiles\":[],\"extra\":true}\n"
             : command.arguments.some((argument) => argument.includes("importlib.metadata"))
             ? "1.0.0\n"
             : command.arguments.some((argument) => argument.includes("platform.python_version"))
@@ -406,6 +413,7 @@ describe("python environments", () => {
         artifacts_dir: artifactsDirectory,
       }));
       expect(prepared.installed_files).toEqual(["/target/site-packages/litellm.py"]);
+      expect(prepared.subject_installed_files).toEqual(["/target/site-packages/litellm.py"]);
       expect(prepared.python_metadata).toEqual({
         version: "3.12.0",
         implementation: "CPython",
@@ -451,7 +459,7 @@ describe("python environments", () => {
             : command.arguments.some((argument) => argument.includes("site.getsitepackages"))
             ? "[\"/target/site-packages\"]\n"
             : command.arguments.some((argument) => argument.includes("m.distributions"))
-            ? "{\"paths\":[],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n"
+            ? "{\"paths\":[],\"subject_paths\":[],\"missing\":[],\"outside\":[],\"nonfiles\":[]}\n"
             : command.arguments.some((argument) => argument.includes("importlib.metadata"))
             ? "1.0.0\n"
             : command.arguments.some((argument) => argument.includes("platform.python_version"))
@@ -479,7 +487,7 @@ describe("python environments", () => {
   });
 
   it(
-    "includes console scripts and wheel .data files in the installed footprint inventory",
+    "separates the subject footprint from dependencies and includes scripts and .data files",
     async () => {
       const root = await mkdtemp(join(tmpdir(), "litellm-bench-wheel-install-"));
       const wheelhouse = join(root, "wheelhouse");
@@ -487,10 +495,11 @@ describe("python environments", () => {
       const artifactsDirectory = join(root, "artifacts");
       await Promise.all([mkdir(wheelhouse), mkdir(workspace)]);
       const wheel = join(wheelhouse, "demo_footprint-1.0.0-py3-none-any.whl");
+      const dependencyWheel = join(wheelhouse, "demo_dep-1.0.0-py3-none-any.whl");
       const buildWheel = [
         "import csv, io, sys, zipfile",
         "wheel=sys.argv[1]",
-        "files={'demo_pkg/__init__.py':b'def main(): return 0\\n','demo_footprint-1.0.0.dist-info/METADATA':b'Metadata-Version: 2.1\\nName: demo-footprint\\nVersion: 1.0.0\\n','demo_footprint-1.0.0.dist-info/WHEEL':b'Wheel-Version: 1.0\\nGenerator: test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n','demo_footprint-1.0.0.dist-info/entry_points.txt':b'[console_scripts]\\ndemo-footprint=demo_pkg:main\\n','demo_footprint-1.0.0.data/data/share/demo-footprint/payload.txt':b'payload'}",
+        "files={'demo_pkg/__init__.py':b'def main(): return 0\\n','demo_footprint-1.0.0.dist-info/METADATA':b'Metadata-Version: 2.1\\nName: demo-footprint\\nVersion: 1.0.0\\nRequires-Dist: demo-dep==1.0.0\\n','demo_footprint-1.0.0.dist-info/WHEEL':b'Wheel-Version: 1.0\\nGenerator: test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n','demo_footprint-1.0.0.dist-info/entry_points.txt':b'[console_scripts]\\ndemo-footprint=demo_pkg:main\\n','demo_footprint-1.0.0.data/data/share/demo-footprint/payload.txt':b'payload'}",
         "record=''.join(f'{path},,\\n' for path in [*files,'demo_footprint-1.0.0.dist-info/RECORD']).encode()",
         "files['demo_footprint-1.0.0.dist-info/RECORD']=record",
         "z=zipfile.ZipFile(wheel,'w',zipfile.ZIP_DEFLATED)",
@@ -498,6 +507,16 @@ describe("python environments", () => {
         "z.close()",
       ].join(";");
       await executeFile(process.env.PYTHON ?? "python3", ["-c", buildWheel, wheel]);
+      const buildDependencyWheel = [
+        "import sys, zipfile",
+        "wheel=sys.argv[1]",
+        "files={'demo_dep/__init__.py':b'dependency','demo_dep-1.0.0.dist-info/METADATA':b'Metadata-Version: 2.1\\nName: demo-dep\\nVersion: 1.0.0\\n','demo_dep-1.0.0.dist-info/WHEEL':b'Wheel-Version: 1.0\\nGenerator: test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n'}",
+        "files['demo_dep-1.0.0.dist-info/RECORD']=''.join(f'{path},,\\n' for path in [*files,'demo_dep-1.0.0.dist-info/RECORD']).encode()",
+        "z=zipfile.ZipFile(wheel,'w',zipfile.ZIP_DEFLATED)",
+        "[z.writestr(path,data) for path,data in files.items()]",
+        "z.close()",
+      ].join(";");
+      await executeFile(process.env.PYTHON ?? "python3", ["-c", buildDependencyWheel, dependencyWheel]);
       const runner = {
         run: (command: CommandSpec) =>
           Effect.tryPromise({
@@ -527,6 +546,13 @@ describe("python environments", () => {
         expect(prepared.installed_files.some((path) => path.endsWith("/bin/demo-footprint"))).toBe(
           true,
         );
+        expect(prepared.subject_installed_files).toContainEqual(
+          expect.stringMatching(/\/bin\/demo-footprint$/),
+        );
+        expect(prepared.installed_files).toContainEqual(
+          expect.stringMatching(/\/demo_dep\/__init__\.py$/),
+        );
+        expect(prepared.subject_installed_files.some((path) => path.includes("demo_dep"))).toBe(false);
         expect(
           prepared.installed_files.some((path) =>
             path.endsWith("/share/demo-footprint/payload.txt")
@@ -534,10 +560,11 @@ describe("python environments", () => {
         ).toBe(true);
         expect((await runPlatform(combinedSize(prepared.installed_files))).logical_bytes)
           .toBeGreaterThan(0);
-        expect(prepared.artifacts).toEqual([expect.objectContaining({
+        expect(prepared.artifacts).toEqual(expect.arrayContaining([expect.objectContaining({
           filename: "demo_footprint-1.0.0-py3-none-any.whl",
           sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
-        })]);
+        })]));
+        expect(prepared.artifacts).toHaveLength(2);
       } finally {
         await rm(root, { recursive: true, force: true });
       }

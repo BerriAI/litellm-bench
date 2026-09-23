@@ -228,6 +228,9 @@
             "installed_before_first_run": {
               "$ref": "#/$defs/DirectoryMeasurement"
             },
+            "subject_installed_before_first_run": {
+              "$ref": "#/$defs/DirectoryMeasurement"
+            },
             "installed_after_first_run": {
               "$ref": "#/$defs/DirectoryMeasurement"
             },

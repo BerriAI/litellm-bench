@@ -67,6 +67,7 @@ const prepared: PreparedEnvironment = {
   python: "/python",
   site_packages: ["/site"],
   installed_files: ["/site/litellm.py", "/bin/litellm"],
+  subject_installed_files: ["/site/litellm.py"],
   downloads: "/downloads",
   pip_report: "/report",
   artifacts: [{ filename: "litellm.whl", bytes: 1_048_576, sha256: "a".repeat(64) }, {
@@ -98,15 +99,18 @@ it.effect("strictly rejects unsupported and incompatible configuration", () =>
 it.effect("projects exact package observations and releases the prepared environment", () =>
   Effect.gen(function*() {
     const events: string[] = [];
-    let measuredPaths: readonly string[] = [];
+    const measuredPaths: (readonly string[])[] = [];
     let preparation: unknown;
     const runner = yield* makePackageSizeRunner.pipe(
       Effect.provideService(PackageSizeProbe, {
         installedSize: (paths) =>
           Effect.sync(() => {
             events.push("measure");
-            measuredPaths = paths;
-            return { logical_bytes: 3_145_728, allocated_bytes: null };
+            measuredPaths.push([...paths]);
+            return {
+              logical_bytes: paths === prepared.installed_files ? 3_145_728 : 1_048_576,
+              allocated_bytes: null,
+            };
           }),
       }),
       Effect.provideService(PythonEnvironment, {
@@ -125,17 +129,18 @@ it.effect("projects exact package observations and releases the prepared environ
       }),
     );
     const result = yield* runner.run(context);
-    expect(events).toEqual(["prepare", "measure", "release"]);
+    expect(events).toEqual(["prepare", "measure", "measure", "release"]);
     expect(preparation).toMatchObject({
       expected_version: "1.0.0",
       timeout_seconds: 120,
       resolver: { binary_only: true },
     });
-    expect(measuredPaths).toEqual(prepared.installed_files);
+    expect(measuredPaths).toEqual([prepared.installed_files, prepared.subject_installed_files]);
     expect(result.details?.resolution).toMatchObject({ policy: "same-campaign-wheel-closure-v1" });
     expect(result.metrics.map(({ id, value }) => [id, value])).toEqual([
       ["package.wheel", 1],
       ["package.download", 3],
+      ["package.installed_subject", 1],
       ["package.installed", 3],
       ["package.artifacts", 2],
     ]);

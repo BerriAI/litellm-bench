@@ -67,6 +67,7 @@ export const prepared: PreparedEnvironment = {
   python: "/workspace/bin/python",
   site_packages: [],
   installed_files: [],
+  subject_installed_files: [],
   downloads: "/workspace/downloads",
   pip_report: "/artifacts/pip-report.json",
   artifacts: [{ filename: "litellm.whl", bytes: 50, sha256: "a".repeat(64) }],

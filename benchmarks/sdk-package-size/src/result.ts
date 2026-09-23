@@ -9,6 +9,10 @@ export const projectPackageSize = (raw: SdkRawObservation): readonly Metric[] =>
   if (wheel === undefined) {
     throw new Error("package-size observation is missing the subject artifact size");
   }
+  const subjectInstalled = raw.size.subject_installed_before_first_run;
+  if (subjectInstalled === undefined) {
+    throw new Error("package-size observation is missing the subject installed size");
+  }
   return [
     {
       id: "package.wheel",
@@ -21,6 +25,13 @@ export const projectPackageSize = (raw: SdkRawObservation): readonly Metric[] =>
       id: "package.download",
       label: "Dependency download closure",
       value: mib(raw.resolution.download_bytes),
+      unit: "MiB",
+      better: "lower",
+    },
+    {
+      id: "package.installed_subject",
+      label: "Installed LiteLLM RECORD footprint before import",
+      value: mib(subjectInstalled.logical_bytes),
       unit: "MiB",
       better: "lower",
     },

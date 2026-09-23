@@ -1276,6 +1276,10 @@ export const benchmarkCatalog = {
         "unit": "MiB",
         "better": "lower"
       },
+      "package.installed_subject": {
+        "unit": "MiB",
+        "better": "lower"
+      },
       "package.installed": {
         "unit": "MiB",
         "better": "lower"
@@ -1303,6 +1307,11 @@ export const benchmarkCatalog = {
           "better": "lower"
         },
         {
+          "id": "package.installed_subject",
+          "unit": "MiB",
+          "better": "lower"
+        },
+        {
           "id": "package.installed",
           "unit": "MiB",
           "better": "lower"
@@ -1314,8 +1323,8 @@ export const benchmarkCatalog = {
         }
       ],
       "protocol": {
-        "question": "How large are the LiteLLM wheel, resolved wheel-only dependency closure, and files installed from that closure?",
-        "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Installed logical size covers every regular file and symlink named by installed wheel RECORDs, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
+        "question": "How large are the LiteLLM wheel, its installed files, the resolved wheel-only dependency closure, and files installed from that closure?",
+        "claim_scope": "The exact requested LiteLLM version and wheel closure resolved within one campaign on the recorded Python patch and resolver tool versions. Subject installed logical size covers files named by the LiteLLM installed RECORD; closure installed logical size covers files named by all installed wheel RECORDs. Both include regular files and symlinks, including scripts and install-scheme data, before first import. Cross-campaign comparisons do not hold dependency versions constant.",
         "experimental_unit": "One isolated, clean, wheel-only resolution and installation",
         "scenarios": [
           {
@@ -1343,6 +1352,13 @@ export const benchmarkCatalog = {
             "better": "lower"
           },
           {
+            "id": "package.installed_subject",
+            "label": "Installed LiteLLM RECORD footprint before import",
+            "unit": "MiB",
+            "role": "secondary",
+            "better": "lower"
+          },
+          {
             "id": "package.installed",
             "label": "Installed RECORD footprint before import",
             "unit": "MiB",
@@ -1363,6 +1379,7 @@ export const benchmarkCatalog = {
             "label": "Clean resolution and installation sizes",
             "measurement": "package.wheel",
             "additional_measurements": [
+              "package.installed_subject",
               "package.download",
               "package.installed",
               "package.artifacts"
